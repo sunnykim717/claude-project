@@ -156,6 +156,12 @@ class SiteToolTest(unittest.TestCase):
         site = json.loads((self.target / "config" / "site.json").read_text(encoding="utf-8"))
         self.assertEqual(site["name"], "○○ 복지 재단")
 
+    def test_new_accepts_unquoted_multi_word_name(self):
+        dest = Path(self.tmp) / "multi"
+        self.assertEqual(self.tool.main(["new", str(dest), "--name", "희망", "나눔", "복지재단"]), 0)
+        site = json.loads((dest / "config" / "site.json").read_text(encoding="utf-8"))
+        self.assertEqual(site["name"], "희망 나눔 복지재단")
+
     def test_new_refuses_existing_folder_and_unknown_design(self):
         self.assertEqual(self.tool.main(["new", str(self.target)]), 1)
         other = Path(self.tmp) / "other"

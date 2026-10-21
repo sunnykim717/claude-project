@@ -4,6 +4,39 @@ NGO, 사회복지법인, 비영리 법인의 기관 소개와 후원 모금 홈�
 
 설정 파일과 콘텐츠 파일을 고치면 홈페이지 파일이 만들어집니다. Node.js 도 AI 도 필요 없고, Python 3 만 있으면 됩니다.
 
+## 처음 시작하기 (5분)
+
+둘 중 하나를 고르면 됩니다.
+
+**A. 브라우저에서 (터미널 없이)**
+
+1. `editor/index.html` 을 브라우저(크롬, 엣지 등)로 엽니다.
+2. 위쪽 명령 칸에 적고 Enter 를 누릅니다. 예: `set site.name 희망 나눔 복지재단`
+3. 오른쪽 미리보기에서 확인하고, **프로젝트 내려받기 (zip)** 을 누릅니다.
+4. 받은 zip 을 풀고 아래 **배포하기** 를 따릅니다.
+
+**B. 터미널에서 (Python 3 만 있으면 됩니다)**
+
+```bash
+python scripts/site_tool.py new ../내홈페이지 --name 희망 나눔 복지재단 --design warm-orange
+cd ../내홈페이지
+python scripts/site_tool.py set home.hero.title 함께 걸어가는 이웃
+python scripts/site_tool.py check
+python scripts/site_tool.py build --out dist
+```
+
+- `designs` 명령으로 디자인 목록을 볼 수 있습니다.
+- `set` 뒤의 값은 따옴표 없이 여러 단어를 써도 됩니다.
+- `check` 는 틀린 곳을 알려 줍니다. 메시지에 나온 파일을 고치고 다시 실행하세요.
+
+**배포하기 (GitHub Pages)**
+
+1. 이 폴더를 새 GitHub 저장소의 최상위에 올립니다.
+2. 저장소 **Settings → Pages** 에서 Source 를 **GitHub Actions** 로 고릅니다.
+3. `.github/workflows/deploy.yml` 이 `main` 에 올라가면 자동으로 배포됩니다.
+
+> 배포 전에 `content/` 의 빈칸 안내문을 실제 내용으로 바꾸세요. 기관 정보, 금액, 계좌, 영수증 안내는 직접 확인해서 적어야 합니다.
+
 ## 폴더 구성
 
 | 폴더 | 무엇을 넣나요? |

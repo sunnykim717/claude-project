@@ -66,7 +66,7 @@ def cmd_new(args):
     site_path = target / FILE_FOR["site"]
     site = json.loads(site_path.read_text(encoding="utf-8"))
     if args.name:
-        site["name"] = args.name
+        site["name"] = " ".join(args.name)
     site_path.write_text(json.dumps(site, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     if args.design:
         designs = load_designs(target)
@@ -135,7 +135,7 @@ def build_parser():
     sub.add_parser("designs", help="디자인 목록 보기").set_defaults(func=cmd_designs)
     p = sub.add_parser("new", help="새 홈페이지 폴더 만들기")
     p.add_argument("folder")
-    p.add_argument("--name", help="기관 이름")
+    p.add_argument("--name", nargs="+", help="기관 이름 (따옴표 없이 여러 단어 가능)")
     p.add_argument("--design", help="디자인 이름 (designs 명령으로 확인)")
     p.set_defaults(func=cmd_new)
     p = sub.add_parser("set", help="설정이나 콘텐츠 값 바꾸기 (검사 후 저장)")
