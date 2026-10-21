@@ -87,6 +87,7 @@
     "site.name / site.description / site.language (ko, en, ja)",
     "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy), theme.layout (classic, modern, card, minimal)",
     "theme.backgroundImage: 배경 사진 경로 (/images/파일이름.jpg). 비우면 배경색만 씁니다",
+    "페이지이름.gallery: 사진 여러 장 (목록). 각 항목은 image (/images/파일이름.jpg), alt (설명). 최대 12장",
     "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
     "about.title / about.body",
     "사진 (첫 화면은 home.hero.image): 페이지이름.image 에 /images/파일이름.jpg, 페이지이름.imageAlt 에 설명. 페이지이름은 about, projects, support, transparency, volunteer, news, contact, privacy",
@@ -105,5 +106,6 @@
     "center",
     "buttons",
     "stack"
-  ]
+  ],
+  "gallery_max": 12
 }

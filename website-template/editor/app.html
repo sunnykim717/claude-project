@@ -28,6 +28,7 @@
     .preview { padding: 12px; min-width: 0; }
     .preview iframe { width: 100%; height: calc(100vh - 150px); min-height: 420px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
     @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } aside { max-height: none; border-right: 0; } .preview iframe { height: 70vh; } }
+    .gallery-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
   </style>
 </head>
 <body>
@@ -74,6 +75,13 @@
       <h2>페이지 파일 받기</h2>
       <p class="hint">받은 파일을 GitHub 저장소의 같은 폴더에 올리면 자동으로 배포됩니다.</p>
       <div class="row" id="downloads"></div>
+    </section>
+    <section class="panel">
+      <h2>갤러리 (여러 장)</h2>
+      <p class="hint">위에서 고른 페이지에 사진을 여러 장 넣습니다.</p>
+      <button type="button" class="secondary" id="btn-gallery">갤러리에 사진 더하기</button>
+      <input type="file" id="file-gallery" accept="image/*" multiple hidden>
+      <div id="gallery-list"></div>
     </section>
     <section class="panel">
       <h2>직접 쓰는 CSS</h2>

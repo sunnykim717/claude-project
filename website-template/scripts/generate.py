@@ -124,6 +124,18 @@ def photo_html(content):
     return f'<figure class="page-photo"><img src="{esc(src)}" alt="{esc(content.get("imageAlt"))}"></figure>'
 
 
+def gallery_html(content):
+    """여러 장 넣은 사진을 페이지 끝에 바둑판으로 보입니다."""
+    items = content.get("gallery") or []
+    if not items:
+        return ""
+    figures = "".join(
+        f'<figure><img src="{esc("public/" + str(item["image"]).lstrip("/"))}" alt="{esc(item.get("alt"))}" loading="lazy"></figure>'
+        for item in items
+    )
+    return f'<div class="gallery">{figures}</div>'
+
+
 def footer_html(root, site, contact):
     lines = []
     if contact.get("email"):
@@ -171,7 +183,9 @@ def build_pages(root, data):
     style = "\n".join([theme_css(theme), background_css(theme), read_part(root, "src/styles/site.css"), custom_css(root)])
     pages = {}
 
-    def page(file_name, title, main_html, description, photo=""):
+    def page(file_name, title, main_html, description, content=None):
+        top = photo_html(content) if content else ""
+        bottom = gallery_html(content) if content else ""
         full_title = site["name"] if file_name == "index.html" else f"{title} | {site['name']}"
         pages[file_name] = fill(read_part(root, "src/pages/page.html"), {
             "lang": esc(site.get("language", "ko")),
@@ -179,7 +193,7 @@ def build_pages(root, data):
             "description": esc(site.get("description")),
             "style": style,
             "header": header_html(root, site, nav, file_name),
-            "main": photo + main_html,
+            "main": top + main_html + bottom,
             "footer": footer_html(root, site, data["contact"]),
             "layout": esc(theme["layout"]),
             "menu": esc(theme["menu"]),
@@ -196,10 +210,10 @@ def build_pages(root, data):
 
     page("about.html", data["about"]["title"],
          block(data["about"]["title"], f'<p class="pre">{esc(data["about"]["body"])}</p>'),
-         data["about"]["body"], photo_html(data["about"]))
+         data["about"]["body"], data["about"])
     page("projects.html", data["projects"]["title"],
          block(data["projects"]["title"], items_html(data["projects"].get("items", []), theme["layout"])),
-         data["projects"]["title"], photo_html(data["projects"]))
+         data["projects"]["title"], data["projects"])
     contact = data["contact"]
     support = data["support"]
     ways = project_articles(support.get("ways", []))
@@ -208,31 +222,31 @@ def build_pages(root, data):
         support_main += block("후원 방법", ways)
     if support.get("notice"):
         support_main += block("안내", f'<p class="pre">{esc(support["notice"])}</p>')
-    page("support.html", support["title"], support_main, support["body"], photo_html(support))
+    page("support.html", support["title"], support_main, support["body"], support)
     news = data["news"]
     page("news.html", news["title"],
-         block(news["title"], project_articles(news.get("items", []))), news["title"], photo_html(news))
+         block(news["title"], project_articles(news.get("items", []))), news["title"], news)
     transparency = data["transparency"]
     page("transparency.html", transparency["title"],
          block(transparency["title"], f'<p class="pre">{esc(transparency["body"])}</p>')
          + block("사업 · 재무 자료", project_articles(transparency.get("reports", [])))
          + block("사업비 구성", f'<p class="pre">{esc(transparency["costs"])}</p>')
          + block("외부 확인", f'<p class="pre">{esc(transparency["disclosure"])}</p>'),
-         transparency["body"], photo_html(transparency))
+         transparency["body"], transparency)
     volunteer = data["volunteer"]
     page("volunteer.html", volunteer["title"],
          block(volunteer["title"], f'<p class="pre">{esc(volunteer["body"])}</p>')
          + block("활동 종류", project_articles(volunteer.get("positions", [])))
          + block("신청 방법", f'<p class="pre">{esc(volunteer["apply"])}</p>'),
-         volunteer["body"], photo_html(volunteer))
+         volunteer["body"], volunteer)
     privacy = data["privacy"]
     page("privacy.html", privacy["title"],
          block(privacy["title"], f'<p class="pre">{esc(privacy["body"])}</p>')
          + block("처리 항목", project_articles(privacy.get("items", []))),
-         privacy["body"], photo_html(privacy))
+         privacy["body"], privacy)
     page("contact.html", contact["title"],
          block(contact["title"], f'<p class="pre">{esc(contact["body"])}</p>'),
-         contact["body"], photo_html(contact))
+         contact["body"], contact)
     return pages
 
 

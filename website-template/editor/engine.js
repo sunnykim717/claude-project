@@ -9,7 +9,7 @@
 
   // 설정 항목 목록은 schema.json 에서만 옵니다. useSchema() 로 한 번 넣어 주세요.
   var loaded = false;
-  var PAGE_FILES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES;
+  var PAGE_FILES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX;
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -26,6 +26,7 @@
     LANGUAGES = schema.languages;
     IMAGE = new RegExp("^/images/[A-Za-z0-9._-]+\\.(" + schema.image_extensions.join("|") + ")$");
     PHOTO_PAGES = schema.photo_pages;
+    GALLERY_MAX = schema.gallery_max;
     loaded = true;
   }
 
@@ -66,6 +67,22 @@
 
   function checkPhoto(files, errors, rel, content) {
     checkImage(files, errors, rel, content.image, "image");
+    var gallery = content.gallery;
+    if (gallery === undefined || gallery === null) return;
+    if (!Array.isArray(gallery)) {
+      errors.push(rel + ": gallery 는 목록이어야 합니다.");
+      return;
+    }
+    if (gallery.length > GALLERY_MAX) errors.push(rel + ": gallery 는 " + GALLERY_MAX + "장까지 넣을 수 있습니다.");
+    gallery.forEach(function (item, index) {
+      var n = index + 1;
+      if (!isObject(item)) {
+        errors.push(rel + " " + n + "번 사진: 사진 칸이 올바르지 않습니다.");
+        return;
+      }
+      checkImage(files, errors, rel + " " + n + "번 사진", item.image, "image");
+      if ("alt" in item && typeof item.alt !== "string") errors.push(rel + " " + n + "번 사진: alt 는 글자여야 합니다.");
+    });
   }
 
   var FORBIDDEN_CSS = /<|@import|url\s*\(|expression\s*\(|javascript:|behavior\s*:|-moz-binding/gi;
@@ -311,12 +328,23 @@
       'body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--bg); opacity: 0.88; }';
   }
 
+  function galleryHtml(content) {
+    var items = content.gallery || [];
+    if (!items.length) return "";
+    var figures = items.map(function (item) {
+      return '<figure><img src="' + esc("public/" + String(item.image).replace(/^\/+/, "")) + '" alt="' + esc(item.alt) + '" loading="lazy"></figure>';
+    }).join("");
+    return '<div class="gallery">' + figures + "</div>";
+  }
+
   function buildPages(files, data) {
     var site = data.site, nav = data.nav, theme = data.theme;
     var style = [themeCss(theme), backgroundCss(theme), files["src/styles/site.css"], files["config/custom.css"] || ""].join("\n");
     var pages = {};
 
-    function page(fileName, title, mainHtml, description, photo) {
+    function page(fileName, title, mainHtml, description, content) {
+      var top = content ? photoHtml(content) : "";
+      var bottom = content ? galleryHtml(content) : "";
       var fullTitle = fileName === "index.html" ? site.name : title + " | " + site.name;
       pages[fileName] = fill(files["src/pages/page.html"], {
         lang: esc(site.language || "ko"),
@@ -324,7 +352,7 @@
         description: esc(site.description),
         style: style,
         header: headerHtml(files, site, nav, fileName),
-        main: (photo || "") + mainHtml,
+        main: top + mainHtml + bottom,
         footer: footerHtml(files, site, data.contact),
         layout: esc(theme.layout),
         menu: esc(theme.menu)
@@ -340,36 +368,36 @@
     page("index.html", site.name, homeMain, site.description || "");
 
     page("about.html", data.about.title,
-      block(data.about.title, '<p class="pre">' + esc(data.about.body) + "</p>"), data.about.body, photoHtml(data.about));
+      block(data.about.title, '<p class="pre">' + esc(data.about.body) + "</p>"), data.about.body, data.about);
     page("projects.html", data.projects.title,
-      block(data.projects.title, itemsHtml(data.projects.items || [], theme.layout)), data.projects.title, photoHtml(data.projects));
+      block(data.projects.title, itemsHtml(data.projects.items || [], theme.layout)), data.projects.title, data.projects);
     var support = data.support;
     var ways = projectArticles(support.ways || []);
     var supportMain = block(support.title, '<p class="pre">' + esc(support.body) + "</p>");
     if (ways) supportMain += block("후원 방법", ways);
     if (support.notice) supportMain += block("안내", '<p class="pre">' + esc(support.notice) + "</p>");
-    page("support.html", support.title, supportMain, support.body, photoHtml(support));
-    page("news.html", data.news.title, block(data.news.title, projectArticles(data.news.items || [])), data.news.title, photoHtml(data.news));
+    page("support.html", support.title, supportMain, support.body, support);
+    page("news.html", data.news.title, block(data.news.title, projectArticles(data.news.items || [])), data.news.title, data.news);
     var transparency = data.transparency;
     page("transparency.html", transparency.title,
       block(transparency.title, '<p class="pre">' + esc(transparency.body) + "</p>") +
       block("사업 · 재무 자료", projectArticles(transparency.reports || [])) +
       block("사업비 구성", '<p class="pre">' + esc(transparency.costs) + "</p>") +
       block("외부 확인", '<p class="pre">' + esc(transparency.disclosure) + "</p>"),
-      transparency.body, photoHtml(transparency));
+      transparency.body, transparency);
     var volunteer = data.volunteer;
     page("volunteer.html", volunteer.title,
       block(volunteer.title, '<p class="pre">' + esc(volunteer.body) + "</p>") +
       block("활동 종류", projectArticles(volunteer.positions || [])) +
       block("신청 방법", '<p class="pre">' + esc(volunteer.apply) + "</p>"),
-      volunteer.body, photoHtml(volunteer));
+      volunteer.body, volunteer);
     var privacy = data.privacy;
     page("privacy.html", privacy.title,
       block(privacy.title, '<p class="pre">' + esc(privacy.body) + "</p>") +
       block("처리 항목", projectArticles(privacy.items || [])),
-      privacy.body, photoHtml(privacy));
+      privacy.body, privacy);
     page("contact.html", data.contact.title,
-      block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body, photoHtml(data.contact));
+      block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body, data.contact);
     return pages;
   }
 

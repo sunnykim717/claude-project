@@ -276,10 +276,13 @@
     f[KEY_FILES[target.file]] = JSON.stringify(data, null, 2) + "\n";
   }
 
-  // 이 사진을 쓰는 곳이 더 없으면 사진 파일도 지웁니다.
+  // 이 사진을 쓰는 곳이 더 없으면 사진 파일도 지웁니다 (로고, 배경, 페이지 사진, 갤러리 모두 확인).
   function dropUnusedImage(f, image) {
     if (!image) return;
-    var used = Object.keys(PHOTO_TARGETS).some(function (key) { return imageOf(f, key) === image; });
+    var used = Object.keys(PHOTO_TARGETS).some(function (key) { return imageOf(f, key) === image; }) ||
+      SCHEMA.photo_pages.some(function (key) {
+        return galleryOf(f, key).some(function (item) { return item.image === image; });
+      });
     if (!used) delete f["public/" + image.replace(/^\/+/, "")];
   }
 
@@ -310,6 +313,83 @@
     if (!select.value) return;
     var image = imageOf(files, select.value);
     document.getElementById("photo-status").textContent = image ? "현재 사진: " + image.replace("/images/", "") : "사진 없음";
+    refreshGallery();
+  }
+
+  // 갤러리: 페이지마다 사진을 여러 장 넣습니다.
+  function galleryOf(f, key) {
+    var data = JSON.parse(f[KEY_FILES[key]]);
+    return Array.isArray(data.gallery) ? data.gallery : [];
+  }
+
+  function writeGallery(f, key, list) {
+    var data = JSON.parse(f[KEY_FILES[key]]);
+    if (list.length) data.gallery = list;
+    else delete data.gallery;
+    f[KEY_FILES[key]] = JSON.stringify(data, null, 2) + "\n";
+  }
+
+  function addGalleryPhotos(key, picked) {
+    var max = SCHEMA.gallery_max;
+    if (galleryOf(files, key).length + picked.length > max) return say("갤러리는 " + max + "장까지 넣을 수 있습니다.", false);
+    if (picked.some(function (file) { return file.size > 10 * 1024 * 1024; })) return say("사진이 너무 큽니다. 한 장당 10MB 이하로 골라 주세요.", false);
+    var urls = picked.reduce(function (chain, file) {
+      return chain.then(function (done) {
+        return shrinkPhoto(file).then(function (dataUrl) { done.push(dataUrl); return done; });
+      });
+    }, Promise.resolve([]));
+    urls.then(function (dataUrls) {
+      var stamp = Date.now();
+      commit(function (f) {
+        var list = galleryOf(f, key).slice();
+        dataUrls.forEach(function (dataUrl, i) {
+          var name = "gallery-" + stamp + "-" + i + ".jpg";
+          f["public/images/" + name] = dataUrl;
+          list.push({ image: "/images/" + name, alt: "" });
+        });
+        writeGallery(f, key, list);
+      }, PHOTO_TARGETS[key].label + " 갤러리에 " + dataUrls.length + "장을 더했습니다.");
+    }, function (e) { say(e.message, false); });
+  }
+
+  function removeGalleryPhoto(key, index) {
+    var old = galleryOf(files, key)[index];
+    if (!old) return;
+    commit(function (f) {
+      var next = galleryOf(f, key).slice();
+      next.splice(index, 1);
+      writeGallery(f, key, next);
+      dropUnusedImage(f, old.image);
+    }, PHOTO_TARGETS[key].label + " 갤러리 사진을 뺐습니다.");
+  }
+
+  function refreshGallery() {
+    var box = document.getElementById("gallery-list");
+    var key = document.getElementById("photo-page").value;
+    box.replaceChildren();
+    if (SCHEMA.photo_pages.indexOf(key) === -1) {
+      box.textContent = "갤러리는 소개, 사업, 후원 같은 페이지에서 쓸 수 있습니다.";
+      return;
+    }
+    var list = galleryOf(files, key);
+    if (!list.length) box.textContent = "갤러리 사진이 없습니다.";
+    list.forEach(function (item, index) {
+      var row = document.createElement("div");
+      row.className = "gallery-row";
+      var thumb = document.createElement("img");
+      thumb.src = files["public/" + item.image.replace(/^\/+/, "")] || "";
+      thumb.width = 56;
+      thumb.alt = "";
+      var label = document.createElement("span");
+      label.textContent = (index + 1) + "번";
+      var button = document.createElement("button");
+      button.type = "button";
+      button.className = "secondary";
+      button.textContent = "빼기";
+      button.addEventListener("click", function () { removeGalleryPhoto(key, index); });
+      row.append(thumb, label, button);
+      box.append(row);
+    });
   }
 
   // 직접 쓰는 CSS 칸. 입력 중에는 덮어쓰지 않습니다.
@@ -416,6 +496,12 @@
       if (file) setPhoto(pageSelect.value, file);
     });
     document.getElementById("btn-css").addEventListener("click", setCustomCss);
+    document.getElementById("btn-gallery").addEventListener("click", function () { document.getElementById("file-gallery").click(); });
+    document.getElementById("file-gallery").addEventListener("change", function (event) {
+      var picked = Array.prototype.slice.call(event.target.files);
+      event.target.value = "";
+      if (picked.length) addGalleryPhotos(pageSelect.value, picked);
+    });
     document.getElementById("btn-export").addEventListener("click", function () {
       download("홈페이지-설정.json", JSON.stringify(files, null, 2), "application/json;charset=utf-8");
     });

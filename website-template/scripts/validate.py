@@ -20,6 +20,7 @@ ALLOWED_FONTS = set(SCHEMA["fonts"])
 SPACINGS = set(SCHEMA["spacings"])
 LAYOUTS = set(SCHEMA["layouts"])
 MENUS = set(SCHEMA["menus"])
+GALLERY_MAX = SCHEMA["gallery_max"]
 LANGUAGES = set(SCHEMA["languages"])
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 IMAGE = re.compile(r"^/images/[A-Za-z0-9._-]+\.(" + "|".join(SCHEMA["image_extensions"]) + ")$")
@@ -65,6 +66,21 @@ def check_image(errors, root, rel, value, field="image"):
 
 def check_photo(errors, root, rel, content):
     check_image(errors, root, rel, content.get("image"))
+    gallery = content.get("gallery")
+    if gallery is None:
+        return
+    if not isinstance(gallery, list):
+        errors.append(f"{rel}: gallery 는 목록이어야 합니다.")
+        return
+    if len(gallery) > GALLERY_MAX:
+        errors.append(f"{rel}: gallery 는 {GALLERY_MAX}장까지 넣을 수 있습니다.")
+    for i, item in enumerate(gallery, start=1):
+        if not isinstance(item, dict):
+            errors.append(f"{rel} {i}번 사진: 사진 칸이 올바르지 않습니다.")
+            continue
+        check_image(errors, root, f"{rel} {i}번 사진", item.get("image"), "image")
+        if "alt" in item and not isinstance(item["alt"], str):
+            errors.append(f"{rel} {i}번 사진: alt 는 글자여야 합니다.")
 
 
 FORBIDDEN_CSS = re.compile(r"<|@import|url\s*\(|expression\s*\(|javascript:|behavior\s*:|-moz-binding", re.IGNORECASE)

@@ -126,6 +126,31 @@ class GenerateTest(unittest.TestCase):
             self.assertLess(about.index("page-photo"), about.index('<section class="block">'))
             self.assertNotIn('class="page-photo"', (out / "news.html").read_text(encoding="utf-8"))
 
+    def test_gallery_shows_every_photo_at_page_end(self):
+        with _Copy() as root:
+            for name in ("g1.jpg", "g2.jpg"):
+                (root / "public" / "images" / name).write_bytes(b"jpg")
+            _edit(root, "content/projects.json", lambda d: d.update(gallery=[
+                {"image": "/images/g1.jpg", "alt": "첫 사진"}, {"image": "/images/g2.jpg", "alt": "둘째 사진"}]))
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            page = (out / "projects.html").read_text(encoding="utf-8")
+            self.assertEqual(page.count('<figure><img src="public/images/g'), 2)
+            self.assertIn('alt="둘째 사진" loading="lazy"', page)
+            self.assertLess(page.index('<div class="gallery">'), page.index("</main>"))
+            self.assertNotIn('class="gallery"', (out / "about.html").read_text(encoding="utf-8"))
+
+    def test_gallery_limit_and_bad_items_are_rejected(self):
+        with _Copy() as root:
+            many = [{"image": "/images/x.jpg"}] * (validate.GALLERY_MAX + 1)
+            _edit(root, "content/about.json", lambda d: d.update(gallery=many))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("12장" in e for e in errors))
+        with _Copy() as root:
+            _edit(root, "content/about.json", lambda d: d.update(gallery=[{"image": "/images/없음.jpg"}]))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("about.json 1번 사진" in e for e in errors))
+
     def test_page_photo_missing_file_is_rejected(self):
         with _Copy() as root:
             _edit(root, "content/news.json", lambda d: d.update(image="/images/missing.jpg"))
