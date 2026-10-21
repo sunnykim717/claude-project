@@ -19,6 +19,7 @@ ALLOWED_FONTS = {"system-ui", "serif", "mono"}
 SPACINGS = {"compact", "normal", "airy"}
 LAYOUTS = {"classic", "modern", "card", "minimal"}
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+IMAGE = re.compile(r"^/images/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp|gif)$")
 EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -112,6 +113,12 @@ def validate(root):
         hero = home.get("hero") or {}
         if not hero.get("title"):
             errors.append("content/home.json: hero.title 을 적어 주세요.")
+        if hero.get("image"):
+            image = str(hero["image"])
+            if not IMAGE.match(image):
+                errors.append("content/home.json: image 는 /images/파일이름.jpg (png, webp, gif) 형식이어야 합니다.")
+            elif not (Path(root) / "public" / image.lstrip("/")).exists():
+                errors.append(f"content/home.json: 사진 파일이 public 폴더에 없습니다 ({image}).")
         if hero.get("buttonLink") and not is_link_ok(hero["buttonLink"]):
             errors.append(f"content/home.json: buttonLink 은 https:// 주소 또는 페이지 주소여야 합니다 ({hero['buttonLink']}).")
 

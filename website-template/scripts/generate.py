@@ -80,10 +80,16 @@ def header_html(root, site, nav, current_file):
 
 def hero_html(root, home):
     hero = home["hero"]
+    image = ""
+    if hero.get("image"):
+        src = "public/" + str(hero["image"]).lstrip("/")
+        image = f'<img class="hero-photo" src="{esc(src)}" alt="{esc(hero.get("imageAlt"))}">'
+
     button = ""
     if hero.get("buttonText") and hero.get("buttonLink"):
         button = f'<a class="button" href="{esc(link_for(hero["buttonLink"]))}">{esc(hero["buttonText"])}</a>'
     return fill(read_part(root, "src/components/Hero.html"), {
+        "image": image,
         "title": esc(hero["title"]),
         "subtitle": esc(hero.get("subtitle")),
         "button": button,

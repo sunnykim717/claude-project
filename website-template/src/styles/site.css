@@ -37,3 +37,5 @@ body.layout-minimal .hero { border-bottom: 0; padding-bottom: 0; }
 body.layout-minimal h2 { color: var(--text); font-size: 1.1rem; text-transform: none; }
 body.layout-minimal article { border-left: 0; padding: 0; margin: 10px 0; }
 body.layout-minimal .site-header { border-bottom: 0; }
+
+.hero-photo { display: block; width: 100%; height: auto; border-radius: var(--radius); margin-bottom: var(--gap); }

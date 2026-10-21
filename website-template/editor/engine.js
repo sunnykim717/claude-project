@@ -26,6 +26,7 @@
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
+  var IMAGE = /^\/images\/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp|gif)$/;
 
   // Python html.escape(value, quote=True) 와 같은 규칙
   function esc(value) {
@@ -125,6 +126,14 @@
     if (isObject(home)) {
       var hero = isObject(home.hero) ? home.hero : {};
       if (!hero.title) errors.push("content/home.json: hero.title 을 적어 주세요.");
+      if (hero.image) {
+        var image = str(hero.image);
+        if (!IMAGE.test(image)) {
+          errors.push("content/home.json: image 는 /images/파일이름.jpg (png, webp, gif) 형식이어야 합니다.");
+        } else if (!(("public/" + image.replace(/^\/+/, "")) in files)) {
+          errors.push("content/home.json: 사진 파일이 public 폴더에 없습니다 (" + image + ").");
+        }
+      }
       if (hero.buttonLink && !isLinkOk(str(hero.buttonLink))) {
         errors.push("content/home.json: buttonLink 은 https:// 주소 또는 페이지 주소여야 합니다 (" + hero.buttonLink + ").");
       }
@@ -193,12 +202,17 @@
 
   function heroHtml(files, home) {
     var hero = home.hero;
+    var image = "";
+    if (hero.image) {
+      var src = "public/" + String(hero.image).replace(/^\/+/, "");
+      image = '<img class="hero-photo" src="' + esc(src) + '" alt="' + esc(hero.imageAlt) + '">';
+    }
     var button = "";
     if (hero.buttonText && hero.buttonLink) {
       button = '<a class="button" href="' + esc(linkFor(hero.buttonLink)) + '">' + esc(hero.buttonText) + "</a>";
     }
     return fill(files["src/components/Hero.html"], {
-      title: esc(hero.title), subtitle: esc(hero.subtitle), button: button
+      image: image, title: esc(hero.title), subtitle: esc(hero.subtitle), button: button
     });
   }
 
