@@ -559,7 +559,8 @@
       var legend = document.createElement("legend");
       legend.textContent = (index + 1) + "번";
       box.append(legend);
-      ITEM_KEYS.forEach(function (k) {
+      var keys = SCHEMA.long_item_pages.indexOf(file) !== -1 ? ITEM_KEYS.concat(["body"]) : ITEM_KEYS;
+      keys.forEach(function (k) {
         var row = document.createElement("label");
         row.className = "sub";
         var caption = document.createElement("span");
@@ -587,7 +588,9 @@
     add.className = "secondary";
     add.textContent = "항목 더하기";
     add.addEventListener("click", function () {
-      editFile(file, function (d) { getAt(d, node.path).push({ title: "새 항목", date: "", summary: "", url: "" }); }, labelOf(node.key) + " 에 항목을 더했습니다.");
+      var blank = { title: "새 항목", date: "", summary: "", url: "" };
+      if (SCHEMA.long_item_pages.indexOf(file) !== -1) blank.body = "";
+      editFile(file, function (d) { getAt(d, node.path).push(blank); }, labelOf(node.key) + " 에 항목을 더했습니다.");
       renderForm();
     });
     wrap.append(add);
@@ -682,9 +685,9 @@
     });
     document.getElementById("btn-design").addEventListener("click", function () { applyDesign(select.value); });
 
-    var pageSelect = document.getElementById("page-select");
+    var previewSelect = document.getElementById("page-select");
     fillPreviewPages();
-    pageSelect.addEventListener("change", function () { currentPage = pageSelect.value; render(); });
+    previewSelect.addEventListener("change", function () { currentPage = previewSelect.value; render(); });
 
     fillFormPages();
     document.getElementById("form-page").addEventListener("change", renderForm);

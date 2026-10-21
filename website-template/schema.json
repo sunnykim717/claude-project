@@ -18,7 +18,8 @@
     "stories": "content/stories.json",
     "library": "content/library.json",
     "faq": "content/faq.json",
-    "location": "content/location.json"
+    "location": "content/location.json",
+    "board": "content/board.json"
   },
   "pages": {
     "/": "index.html",
@@ -36,7 +37,8 @@
     "/stories": "stories.html",
     "/library": "library.html",
     "/faq": "faq.html",
-    "/location": "location.html"
+    "/location": "location.html",
+    "/board": "board.html"
   },
   "languages": [
     "ko",
@@ -123,7 +125,8 @@
     "config/custom.css: 직접 쓰는 CSS. 모든 페이지 맨 뒤에 붙습니다 (url( , @import , < 는 쓸 수 없음)",
     "home.sections: 첫 화면에 보일 칸 순서 (intro, projects, news 중 골라 쓰기). 예: [\"news\",\"intro\"]",
     "새 페이지: greetings, history, events, stories, library, faq, location 의 title, body, itemsTitle, items (제목, 날짜, 설명, 주소)",
-    "메뉴: add-menu 이름 | /주소 , remove-menu 번호 (편집기 명령) 또는 config/navigation.json 직접 고치기"
+    "메뉴: add-menu 이름 | /주소 , remove-menu 번호 (편집기 명령) 또는 config/navigation.json 직접 고치기",
+    "게시판(board): 글마다 본문(body)을 적으면 '자세히 보기'로 펼쳐집니다. 글 쓰기 칸에서 쓰세요"
   ],
   "menus": [
     "row",
@@ -139,7 +142,8 @@
     "stories",
     "library",
     "faq",
-    "location"
+    "location",
+    "board"
   ],
   "home_sections": [
     "intro",
@@ -163,6 +167,10 @@
     "library": "자료실",
     "faq": "자주 묻는 질문",
     "location": "오시는 길",
-    "site": "기관 기본 정보"
-  }
+    "site": "기관 기본 정보",
+    "board": "게시판"
+  },
+  "long_item_pages": [
+    "board"
+  ]
 }

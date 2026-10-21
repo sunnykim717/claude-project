@@ -111,6 +111,7 @@
         return;
       }
       if (item.date && !DATE.test(str(item.date))) errors.push(rel + " " + n + "번 " + label + ": date 는 YYYY-MM-DD 형식이어야 합니다.");
+      if ("body" in item && typeof item.body !== "string") errors.push(rel + " " + n + "번 " + label + ": body 는 글자여야 합니다.");
       if (item.url && !(startsWith(str(item.url), "https://") || startsWith(str(item.url), "http://"))) {
         errors.push(rel + " " + n + "번 " + label + ": url 은 https:// 로 시작해야 합니다.");
       }
@@ -326,7 +327,8 @@
       if (item.url) title = '<a href="' + esc(item.url) + '">' + title + "</a>";
       var date = item.date ? '<time datetime="' + esc(item.date) + '">' + esc(item.date) + "</time>" : "";
       var summary = item.summary ? "<p>" + esc(item.summary) + "</p>" : "";
-      return "<article><h3>" + title + "</h3>" + date + summary + "</article>";
+      var body = item.body ? '<details><summary>자세히 보기</summary><p class="pre">' + esc(item.body) + "</p></details>" : "";
+      return "<article><h3>" + title + "</h3>" + date + summary + body + "</article>";
     }).join("");
   }
 

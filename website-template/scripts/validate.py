@@ -110,6 +110,8 @@ def check_items(errors, rel, label, items):
             continue
         if item.get("date") and not DATE.match(item["date"]):
             errors.append(f"{rel} {i}번 {label}: date 는 YYYY-MM-DD 형식이어야 합니다.")
+        if "body" in item and not isinstance(item["body"], str):
+            errors.append(f"{rel} {i}번 {label}: body 는 글자여야 합니다.")
         if item.get("url") and not item["url"].startswith(("https://", "http://")):
             errors.append(f"{rel} {i}번 {label}: url 은 https:// 로 시작해야 합니다.")
 

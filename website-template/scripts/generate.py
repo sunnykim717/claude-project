@@ -173,7 +173,8 @@ def project_articles(items):
             title = f'<a href="{esc(item["url"])}">{title}</a>'
         date = f'<time datetime="{esc(item["date"])}">{esc(item["date"])}</time>' if item.get("date") else ""
         summary = f'<p>{esc(item["summary"])}</p>' if item.get("summary") else ""
-        out.append(f"<article><h3>{title}</h3>{date}{summary}</article>")
+        body = f'<details><summary>자세히 보기</summary><p class="pre">{esc(item["body"])}</p></details>' if item.get("body") else ""
+        out.append(f"<article><h3>{title}</h3>{date}{summary}{body}</article>")
     return "".join(out)
 
 

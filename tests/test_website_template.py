@@ -174,6 +174,22 @@ class GenerateTest(unittest.TestCase):
             _, errors = validate.validate(root)
             self.assertTrue(any("sections" in e for e in errors))
 
+    def test_board_post_body_is_expandable_and_escaped(self):
+        with _Copy() as root:
+            _edit(root, "content/board.json", lambda d: d["items"][0].update(body="<b>줄 1</b>\n줄 2"))
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            board = (out / "board.html").read_text(encoding="utf-8")
+            self.assertIn("<details><summary>자세히 보기</summary>", board)
+            self.assertIn("&lt;b&gt;줄 1&lt;/b&gt;", board)
+            self.assertNotIn("<b>줄 1</b>", board)
+
+    def test_board_post_body_must_be_text(self):
+        with _Copy() as root:
+            _edit(root, "content/board.json", lambda d: d["items"][0].update(body=["목록"]))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("board.json" in e and "body" in e for e in errors))
+
     def test_generic_page_needs_a_title(self):
         with _Copy() as root:
             _edit(root, "content/faq.json", lambda d: d.update(title=""))
