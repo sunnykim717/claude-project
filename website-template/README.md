@@ -144,6 +144,23 @@ python scripts/generate.py     # dist/ 에 페이지 만들기
 
 `dist/index.html` 을 브라우저로 열어 확인하세요. 고친 뒤에는 두 명령을 다시 실행합니다.
 
+## 문서에서 소식 초안 만들기 (선택, Node.js 필요)
+
+HWPX, HWP, PDF, DOCX 문서를 읽어 소식 초안을 JSON 으로 만듭니다. 홈페이지 파일(`content/`)은 바꾸지 않습니다. 변환은 인터넷 없이 이루어지고 AI 를 쓰지 않습니다.
+
+```bash
+cd tools/import-draft
+npm install          # 처음 한 번 (kordoc 4.23.1 을 설치합니다)
+npm test             # 확인 (테스트 9건)
+node import.mjs ~/받은파일/소식.hwpx ~/받은파일/안내.pdf
+```
+
+- 결과는 `drafts/<파일이름>.draft.json` 에 생깁니다. `drafts/` 는 저장소에 올라가지 않습니다.
+- `suggestedNewsItem` 의 `title`, `date`, `summary` 를 확인하고 `content/news.json` 의 `items` 에 붙여 넣습니다. `body`, `bullets`, `tables` 는 참고용입니다.
+- `warnings` 에 나온 내용은 반드시 확인하세요. 날짜가 없거나, 전화번호나 주민등록번호 모양의 숫자가 있으면 알려 줍니다. 주민등록번호 모양은 초안에서 가려 집니다.
+- 암호가 걸린 문서는 읽지 않고 건너뜁니다.
+- 스캔한 그림 문서(글자가 없는 PDF)는 글을 찾지 못합니다. 이 도구는 OCR 을 쓰지 않습니다.
+
 ## 주의
 
 - 링크는 `https://` 주소 또는 이 템플릿의 페이지 주소(`/about` 등)만 쓸 수 있습니다.
