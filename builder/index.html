@@ -82,6 +82,7 @@
     .howto { padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--line); font-size: 0.9rem; }
     .howto ol { margin: 6px 0 0; padding-left: 20px; }
     .howto li { margin: 3px 0; }
+    .howto .next { margin: 8px 0 0; }
     @media (max-width: 860px) {
       .layout { grid-template-columns: 1fr; }
       aside { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--line); }
@@ -108,6 +109,7 @@
     <li>다 됐으면 <b>📄 홈페이지 파일 받기</b> 를 누르세요. 받은 파일을 더블클릭하면 브라우저에서 열립니다.</li>
     <li>내일 이어서 하려면 <b>💾 작업 저장</b> 으로 파일을 받아 두세요. 다시 열 때는 <b>📂 작업 불러오기</b> 로 그 파일을 고릅니다.</li>
   </ol>
+  <p class="next">다음 단계: 내 GitHub 계정에 올리고 키우는 방법은 <a href="https://github.com/sunnykim717/claude-project/blob/main/website-template/docs/%EB%8B%A4%EC%9D%8C-%EB%8B%A8%EA%B3%84-%EB%82%98%EB%A7%8C%EC%9D%98-%ED%99%88%ED%8E%98%EC%9D%B4%EC%A7%80.md" target="_blank" rel="noopener">안내서 보기</a> 를 누르세요.</p>
 </div>
 
 <div class="layout">
@@ -119,8 +121,8 @@
       <div id="wizardBox"></div>
     </details>
     <details open>
-      <summary>사진첩 (사진 여러 장, 최대 12장)</summary>
-      <p class="hint">사진은 자동으로 작게 줄여서 들어갑니다. 한 번에 여러 장을 고를 수 있습니다.</p>
+      <summary>사진첩 (사진 여러 장)</summary>
+      <p class="hint">사진은 자동으로 작게 줄여서 들어갑니다. 한 번에 여러 장을 고를 수 있습니다. 지금은 최대 12장이며, 나중에 더 늘릴 수 있습니다.</p>
       <input type="file" id="galleryFileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
       <p class="hint" id="galleryState"></p>
       <div id="galleryList" class="gallery-list"></div>
@@ -1586,9 +1588,9 @@ ${navHtml}
   }
   async function addGalleryFiles(files) {
     const room = GALLERY_MAX - state.gallery.length;
-    if (room <= 0) { alert(`사진첩에는 최대 ${GALLERY_MAX}장까지 넣을 수 있습니다.`); return; }
+    if (room <= 0) { alert(`사진첩은 지금 최대 ${GALLERY_MAX}장까지 넣을 수 있습니다. 더 넣으려면 빼기 버튼으로 줄이거나, 나중에 늘려 주세요.`); return; }
     const picked = [...files].filter(isPhotoFile).slice(0, room);
-    if (files.length > room) alert(`${room}장만 넣었습니다. 사진첩은 최대 ${GALLERY_MAX}장입니다.`);
+    if (files.length > room) alert(`${room}장만 넣었습니다. 사진첩은 지금 최대 ${GALLERY_MAX}장이며, 나중에 늘릴 수 있습니다.`);
     undoSnapshot = clone(state);
     for (const file of picked) {
       let data;
