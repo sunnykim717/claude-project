@@ -38,6 +38,8 @@
     <input type="file" id="file-import" accept="application/json,.json" hidden>
     <button type="button" class="secondary" id="btn-export">설정 저장 (파일)</button>
     <button type="button" id="btn-project">프로젝트 내려받기 (zip)</button>
+    <button type="button" class="secondary" id="btn-photo">첫 화면 사진 올리기</button>
+    <input type="file" id="file-photo" accept="image/*" hidden>
     <button type="button" class="secondary" id="btn-reset">처음 상태로</button>
   </div>
 </header>
@@ -452,7 +454,7 @@
 
     entries.forEach(function (entry) {
       var name = enc.encode(entry.name);
-      var data = enc.encode(entry.text);
+      var data = entry.bytes ? entry.bytes : enc.encode(entry.text);
       var crc = crc32(data);
 
       var local = new Uint8Array(30 + name.length);
@@ -702,8 +704,14 @@ const PROJECT_EXTRA = {
     return clone(DEFAULT_FILES);
   }
 
+  // 저장이 안 되면 false 를 돌려줍니다 (사진이 많으면 브라우저 저장 공간이 찹니다).
   function persist() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(files)); } catch (e) { /* 저장을 못 해도 화면은 동작합니다 */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(files));
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   function say(text, ok) {
@@ -765,8 +773,9 @@ const PROJECT_EXTRA = {
       files = before;
       return say("저장하지 않았습니다. 다음을 고쳐 주세요:\n- " + errors.join("\n- "), false);
     }
-    persist();
+    var saved = persist();
     render();
+    if (!saved) return say("저장 공간이 부족해 브라우저에 저장하지 못했습니다. 설정 저장(파일)으로 보관해 주세요.", false);
     if (successText) say(successText, true);
   }
 
@@ -856,7 +865,11 @@ const PROJECT_EXTRA = {
     var result = SiteEngine.build(files);
     var frame = document.getElementById("frame");
     if (result.ok) {
-      frame.srcdoc = result.pages[currentPage] || result.pages["index.html"];
+      var html = result.pages[currentPage] || result.pages["index.html"];
+      Object.keys(files).forEach(function (name) {
+        if (name.indexOf("public/images/") === 0) html = html.split('src="' + name + '"').join('src="' + files[name] + '"');
+      });
+      frame.srcdoc = html;
     } else {
       frame.srcdoc = "<p style='font-family:system-ui;padding:16px;color:#b91c1c'>설정에 오류가 있어 미리보기를 만들 수 없습니다. 아래 '검사' 명령으로 확인해 주세요.</p>";
     }
@@ -874,6 +887,57 @@ const PROJECT_EXTRA = {
     }
   }
 
+  // 사진을 1200px 이하로 줄여 JPEG 데이터로 바꿉니다 (브라우저 안에서만 처리).
+  function shrinkPhoto(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var scale = Math.min(1, 1200 / img.width);
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL("image/jpeg", 0.85));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error("사진을 읽을 수 없습니다.")); };
+      img.src = url;
+    });
+  }
+
+  function bytesOf(dataUrl) {
+    var binary = atob(dataUrl.split(",")[1]);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  function setHeroPhoto(file) {
+    if (file.size > 10 * 1024 * 1024) return say("사진이 너무 큽니다. 10MB 이하의 사진을 골라 주세요.", false);
+    shrinkPhoto(file).then(function (dataUrl) {
+      var name = "photo-" + Date.now() + ".jpg";
+      var before = clone(files);
+      var old = (JSON.parse(files[KEY_FILES.home]).hero || {}).image;
+      try {
+        files["public/images/" + name] = dataUrl;
+        var home = JSON.parse(files[KEY_FILES.home]);
+        home.hero = home.hero || {};
+        home.hero.image = "/images/" + name;
+        files[KEY_FILES.home] = JSON.stringify(home, null, 2) + "\n";
+        var errors = validateCurrent();
+        if (errors.length) throw new Error(errors.join("\n"));
+        if (old && files["public/" + old.replace(/^\/+/, "")]) delete files["public/" + old.replace(/^\/+/, "")];
+        var saved = persist();
+        render();
+        say(saved ? "첫 화면 사진을 바꿨습니다." : "사진은 바꿨지만 브라우저 저장 공간이 부족합니다. 설정 저장(파일)을 받아 두세요.", saved);
+      } catch (e) {
+        files = before;
+        say("사진을 넣지 않았습니다. " + e.message, false);
+      }
+    }, function (e) { say(e.message, false); });
+  }
+
   // 저장소 루트에 그대로 풀 수 있는 폴더 구조로 zip 을 만듭니다.
   function projectEntries() {
     var result = SiteEngine.build(files);
@@ -882,13 +946,20 @@ const PROJECT_EXTRA = {
     Object.keys(PROJECT_EXTRA).forEach(function (name) { entries[name] = PROJECT_EXTRA[name]; });
     Object.keys(files).forEach(function (name) { entries[name] = files[name]; });
     Object.keys(result.pages).forEach(function (name) { entries["dist/" + name] = result.pages[name]; });
+    Object.keys(files).forEach(function (name) {
+      if (name.indexOf("public/images/") === 0) entries["dist/" + name] = files[name];
+    });
     return entries;
   }
 
   function downloadProject() {
     var entries = projectEntries();
     if (!entries) return say("설정에 오류가 있어 내려받을 수 없습니다. 검사 명령으로 확인해 주세요.", false);
-    var list = Object.keys(entries).sort().map(function (name) { return { name: name, text: entries[name] }; });
+    var list = Object.keys(entries).sort().map(function (name) {
+      var value = entries[name];
+      if (/^data:image\//.test(value)) return { name: name, bytes: bytesOf(value) };
+      return { name: name, text: value };
+    });
     var bytes = SiteZip.buildZip(list);
     var blob = new Blob([bytes], { type: "application/zip" });
     var link = document.createElement("a");
@@ -949,6 +1020,12 @@ const PROJECT_EXTRA = {
     document.getElementById("btn-help").addEventListener("click", function () { runCommand("help"); });
 
     document.getElementById("btn-project").addEventListener("click", downloadProject);
+    document.getElementById("btn-photo").addEventListener("click", function () { document.getElementById("file-photo").click(); });
+    document.getElementById("file-photo").addEventListener("change", function (event) {
+      var file = event.target.files[0];
+      event.target.value = "";
+      if (file) setHeroPhoto(file);
+    });
     document.getElementById("btn-export").addEventListener("click", function () {
       download("홈페이지-설정.json", JSON.stringify(files, null, 2), "application/json;charset=utf-8");
     });

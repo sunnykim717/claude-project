@@ -30,7 +30,7 @@
 
     entries.forEach(function (entry) {
       var name = enc.encode(entry.name);
-      var data = enc.encode(entry.text);
+      var data = entry.bytes ? entry.bytes : enc.encode(entry.text);
       var crc = crc32(data);
 
       var local = new Uint8Array(30 + name.length);
