@@ -121,8 +121,8 @@
       <div id="wizardBox"></div>
     </details>
     <details open>
-      <summary>사진첩 (사진 여러 장, 최대 12장)</summary>
-      <p class="hint">사진은 자동으로 작게 줄여서 들어갑니다. 한 번에 여러 장을 고를 수 있습니다.</p>
+      <summary>사진첩 (사진 여러 장)</summary>
+      <p class="hint">사진은 자동으로 작게 줄여서 들어갑니다. 한 번에 여러 장을 고를 수 있습니다. 지금은 최대 12장이며, 나중에 더 늘릴 수 있습니다.</p>
       <input type="file" id="galleryFileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
       <p class="hint" id="galleryState"></p>
       <div id="galleryList" class="gallery-list"></div>
@@ -1588,9 +1588,9 @@ ${navHtml}
   }
   async function addGalleryFiles(files) {
     const room = GALLERY_MAX - state.gallery.length;
-    if (room <= 0) { alert(`사진첩에는 최대 ${GALLERY_MAX}장까지 넣을 수 있습니다.`); return; }
+    if (room <= 0) { alert(`사진첩은 지금 최대 ${GALLERY_MAX}장까지 넣을 수 있습니다. 더 넣으려면 빼기 버튼으로 줄이거나, 나중에 늘려 주세요.`); return; }
     const picked = [...files].filter(isPhotoFile).slice(0, room);
-    if (files.length > room) alert(`${room}장만 넣었습니다. 사진첩은 최대 ${GALLERY_MAX}장입니다.`);
+    if (files.length > room) alert(`${room}장만 넣었습니다. 사진첩은 지금 최대 ${GALLERY_MAX}장이며, 나중에 늘릴 수 있습니다.`);
     undoSnapshot = clone(state);
     for (const file of picked) {
       let data;
