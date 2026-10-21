@@ -137,6 +137,16 @@ python -m unittest discover -s tests
 저장소 Settings → Pages 에서 `Deploy from a branch` 를 선택하고 기본 브랜치의 `/ (root)` 를 지정하면
 `https://<사용자명>.github.io/<저장소명>/` 주소로 홈페이지가 공개됩니다.
 
+## 새 프로그램을 바이브 코딩으로 설명하기 (명세 도구)
+
+새로 만들 프로그램을 빈칸 채우듯 명세(JSON)로 적으면, 빠진 내용을 알려 주고 AI 에 붙여 넣을 요청문을 만들어 줍니다.
+
+```bash
+python vibe/make_brief.py vibe/examples/visit_form.json --out brief.md
+```
+
+자세한 칸 설명은 [`vibe/README.md`](vibe/README.md) 를 보세요.
+
 ## 회원명부·방문기록·연혁 문서 자동 생성 (개발자용)
 
 CSV 데이터를 읽어 회원명부(엑셀), 방문기록과 연혁(워드) 문서를 만듭니다. AI는 쓰지 않고 정해진 형식대로 정리합니다.
