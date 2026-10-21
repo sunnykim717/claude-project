@@ -176,6 +176,14 @@
           <button type="button" id="logoClear">빼기</button>
         </div>
         <p class="hint" id="logoFileState"></p>
+        <label for="heroBgInput">첫 화면 배경 사진 (사진 위에 글이 올라갑니다, 1MB 이하로 줄여 저장)</label>
+        <div class="row">
+          <input type="file" id="heroBgInput" accept="image/png,image/jpeg,image/webp,image/gif" class="grow">
+          <button type="button" id="heroBgClear">빼기</button>
+        </div>
+        <p class="hint" id="heroBgState"></p>
+        <label for="overlay">배경 사진 위 색 막 진하기 (<span id="overlayValue"></span>%)</label>
+        <input type="range" id="overlay" min="0" max="85" step="5" data-bind="design.overlay">
         <label for="lang">페이지 언어</label>
         <select id="lang" data-bind="site.lang">
           <option value="ko">한국어 (ko)</option>
@@ -387,6 +395,7 @@
       description: "",
       heroImage: "",
       heroFile: "",
+      heroBg: "",
       logo: "",
       lang: "ko",
     },
@@ -400,6 +409,7 @@
       maxWidth: 760,
       spacing: "normal",
       look: "classic",
+      overlay: 45,
     },
     sections: [
       { id: "hero", enabled: true },
@@ -479,6 +489,8 @@
     if (!TEMPLATES[d.template]) d.template = "minimal";
     if (!SPACING[d.spacing]) d.spacing = "normal";
     if (!LOOKS[d.look]) d.look = "classic";
+    d.overlay = clamp(Number(d.overlay), 0, 85, 45);
+    s.site.heroBg = safeImageData(s.site.heroBg);
     d.radius = clamp(Number(d.radius), 0, 32, DEFAULT_STATE.design.radius);
     d.maxWidth = clamp(Number(d.maxWidth), 560, 960, DEFAULT_STATE.design.maxWidth);
     return s;
@@ -622,7 +634,10 @@
     if (id === "hero") {
       const img = safeImageData(s.site.heroFile) || safeUrl(s.site.heroImage);
       const logo = safeImageData(s.site.logo);
-      return `<header class="hero" id="hero">
+      const bg = safeImageData(s.site.heroBg);
+      const heroClass = bg ? "hero hero-bg" : "hero";
+      const heroStyle = bg ? ` style="background-image:url(${bg});--ov:${clamp(Number(s.design.overlay), 0, 85, 45) / 100}"` : "";
+      return `<header class="${heroClass}" id="hero"${heroStyle}>
       ${logo ? `<img class="logo" src="${logo}" alt="${title} 로고">` : ""}
       ${img ? `<img src="${img}" alt="${title} 대표 이미지">` : ""}
       <h1>${title}</h1>${s.site.subtitle ? `\n      <p class="subtitle">${esc(s.site.subtitle)}</p>` : ""}
@@ -761,6 +776,10 @@
     .hero { padding: calc(var(--gap) * 2.5) 0 calc(var(--gap) * 1.5); border-bottom: 4px solid var(--accent); }
     .hero h1 { line-height: 1.3; }
     .hero img { display: block; width: 100%; height: auto; border-radius: var(--radius); margin-bottom: 16px; }
+    .hero-bg { position: relative; overflow: hidden; color: #fff; background-size: cover; background-position: center; border-bottom: none; border-radius: var(--radius); padding-left: var(--gap); padding-right: var(--gap); }
+    .hero-bg::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, var(--ov, 0.45)); }
+    .hero-bg > * { position: relative; }
+    .hero-bg h1, .hero-bg .subtitle { color: #fff; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
     .hero img.logo { width: auto; height: 56px; margin-bottom: 12px; border-radius: 0; }
     .hero h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.4rem); }
     .subtitle { margin: 10px 0 0; font-size: 1.1rem; opacity: 0.85; }
@@ -780,7 +799,7 @@
     .links a { color: var(--accent); }
     footer { margin-top: calc(var(--gap) * 3); padding: calc(var(--gap) * 1.2) var(--gap) calc(var(--gap) * 2); border-top: 3px solid var(--accent); text-align: center; font-size: 0.9rem; opacity: 0.8; }
     a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-    body.look-band .hero { background: var(--accent); color: var(--bg); border-bottom: none; border-radius: var(--radius); padding: calc(var(--gap) * 1.5); }
+    body.look-band .hero:not(.hero-bg) { background: var(--accent); color: var(--bg); border-bottom: none; border-radius: var(--radius); padding: calc(var(--gap) * 1.5); }
     body.look-band .hero h1, body.look-band .hero .subtitle { color: var(--bg); }
     details.more { margin: 8px 0 0; } details.more summary { font-weight: 600; color: var(--accent); cursor: pointer; }
     details.more img { display: block; max-width: 100%; height: auto; border-radius: var(--radius); margin: 8px 0; }
@@ -1681,9 +1700,10 @@ ${navHtml}
     if (!isPhotoFile(file)) { alert("PNG, JPG, WEBP, GIF 사진만 넣을 수 있습니다."); return; }
     if (file.size > MAX_ORIGINAL_BYTES) { alert("사진이 너무 큽니다. 15MB 이하 사진을 골라 주세요."); return; }
     const isLogo = key === "logo";
+    const isBg = key === "heroBg";
     let data;
     try {
-      data = await resizeImage(file, isLogo ? 400 : 1200, isLogo ? "image/png" : "image/jpeg", 0.8);
+      data = await resizeImage(file, isLogo ? 400 : isBg ? 1600 : 1200, isLogo ? "image/png" : "image/jpeg", isBg ? 0.7 : 0.8);
     } catch (err) {
       alert("사진을 읽지 못했습니다. 다른 사진을 골라 주세요.");
       return;
@@ -1697,6 +1717,8 @@ ${navHtml}
   function updateImageStatus() {
     $("heroFileState").textContent = state.site.heroFile ? "대표 사진이 들어 있습니다." : "대표 사진이 없습니다.";
     $("logoFileState").textContent = state.site.logo ? "로고가 들어 있습니다." : "로고가 없습니다.";
+    $("heroBgState").textContent = state.site.heroBg ? "배경 사진이 들어 있습니다." : "배경 사진이 없습니다.";
+    $("overlayValue").textContent = state.design.overlay;
     $("galleryState").textContent = `사진첩: ${state.gallery.length} / ${GALLERY_MAX}장`;
     $("galleryList").innerHTML = state.gallery.map((g, i) => `<figure><img src="${g.src}" alt="사진 ${i + 1}"><button type="button" data-gallery-remove="${i}">빼기</button></figure>`).join("");
   }
@@ -1733,6 +1755,8 @@ ${navHtml}
     fullRender();
     updateImageStatus();
   });
+  $("heroBgInput").addEventListener("change", (e) => pickImageFile(e.target, "heroBg"));
+  $("heroBgClear").addEventListener("click", () => { state.site.heroBg = ""; fullRender(); updateImageStatus(); });
   $("heroFileInput").addEventListener("change", (e) => pickImageFile(e.target, "heroFile"));
   $("logoFileInput").addEventListener("change", (e) => pickImageFile(e.target, "logo"));
   $("heroFileClear").addEventListener("click", () => { state.site.heroFile = ""; fullRender(); updateImageStatus(); });
