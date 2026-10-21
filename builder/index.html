@@ -1862,24 +1862,24 @@ ${navHtml}
     $("ghLinks").innerHTML = `
       <ol class="gh-steps">
         <li>
-          <strong>1단계: 저장소(폴더) 만들기</strong>
+          <strong>① 저장소(폴더) 만들기</strong>
           <p class="hint">아래 버튼을 누르면 GitHub 화면이 열립니다. 이름 칸은 이미 채워져 있습니다.<br>
           <b>Public</b>(공개)을 고르고, 초록색 <b>Create repository</b> 버튼을 누르세요.</p>
-          <a class="gh-button" href="https://github.com/new?name=${repo}" target="_blank" rel="noopener">1단계 열기</a>
+          <a class="gh-button" href="https://github.com/new?name=${repo}" target="_blank" rel="noopener">① 열기</a>
           <label class="gh-done"><input type="checkbox"> 저장소를 만들었어요</label>
         </li>
         <li>
-          <strong>2단계: 홈페이지 파일 올리기</strong>
+          <strong>② 홈페이지 파일 올리기</strong>
           <p class="hint">빌더에서 받은 <b>index.html</b> 파일을 GitHub 화면 가운데로 끌어다 놓으세요.<br>
           화면 아래 초록색 <b>Commit changes</b> 버튼을 누르면 끝입니다.</p>
-          <a class="gh-button" href="${base}/upload/main" target="_blank" rel="noopener">2단계 열기</a>
+          <a class="gh-button" href="${base}/upload/main" target="_blank" rel="noopener">② 열기</a>
           <label class="gh-done"><input type="checkbox"> 파일을 올렸어요</label>
         </li>
         <li>
-          <strong>3단계: 홈페이지 주소 켜기</strong>
+          <strong>③ 홈페이지 주소 켜기</strong>
           <p class="hint">Source(출처)에서 <b>Deploy from a branch</b>를 고르세요.<br>
           Branch는 <b>main</b>, 폴더는 <b>/ (root)</b> 로 고르고 <b>Save</b>를 누릅니다.</p>
-          <a class="gh-button" href="${base}/settings/pages" target="_blank" rel="noopener">3단계 열기</a>
+          <a class="gh-button" href="${base}/settings/pages" target="_blank" rel="noopener">③ 열기</a>
           <label class="gh-done"><input type="checkbox"> 주소를 켰어요</label>
         </li>
       </ol>
