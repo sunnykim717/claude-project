@@ -81,119 +81,123 @@
 
 <div class="layout">
   <aside>
+    <p class="hint">질문에 답하면 홈페이지가 만들어집니다. 더 세밀하게 고치려면 아래 "직접 고치기"를 여세요.</p>
     <details open>
-      <summary>0. 말로 적기 (회원가입 없이)</summary>
-      <p class="hint">한 줄에 하나씩 적으면 아래 칸이 채워집니다. 입력한 내용은 이 브라우저 안에서만 처리되고, 어디로도 보내지 않습니다.</p>
-      <textarea id="nlInput" placeholder="제목: 민수의 작업실&#10;소개: 만들고 기록하는 공간&#10;소개글: 안녕하세요. 작업 기록을 남깁니다.&#10;연락처: hello@example.com&#10;강조색: 파란색&#10;배경색: 흰색&#10;글꼴: 명조&#10;템플릿: 오션&#10;소식 추가: 행사 안내 | 2026-11-03 | 주민 여러분을 초대합니다 | https://example.com&#10;소식 삭제: 지난 행사"></textarea>
-      <div class="actions">
-        <button type="button" id="nlApply" class="primary">적용</button>
-        <button type="button" id="nlUndo">되돌리기</button>
-      </div>
-      <div id="nlResult" class="hint"></div>
-    </details>
-
-    <details open>
-      <summary>0-2. 붙여넣기 · 링크로 열기</summary>
-      <p class="hint">명세(JSON)나 말로 적은 글을 붙여넣으면 적용합니다. 지금 내용을 링크로 복사해 두면 그 링크를 열 때 같은 내용이 채워집니다.</p>
-      <textarea id="specPaste" rows="4" placeholder="여기에 명세(JSON) 또는 말로 적은 글을 붙여넣으세요"></textarea>
-      <div class="actions">
-        <button type="button" id="specApply" class="primary">붙여넣은 내용 적용</button>
-        <button type="button" id="makeLink">지금 내용을 링크로 복사</button>
-      </div>
-      <div id="specResult" class="hint"></div>
-    </details>
-
-    <details open>
-      <summary>0-3. 질문에 답하며 만들기</summary>
-      <p class="hint">질문에 하나씩 답하면 됩니다. 건너뛰어도 되고, 나중에 아래 칸에서 직접 고칠 수 있습니다.</p>
+      <summary>질문에 답하며 만들기</summary>
+      <p class="hint">질문에 하나씩 답하면 됩니다. 건너뛰어도 되고, 아래 칸에서 나중에 고칠 수 있습니다.</p>
       <div id="wizardBox"></div>
     </details>
+    <details class="advanced">
+      <summary>직접 고치기 (고급)</summary>
 
-    <details open>
-      <summary>1. 사이트 정보</summary>
-      <label for="title">사이트 제목 (필수, 60자 이내 권장)</label>
-      <input type="text" id="title" data-bind="site.title">
-      <label for="subtitle">한 줄 소개</label>
-      <input type="text" id="subtitle" data-bind="site.subtitle" placeholder="예: 만들고 기록하는 공간">
-      <label for="description">검색용 설명 (meta description, 160자 이내 권장)</label>
-      <textarea id="description" data-bind="site.description"></textarea>
-      <label for="heroImage">대표 이미지 URL (https:// 로 시작)</label>
-      <input type="url" id="heroImage" data-bind="site.heroImage" placeholder="https://">
-      <label for="lang">페이지 언어</label>
-      <select id="lang" data-bind="site.lang">
-        <option value="ko">한국어 (ko)</option>
-        <option value="en">영어 (en)</option>
-        <option value="ja">일본어 (ja)</option>
-      </select>
-    </details>
+      <details>
+        <summary>말로 적기 (한 줄씩 적기)</summary>
+        <p class="hint">한 줄에 하나씩 적으면 아래 칸이 채워집니다. 입력한 내용은 이 브라우저 안에서만 처리되고, 어디로도 보내지 않습니다.</p>
+        <textarea id="nlInput" placeholder="제목: 민수의 작업실&#10;소개: 만들고 기록하는 공간&#10;소개글: 안녕하세요. 작업 기록을 남깁니다.&#10;연락처: hello@example.com&#10;강조색: 파란색&#10;배경색: 흰색&#10;글꼴: 명조&#10;템플릿: 오션&#10;소식 추가: 행사 안내 | 2026-11-03 | 주민 여러분을 초대합니다 | https://example.com&#10;소식 삭제: 지난 행사"></textarea>
+        <div class="actions">
+          <button type="button" id="nlApply" class="primary">적용</button>
+          <button type="button" id="nlUndo">되돌리기</button>
+        </div>
+        <div id="nlResult" class="hint"></div>
+      </details>
 
-    <details open>
-      <summary>2. 디자인</summary>
-      <label>템플릿 (선택 시 아래 값이 채워집니다)</label>
-      <div class="templates" id="templates"></div>
-      <div class="row">
-        <div><label>강조색</label><input type="color" data-bind="design.accent"></div>
-        <div><label>글자색</label><input type="color" data-bind="design.text"></div>
-        <div><label>배경색</label><input type="color" data-bind="design.bg"></div>
-      </div>
-      <label for="font">글꼴</label>
-      <select id="font" data-bind="design.font">
-        <option value="system-ui, sans-serif">기본 고딕</option>
-        <option value="Georgia, serif">세리프</option>
-        <option value="ui-monospace, monospace">모노스페이스</option>
-      </select>
-      <label for="radius">모서리 반경 (0–32px)</label>
-      <input type="number" id="radius" min="0" max="32" data-bind="design.radius">
-      <label for="maxWidth">본문 최대 너비 (560–960px)</label>
-      <input type="number" id="maxWidth" min="560" max="960" step="20" data-bind="design.maxWidth">
-      <label for="spacing">여백 밀도</label>
-      <select id="spacing" data-bind="design.spacing">
-        <option value="compact">촘촘하게</option>
-        <option value="normal">보통</option>
-        <option value="airy">넉넉하게</option>
-      </select>
-    </details>
+      <details>
+        <summary>붙여넣기 · 링크로 열기</summary>
+        <p class="hint">명세(JSON)나 말로 적은 글을 붙여넣으면 적용합니다. 지금 내용을 링크로 복사해 두면 그 링크를 열 때 같은 내용이 채워집니다.</p>
+        <textarea id="specPaste" rows="4" placeholder="여기에 명세(JSON) 또는 말로 적은 글을 붙여넣으세요"></textarea>
+        <div class="actions">
+          <button type="button" id="specApply" class="primary">붙여넣은 내용 적용</button>
+          <button type="button" id="makeLink">지금 내용을 링크로 복사</button>
+        </div>
+        <div id="specResult" class="hint"></div>
+      </details>
 
-    <details open>
-      <summary>3. 섹션 순서와 표시</summary>
-      <p class="hint">체크하면 표시되고, ▲▼ 로 위아래 순서를 바꿉니다.</p>
-      <div id="sections"></div>
-    </details>
+      <details>
+        <summary>사이트 이름과 소개</summary>
+        <label for="title">사이트 제목 (필수, 60자 이내 권장)</label>
+        <input type="text" id="title" data-bind="site.title">
+        <label for="subtitle">한 줄 소개</label>
+        <input type="text" id="subtitle" data-bind="site.subtitle" placeholder="예: 만들고 기록하는 공간">
+        <label for="description">검색용 설명 (meta description, 160자 이내 권장)</label>
+        <textarea id="description" data-bind="site.description"></textarea>
+        <label for="heroImage">대표 이미지 URL (https:// 로 시작)</label>
+        <input type="url" id="heroImage" data-bind="site.heroImage" placeholder="https://">
+        <label for="lang">페이지 언어</label>
+        <select id="lang" data-bind="site.lang">
+          <option value="ko">한국어 (ko)</option>
+          <option value="en">영어 (en)</option>
+          <option value="ja">일본어 (ja)</option>
+        </select>
+      </details>
 
-    <details>
-      <summary>4. 섹션 제목과 내용</summary>
-      <label for="headAbout">소개 제목</label>
-      <input type="text" id="headAbout" data-bind="headings.about">
-      <label for="about">소개 글 (줄바꿈 가능)</label>
-      <textarea id="about" data-bind="about" placeholder="나를 소개하는 글을 적어 보세요. 줄바꿈도 그대로 반영됩니다."></textarea>
-      <label for="headProjects">프로젝트 제목</label>
-      <input type="text" id="headProjects" data-bind="headings.projects">
-      <label for="headContact">연락처 제목</label>
-      <input type="text" id="headContact" data-bind="headings.contact">
-      <label for="contact">연락처 내용</label>
-      <textarea id="contact" data-bind="contact" placeholder="예: hello@example.com"></textarea>
-    </details>
+      <details>
+        <summary>디자인 (색, 글꼴, 모양)</summary>
+        <label>템플릿 (선택 시 아래 값이 채워집니다)</label>
+        <div class="templates" id="templates"></div>
+        <div class="row">
+          <div><label>강조색</label><input type="color" data-bind="design.accent"></div>
+          <div><label>글자색</label><input type="color" data-bind="design.text"></div>
+          <div><label>배경색</label><input type="color" data-bind="design.bg"></div>
+        </div>
+        <label for="font">글꼴</label>
+        <select id="font" data-bind="design.font">
+          <option value="system-ui, sans-serif">기본 고딕</option>
+          <option value="Georgia, serif">세리프</option>
+          <option value="ui-monospace, monospace">모노스페이스</option>
+        </select>
+        <label for="radius">모서리 반경 (0–32px)</label>
+        <input type="number" id="radius" min="0" max="32" data-bind="design.radius">
+        <label for="maxWidth">본문 최대 너비 (560–960px)</label>
+        <input type="number" id="maxWidth" min="560" max="960" step="20" data-bind="design.maxWidth">
+        <label for="spacing">여백 밀도</label>
+        <select id="spacing" data-bind="design.spacing">
+          <option value="compact">촘촘하게</option>
+          <option value="normal">보통</option>
+          <option value="airy">넉넉하게</option>
+        </select>
+      </details>
 
-    <details>
-      <summary>5. 프로젝트 목록</summary>
-      <div id="projects"></div>
-      <button id="addProject">+ 항목 추가</button>
-    </details>
+      <details>
+        <summary>섹션 순서와 표시</summary>
+        <p class="hint">체크하면 표시되고, ▲▼ 로 위아래 순서를 바꿉니다.</p>
+        <div id="sections"></div>
+      </details>
 
-    <details>
-      <summary>6. 버튼과 SNS 링크</summary>
-      <label for="ctaLabel">버튼 문구</label>
-      <input type="text" id="ctaLabel" data-bind="cta.label">
-      <label for="ctaUrl">버튼 링크 (https:// 로 시작)</label>
-      <input type="url" id="ctaUrl" data-bind="cta.url" placeholder="https://">
-      <label for="github">GitHub</label>
-      <input type="url" id="github" data-bind="social.github" placeholder="https://">
-      <label for="instagram">Instagram</label>
-      <input type="url" id="instagram" data-bind="social.instagram" placeholder="https://">
-      <label for="youtube">YouTube</label>
-      <input type="url" id="youtube" data-bind="social.youtube" placeholder="https://">
-      <label for="email">이메일</label>
-      <input type="text" id="email" data-bind="social.email" placeholder="name@example.com">
+      <details>
+        <summary>섹션 제목과 내용 (고급)</summary>
+        <label for="headAbout">소개 제목</label>
+        <input type="text" id="headAbout" data-bind="headings.about">
+        <label for="about">소개 글 (줄바꿈 가능)</label>
+        <textarea id="about" data-bind="about" placeholder="나를 소개하는 글을 적어 보세요. 줄바꿈도 그대로 반영됩니다."></textarea>
+        <label for="headProjects">프로젝트 제목</label>
+        <input type="text" id="headProjects" data-bind="headings.projects">
+        <label for="headContact">연락처 제목</label>
+        <input type="text" id="headContact" data-bind="headings.contact">
+        <label for="contact">연락처 내용</label>
+        <textarea id="contact" data-bind="contact" placeholder="예: hello@example.com"></textarea>
+      </details>
+
+      <details>
+        <summary>소식과 사업 목록</summary>
+        <div id="projects"></div>
+        <button id="addProject">+ 항목 추가</button>
+      </details>
+
+      <details>
+        <summary>버튼과 SNS 링크</summary>
+        <label for="ctaLabel">버튼 문구</label>
+        <input type="text" id="ctaLabel" data-bind="cta.label">
+        <label for="ctaUrl">버튼 링크 (https:// 로 시작)</label>
+        <input type="url" id="ctaUrl" data-bind="cta.url" placeholder="https://">
+        <label for="github">GitHub</label>
+        <input type="url" id="github" data-bind="social.github" placeholder="https://">
+        <label for="instagram">Instagram</label>
+        <input type="url" id="instagram" data-bind="social.instagram" placeholder="https://">
+        <label for="youtube">YouTube</label>
+        <input type="url" id="youtube" data-bind="social.youtube" placeholder="https://">
+        <label for="email">이메일</label>
+        <input type="text" id="email" data-bind="social.email" placeholder="name@example.com">
+      </details>
     </details>
   </aside>
 
@@ -213,15 +217,19 @@
       <iframe class="preview-frame" id="frame" title="미리보기"></iframe>
     </div>
 
-    <h2 style="font-size:1rem">검수 결과</h2>
-    <ul class="checks" id="checks"></ul>
+    <details>
+      <summary>검수 결과</summary>
+      <ul class="checks" id="checks"></ul>
+    </details>
 
-    <div class="brief-head">
-      <h2 style="font-size:1rem;margin:0">AI 요청용 상세 명세서</h2>
-      <button id="copyBrief" class="primary">명세서 복사</button>
-    </div>
-    <p class="hint">이 내용을 AI에게 그대로 붙여 넣으면, 설정한 값과 똑같은 홈페이지 코드를 요청할 수 있습니다.</p>
-    <textarea class="brief" id="brief" readonly></textarea>
+    <details>
+      <summary>고급 · AI 요청용 상세 명세서</summary>
+      <div class="brief-head">
+        <button id="copyBrief" class="primary">명세서 복사</button>
+      </div>
+      <p class="hint">이 내용을 AI에게 그대로 붙여 넣으면, 설정한 값과 똑같은 홈페이지 코드를 요청할 수 있습니다.</p>
+      <textarea class="brief" id="brief" readonly></textarea>
+    </details>
   </section>
 </div>
 
