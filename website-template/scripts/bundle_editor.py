@@ -19,7 +19,7 @@ TEXT_FILES = [
     "content/transparency.json", "content/volunteer.json", "content/privacy.json",
     "content/news.json", "content/contact.json",
     "src/components/Header.html", "src/components/Hero.html", "src/components/Footer.html",
-    "src/pages/page.html", "src/styles/site.css",
+    "src/pages/page.html", "src/styles/site.css", "config/custom.css",
 ]
 
 

@@ -52,15 +52,35 @@ def load_all(root):
     return data, errors
 
 
-def check_photo(errors, root, rel, content):
+def check_image(errors, root, rel, value, field="image"):
     """사진 칸이 비어 있으면 아무것도 하지 않습니다. 있으면 형식과 파일 존재를 봅니다."""
-    if not content.get("image"):
+    if not value:
         return
-    image = str(content["image"])
+    image = str(value)
     if not IMAGE.match(image):
-        errors.append(f"{rel}: image 는 /images/파일이름.jpg (png, webp, gif) 형식이어야 합니다.")
+        errors.append(f"{rel}: {field} 는 /images/파일이름.jpg (png, webp, gif) 형식이어야 합니다.")
     elif not (Path(root) / "public" / image.lstrip("/")).exists():
         errors.append(f"{rel}: 사진 파일이 public 폴더에 없습니다 ({image}).")
+
+
+def check_photo(errors, root, rel, content):
+    check_image(errors, root, rel, content.get("image"))
+
+
+FORBIDDEN_CSS = re.compile(r"<|@import|url\s*\(|expression\s*\(|javascript:|behavior\s*:|-moz-binding", re.IGNORECASE)
+
+
+def check_custom_css(errors, root):
+    """직접 쓰는 CSS 는 배경 사진 말고는 바깥 파일을 부르지 못하게 합니다."""
+    path = Path(root) / "config" / "custom.css"
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    if len(text) > 20000:
+        errors.append("config/custom.css: 20,000 글자를 넘을 수 없습니다.")
+    found = sorted({m.group(0).lower() for m in FORBIDDEN_CSS.finditer(text)})
+    if found:
+        errors.append("config/custom.css: 다음은 쓸 수 없습니다: " + ", ".join(found))
 
 
 def check_items(errors, rel, label, items):
@@ -116,6 +136,12 @@ def validate(root):
             errors.append(f"config/theme.json: layout 은 {', '.join(SCHEMA['layouts'])} 중 하나여야 합니다.")
         if theme.get("menu") not in MENUS:
             errors.append(f"config/theme.json: menu 는 {', '.join(SCHEMA['menus'])} 중 하나여야 합니다.")
+
+    if isinstance(site, dict):
+        check_image(errors, root, "config/site.json", site.get("logo"), "logo")
+    if isinstance(theme, dict):
+        check_image(errors, root, "config/theme.json", theme.get("backgroundImage"), "backgroundImage")
+    check_custom_css(errors, root)
 
     home = data["home"]
     if isinstance(home, dict):

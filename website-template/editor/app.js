@@ -189,12 +189,13 @@
 
   function render() {
     refreshPhotoStatus();
+    refreshCustomCss();
     var result = SiteEngine.build(files);
     var frame = document.getElementById("frame");
     if (result.ok) {
       var html = result.pages[currentPage] || result.pages["index.html"];
       Object.keys(files).forEach(function (name) {
-        if (name.indexOf("public/images/") === 0) html = html.split('src="' + name + '"').join('src="' + files[name] + '"');
+        if (name.indexOf("public/images/") === 0) html = html.split('"' + name + '"').join('"' + files[name] + '"');
       });
       frame.srcdoc = html;
     } else {
@@ -240,65 +241,86 @@
     return bytes;
   }
 
-  // 사진을 넣을 페이지와 이름. 첫 화면 사진은 home.hero 안에, 나머지는 페이지 맨 위에 둡니다.
-  var PHOTO_LABELS = {
+  // 사진을 넣을 곳. 로고와 배경은 설정 파일에, 첫 화면 사진은 home.hero 안에, 나머지 페이지 사진은 페이지 맨 위에 둡니다.
+  var PAGE_LABELS = {
     home: "첫 화면", about: "소개", projects: "사업", support: "후원", transparency: "투명성",
     volunteer: "자원봉사", news: "소식", contact: "문의", privacy: "개인정보"
   };
+  var PHOTO_TARGETS = {
+    logo: { label: "로고", file: "site", field: "logo" },
+    background: { label: "배경", file: "theme", field: "backgroundImage" },
+    home: { label: "첫 화면", file: "home", hero: true, field: "image" }
+  };
+  SCHEMA.photo_pages.forEach(function (key) {
+    PHOTO_TARGETS[key] = { label: PAGE_LABELS[key], file: key, field: "image" };
+  });
+  var PHOTO_ORDER = ["logo", "background", "home"].concat(SCHEMA.photo_pages);
 
-  function photoSlot(data, pageKey) {
-    if (pageKey !== "home") return data;
+  function slotOf(data, target) {
+    if (!target.hero) return data;
     data.hero = data.hero || {};
     return data.hero;
   }
 
-  function photoOf(f, pageKey) {
-    var data = JSON.parse(f[KEY_FILES[pageKey]]);
-    return photoSlot(data, pageKey).image || "";
+  function imageOf(f, key) {
+    var target = PHOTO_TARGETS[key];
+    return slotOf(JSON.parse(f[KEY_FILES[target.file]]), target)[target.field] || "";
   }
 
-  function writePhoto(f, pageKey, image) {
-    var data = JSON.parse(f[KEY_FILES[pageKey]]);
-    var slot = photoSlot(data, pageKey);
-    if (image) slot.image = image;
-    else delete slot.image;
-    f[KEY_FILES[pageKey]] = JSON.stringify(data, null, 2) + "\n";
+  function writeImage(f, key, image) {
+    var target = PHOTO_TARGETS[key];
+    var data = JSON.parse(f[KEY_FILES[target.file]]);
+    var slot = slotOf(data, target);
+    if (image) slot[target.field] = image;
+    else delete slot[target.field];
+    f[KEY_FILES[target.file]] = JSON.stringify(data, null, 2) + "\n";
   }
 
-  // 이 사진을 쓰는 페이지가 더 없으면 사진 파일도 지웁니다.
-  function dropUnusedPhoto(f, image) {
+  // 이 사진을 쓰는 곳이 더 없으면 사진 파일도 지웁니다.
+  function dropUnusedImage(f, image) {
     if (!image) return;
-    var used = Object.keys(PHOTO_LABELS).some(function (key) { return photoOf(f, key) === image; });
+    var used = Object.keys(PHOTO_TARGETS).some(function (key) { return imageOf(f, key) === image; });
     if (!used) delete f["public/" + image.replace(/^\/+/, "")];
   }
 
-  function setPagePhoto(pageKey, file) {
+  function setPhoto(key, file) {
     if (file.size > 10 * 1024 * 1024) return say("사진이 너무 큽니다. 10MB 이하의 사진을 골라 주세요.", false);
     shrinkPhoto(file).then(function (dataUrl) {
       var name = "photo-" + Date.now() + ".jpg";
-      var old = photoOf(files, pageKey);
+      var old = imageOf(files, key);
       commit(function (f) {
         f["public/images/" + name] = dataUrl;
-        writePhoto(f, pageKey, "/images/" + name);
-        dropUnusedPhoto(f, old);
-      }, PHOTO_LABELS[pageKey] + " 사진을 바꿨습니다.");
+        writeImage(f, key, "/images/" + name);
+        dropUnusedImage(f, old);
+      }, PHOTO_TARGETS[key].label + " 사진을 바꿨습니다.");
     }, function (e) { say(e.message, false); });
   }
 
-  function removePagePhoto(pageKey) {
-    var old = photoOf(files, pageKey);
-    if (!old) return say(PHOTO_LABELS[pageKey] + " 페이지에는 사진이 없습니다.", false);
+  function removePhoto(key) {
+    var old = imageOf(files, key);
+    if (!old) return say(PHOTO_TARGETS[key].label + " 에는 사진이 없습니다.", false);
     commit(function (f) {
-      writePhoto(f, pageKey, "");
-      dropUnusedPhoto(f, old);
-    }, PHOTO_LABELS[pageKey] + " 사진을 뺐습니다.");
+      writeImage(f, key, "");
+      dropUnusedImage(f, old);
+    }, PHOTO_TARGETS[key].label + " 사진을 뺐습니다.");
   }
 
   function refreshPhotoStatus() {
     var select = document.getElementById("photo-page");
     if (!select.value) return;
-    var image = photoOf(files, select.value);
+    var image = imageOf(files, select.value);
     document.getElementById("photo-status").textContent = image ? "현재 사진: " + image.replace("/images/", "") : "사진 없음";
+  }
+
+  // 직접 쓰는 CSS 칸. 입력 중에는 덮어쓰지 않습니다.
+  function refreshCustomCss() {
+    var box = document.getElementById("custom-css");
+    if (document.activeElement !== box) box.value = files["config/custom.css"] || "";
+  }
+
+  function setCustomCss() {
+    var text = document.getElementById("custom-css").value;
+    commit(function (f) { f["config/custom.css"] = text; }, "직접 쓰는 CSS 를 적용했습니다.");
   }
 
   // 저장소 루트에 그대로 풀 수 있는 폴더 구조로 zip 을 만듭니다.
@@ -384,15 +406,16 @@
 
     document.getElementById("btn-project").addEventListener("click", downloadProject);
     var pageSelect = document.getElementById("photo-page");
-    ["home"].concat(SCHEMA.photo_pages).forEach(function (key) { pageSelect.add(new Option(PHOTO_LABELS[key], key)); });
+    PHOTO_ORDER.forEach(function (key) { pageSelect.add(new Option(PHOTO_TARGETS[key].label, key)); });
     pageSelect.addEventListener("change", refreshPhotoStatus);
     document.getElementById("btn-photo").addEventListener("click", function () { document.getElementById("file-photo").click(); });
-    document.getElementById("btn-photo-remove").addEventListener("click", function () { removePagePhoto(pageSelect.value); });
+    document.getElementById("btn-photo-remove").addEventListener("click", function () { removePhoto(pageSelect.value); });
     document.getElementById("file-photo").addEventListener("change", function (event) {
       var file = event.target.files[0];
       event.target.value = "";
-      if (file) setPagePhoto(pageSelect.value, file);
+      if (file) setPhoto(pageSelect.value, file);
     });
+    document.getElementById("btn-css").addEventListener("click", setCustomCss);
     document.getElementById("btn-export").addEventListener("click", function () {
       download("홈페이지-설정.json", JSON.stringify(files, null, 2), "application/json;charset=utf-8");
     });

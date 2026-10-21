@@ -138,6 +138,38 @@ class GenerateTest(unittest.TestCase):
             _, errors = validate.validate(root)
             self.assertTrue(any("privacy.json" in e and "image" in e for e in errors))
 
+    def test_logo_and_background_photo_are_used(self):
+        with _Copy() as root:
+            (root / "public" / "images" / "logo.png").write_bytes(b"png")
+            (root / "public" / "images" / "bg.jpg").write_bytes(b"jpg")
+            _edit(root, "config/site.json", lambda d: d.update(logo="/images/logo.png"))
+            _edit(root, "config/theme.json", lambda d: d.update(backgroundImage="/images/bg.jpg"))
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            index = (out / "index.html").read_text(encoding="utf-8")
+            self.assertIn('<img class="logo" src="public/images/logo.png" alt="">', index)
+            self.assertIn('background-image: url("public/images/bg.jpg")', index)
+
+    def test_custom_css_is_added_last_and_unsafe_css_is_rejected(self):
+        with _Copy() as root:
+            (root / "config" / "custom.css").write_text(".hero h1 { letter-spacing: 0.1em; }", encoding="utf-8")
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            index = (out / "index.html").read_text(encoding="utf-8")
+            self.assertIn(".hero h1 { letter-spacing: 0.1em; }", index)
+            self.assertLess(index.index(".site-header {"), index.index("letter-spacing: 0.1em"))
+            (root / "config" / "custom.css").write_text("body { background: url(http://x.test/a.png); }", encoding="utf-8")
+            _, errors = validate.validate(root)
+            self.assertTrue(any("custom.css" in e and "url(" in e for e in errors))
+
+    def test_logo_path_must_be_a_real_image(self):
+        with _Copy() as root:
+            _edit(root, "config/site.json", lambda d: d.update(logo="/images/없는.png"))
+            _edit(root, "config/theme.json", lambda d: d.update(backgroundImage="../bg.jpg"))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("site.json" in e and "logo" in e for e in errors))
+            self.assertTrue(any("theme.json" in e and "backgroundImage" in e for e in errors))
+
     def test_theme_values_become_css_variables(self):
         with _Copy() as root:
             _edit(root, "config/theme.json", lambda d: d.update(primaryColor="#0F766E", font="serif", radius=14))

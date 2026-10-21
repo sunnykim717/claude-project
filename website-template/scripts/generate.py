@@ -45,6 +45,22 @@ def read_part(root, rel):
     return (Path(root) / rel).read_text(encoding="utf-8")
 
 
+def background_css(theme):
+    """배경 사진이 있으면 배경색 위에 얇은 막을 씌워 글자가 읽히게 합니다."""
+    if not theme.get("backgroundImage"):
+        return ""
+    src = "public/" + str(theme["backgroundImage"]).lstrip("/")
+    return (
+        f'body {{ background-image: url("{src}"); background-size: cover; background-attachment: fixed; }}\n'
+        'body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--bg); opacity: 0.88; }'
+    )
+
+
+def custom_css(root):
+    path = Path(root) / "config" / "custom.css"
+    return path.read_text(encoding="utf-8") if path.exists() else ""
+
+
 def theme_css(theme):
     """theme.json 의 값을 CSS 변수로 바꿉니다."""
     return (
@@ -73,8 +89,11 @@ def header_html(root, site, nav, current_file):
         target = PAGE_FILES[entry["path"]]
         current = ' aria-current="page"' if target == current_file else ""
         links.append(f'<li><a href="{esc(target)}"{current}>{esc(entry["label"])}</a></li>')
+    brand = esc(site["name"])
+    if site.get("logo"):
+        brand = f'<img class="logo" src="{esc("public/" + str(site["logo"]).lstrip("/"))}" alt="">' + brand
     return fill(read_part(root, "src/components/Header.html"), {
-        "brand": esc(site["name"]),
+        "brand": brand,
         "links": "".join(links),
     })
 
@@ -149,7 +168,7 @@ def project_articles(items):
 def build_pages(root, data):
     """페이지 이름과 전체 HTML 을 돌려줍니다."""
     site, nav, theme = data["site"], data["nav"], data["theme"]
-    style = theme_css(theme) + "\n" + read_part(root, "src/styles/site.css")
+    style = "\n".join([theme_css(theme), background_css(theme), read_part(root, "src/styles/site.css"), custom_css(root)])
     pages = {}
 
     def page(file_name, title, main_html, description, photo=""):

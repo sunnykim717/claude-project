@@ -54,14 +54,30 @@
   }
 
   // 사진 칸이 비어 있으면 아무것도 하지 않습니다. 있으면 형식과 파일 존재를 봅니다.
-  function checkPhoto(files, errors, rel, content) {
-    if (!content.image) return;
-    var image = str(content.image);
+  function checkImage(files, errors, rel, value, field) {
+    if (!value) return;
+    var image = str(value);
     if (!IMAGE.test(image)) {
-      errors.push(rel + ": image 는 /images/파일이름.jpg (png, webp, gif) 형식이어야 합니다.");
+      errors.push(rel + ": " + field + " 는 /images/파일이름.jpg (png, webp, gif) 형식이어야 합니다.");
     } else if (!(("public/" + image.replace(/^\/+/, "")) in files)) {
       errors.push(rel + ": 사진 파일이 public 폴더에 없습니다 (" + image + ").");
     }
+  }
+
+  function checkPhoto(files, errors, rel, content) {
+    checkImage(files, errors, rel, content.image, "image");
+  }
+
+  var FORBIDDEN_CSS = /<|@import|url\s*\(|expression\s*\(|javascript:|behavior\s*:|-moz-binding/gi;
+
+  // 직접 쓰는 CSS 는 바깥 파일을 부르지 못하게 합니다 (Python 검사와 같은 규칙).
+  function checkCustomCss(files, errors) {
+    var text = files["config/custom.css"];
+    if (typeof text !== "string") return;
+    if (text.length > 20000) errors.push("config/custom.css: 20,000 글자를 넘을 수 없습니다.");
+    var found = (text.match(FORBIDDEN_CSS) || []).map(function (m) { return m.toLowerCase(); });
+    found = found.filter(function (m, i) { return found.indexOf(m) === i; }).sort();
+    if (found.length) errors.push("config/custom.css: 다음은 쓸 수 없습니다: " + found.join(", "));
   }
 
   function checkItems(errors, rel, label, items) {
@@ -141,6 +157,10 @@
       if (MENUS.indexOf(theme.menu) === -1) errors.push("config/theme.json: menu 는 " + MENUS.join(", ") + " 중 하나여야 합니다.");
     }
 
+    if (isObject(site)) checkImage(files, errors, "config/site.json", site.logo, "logo");
+    if (isObject(theme)) checkImage(files, errors, "config/theme.json", theme.backgroundImage, "backgroundImage");
+    checkCustomCss(files, errors);
+
     var home = data.home;
     if (isObject(home)) {
       var hero = isObject(home.hero) ? home.hero : {};
@@ -213,7 +233,9 @@
       var current = target === currentFile ? ' aria-current="page"' : "";
       return '<li><a href="' + esc(target) + '"' + current + ">" + esc(entry.label) + "</a></li>";
     });
-    return fill(files["src/components/Header.html"], { brand: esc(site.name), links: links.join("") });
+    var brand = esc(site.name);
+    if (site.logo) brand = '<img class="logo" src="' + esc("public/" + String(site.logo).replace(/^\/+/, "")) + '" alt="">' + brand;
+    return fill(files["src/components/Header.html"], { brand: brand, links: links.join("") });
   }
 
   function heroHtml(files, home) {
@@ -281,9 +303,17 @@
     return '<figure class="page-photo"><img src="' + esc(src) + '" alt="' + esc(content.imageAlt) + '"></figure>';
   }
 
+  // 배경 사진이 있으면 배경색 위에 얇은 막을 씌웁니다 (Python 생성기와 같은 규칙).
+  function backgroundCss(theme) {
+    if (!theme.backgroundImage) return "";
+    var src = "public/" + String(theme.backgroundImage).replace(/^\/+/, "");
+    return 'body { background-image: url("' + src + '"); background-size: cover; background-attachment: fixed; }\n' +
+      'body::before { content: ""; position: fixed; inset: 0; z-index: -1; background: var(--bg); opacity: 0.88; }';
+  }
+
   function buildPages(files, data) {
     var site = data.site, nav = data.nav, theme = data.theme;
-    var style = themeCss(theme) + "\n" + files["src/styles/site.css"];
+    var style = [themeCss(theme), backgroundCss(theme), files["src/styles/site.css"], files["config/custom.css"] || ""].join("\n");
     var pages = {};
 
     function page(fileName, title, mainHtml, description, photo) {

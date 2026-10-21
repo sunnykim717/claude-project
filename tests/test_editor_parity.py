@@ -11,17 +11,12 @@ ROOT = Path(__file__).resolve().parent.parent / "website-template"
 ENGINE = ROOT / "editor" / "engine.js"
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import bundle_editor  # noqa: E402
 import generate  # noqa: E402
 import validate  # noqa: E402
 
-TEXT_FILES = [
-    "config/site.json", "config/navigation.json", "config/theme.json",
-    "content/home.json", "content/about.json", "content/projects.json", "content/support.json",
-    "content/transparency.json", "content/volunteer.json", "content/privacy.json",
-    "content/news.json", "content/contact.json",
-    "src/components/Header.html", "src/components/Hero.html", "src/components/Footer.html",
-    "src/pages/page.html", "src/styles/site.css",
-]
+TEXT_FILES = bundle_editor.TEXT_FILES
+
 
 
 def _read_files(root):
