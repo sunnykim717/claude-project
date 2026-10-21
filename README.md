@@ -58,8 +58,10 @@ python -m unittest discover -s tests
 
 자연어로 요청하면 Claude Code 클라우드 세션이 `data/site.json` 만 수정합니다. API 키는 필요 없습니다.
 
-1. Claude Code 클라우드 세션을 이 저장소에 연결합니다.
+1. Claude Code 클라우드 세션을 이 저장소에 연결합니다. 세션은 [`docs/content-guide.md`](docs/content-guide.md)의 작성 규칙을 따릅니다.
 2. 요청을 말합니다. 예: "프로젝트에 2026-10-21 자 '빌더 공개' 항목 추가하고 제목을 '민수의 작업실'로 바꿔 줘"
+   - 문장 초안도 부탁할 수 있습니다. 예: "프로젝트 설명을 세 문장으로 다듬어 줘"
+   - 날짜나 링크처럼 사실인 정보는 요청에 직접 적어 주세요. 세션은 지어내지 않습니다.
 3. 세션은 `data/site.json` 만 고치고, `python -m unittest discover -s tests` 와 `python update_homepage.py` 로 확인한 뒤 push 합니다.
 4. push 가 `data/site.json` 을 건드리면 워크플로가 검증, 생성, 커밋을 자동으로 처리합니다.
 
