@@ -37,6 +37,7 @@
     <button type="button" class="secondary" id="btn-import">설정 불러오기</button>
     <input type="file" id="file-import" accept="application/json,.json" hidden>
     <button type="button" class="secondary" id="btn-export">설정 저장 (파일)</button>
+    <button type="button" id="btn-project">프로젝트 내려받기 (zip)</button>
     <button type="button" class="secondary" id="btn-reset">처음 상태로</button>
   </div>
 </header>
@@ -83,8 +84,12 @@
 __ENGINE__
 </script>
 <script>
+__ZIP__
+</script>
+<script>
 const DEFAULT_FILES = __DEFAULT_FILES__;
 const DESIGNS = __DESIGNS__;
+const PROJECT_EXTRA = __PROJECT_EXTRA__;
 __APP__
 </script>
 </body>

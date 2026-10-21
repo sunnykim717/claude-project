@@ -219,6 +219,31 @@
     }
   }
 
+  // 저장소 루트에 그대로 풀 수 있는 폴더 구조로 zip 을 만듭니다.
+  function projectEntries() {
+    var result = SiteEngine.build(files);
+    if (!result.ok) return null;
+    var entries = {};
+    Object.keys(PROJECT_EXTRA).forEach(function (name) { entries[name] = PROJECT_EXTRA[name]; });
+    Object.keys(files).forEach(function (name) { entries[name] = files[name]; });
+    Object.keys(result.pages).forEach(function (name) { entries["dist/" + name] = result.pages[name]; });
+    return entries;
+  }
+
+  function downloadProject() {
+    var entries = projectEntries();
+    if (!entries) return say("설정에 오류가 있어 내려받을 수 없습니다. 검사 명령으로 확인해 주세요.", false);
+    var list = Object.keys(entries).sort().map(function (name) { return { name: name, text: entries[name] }; });
+    var bytes = SiteZip.buildZip(list);
+    var blob = new Blob([bytes], { type: "application/zip" });
+    var link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "홈페이지-프로젝트.zip";
+    link.click();
+    URL.revokeObjectURL(link.href);
+    say("zip 을 받았습니다. 압축을 풀어 저장소 맨 위 폴더에 그대로 넣고 올리면 배포 워크플로가 실행됩니다.", true);
+  }
+
   function download(name, text, type) {
     var blob = new Blob([text], { type: type });
     var link = document.createElement("a");
@@ -268,6 +293,7 @@
     });
     document.getElementById("btn-help").addEventListener("click", function () { runCommand("help"); });
 
+    document.getElementById("btn-project").addEventListener("click", downloadProject);
     document.getElementById("btn-export").addEventListener("click", function () {
       download("홈페이지-설정.json", JSON.stringify(files, null, 2), "application/json;charset=utf-8");
     });
