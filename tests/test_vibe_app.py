@@ -184,9 +184,16 @@ class MultiStepAndSaveTest(unittest.TestCase):
         self.assertIn('id="clear-saved"', page)
         self.assertIn("이 브라우저에만 저장됩니다", page)
 
-    def test_storage_key_is_named_after_page(self):
+    def test_storage_key_is_content_hash_not_name(self):
         page = ba.build_html(_spec(save=True))
-        self.assertIn('"vibe-app:방문 신청 페이지"', page)
+        self.assertIn('const STORAGE_KEY = "vibe-app:', page)
+        self.assertNotIn('"vibe-app:방문 신청 페이지"', page)
+
+    def test_same_name_different_spec_gets_different_key(self):
+        a = ba.build_html(_spec(save=True))
+        b = ba.build_html(_spec(save=True, goal="다른 목적"))
+        key = lambda h: h.split('const STORAGE_KEY = "')[1].split('"')[0]
+        self.assertNotEqual(key(a), key(b))
 
     def test_new_field_types_render(self):
         spec = _spec()
@@ -220,6 +227,12 @@ class BackupTest(unittest.TestCase):
         page = ba.build_html(_spec(save=True))
         for control in ("make-backup", "share-backup", "restore-backup", "restore-file"):
             self.assertIn(f'id="{control}"', page)
+
+    def test_damaged_records_are_kept_not_overwritten(self):
+        page = ba.build_html(_spec(save=True))
+        self.assertIn(':broken:', page)
+        self.assertIn('2 * 1024 * 1024', page)
+        self.assertIn('backup.records.length > 5000', page)
 
     def test_backup_format_and_duplicate_guard_in_script(self):
         page = ba.build_html(_spec(save=True))

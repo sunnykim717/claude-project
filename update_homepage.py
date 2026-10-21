@@ -119,6 +119,8 @@ def load_site(path):
             raise ValueError(f"{path}: 알 수 없는 섹션이 있습니다 -> {', '.join(map(str, unknown))}")
 
     for item in site.get("items", []):
+        if not isinstance(item, dict):
+            raise ValueError(f"{path}: 각 item 은 {{ }} 로 감싼 설정 묶음이어야 합니다.")
         if not item.get("title"):
             raise ValueError(f"{path}: 모든 item 에 'title' 이 필요합니다.")
         if item.get("url") and not is_http_url(item["url"]):

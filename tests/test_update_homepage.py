@@ -200,5 +200,14 @@ class FullSpecTest(unittest.TestCase):
             uh.load_site(path)
 
 
+class ItemShapeTest(unittest.TestCase):
+    def test_item_that_is_not_an_object_is_rejected(self):
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".json", encoding="utf-8", delete=False)
+        json.dump({"title": "t", "items": ["문자열"]}, tmp, ensure_ascii=False)
+        tmp.close()
+        with self.assertRaises(ValueError):
+            uh.load_site(Path(tmp.name))
+
+
 if __name__ == "__main__":
     unittest.main()

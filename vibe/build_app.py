@@ -15,6 +15,7 @@
 """
 
 import argparse
+import hashlib
 import html
 import json
 import re
@@ -364,13 +365,29 @@ def _saved_js(save):
   const savedCount = document.getElementById("saved-count");
   const savedMsg = document.getElementById("saved-msg");
 
+  let recordNotice = "";
+
   function loadRecords() {
+    let raw = null;
     try {
-      const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      return Array.isArray(parsed) ? parsed : [];
+      raw = localStorage.getItem(STORAGE_KEY);
     } catch (err) {
       return [];
     }
+    if (raw === null) return [];
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (err) { /* 아래에서 따로 보관합니다 */ }
+    // 읽을 수 없는 기록은 지우지 않고 다른 칸에 그대로 보관한 뒤, 빈 목록으로 보여 줍니다.
+    try {
+      localStorage.setItem(STORAGE_KEY + ":broken:" + Date.now(), raw);
+      localStorage.removeItem(STORAGE_KEY); // 같은 보관본이 반복해서 만들어지지 않도록 원래 칸을 비웁니다
+      recordNotice = "저장된 기록을 읽을 수 없어 따로 보관했습니다. 새 신청은 정상적으로 저장됩니다.";
+    } catch (err) {
+      recordNotice = "저장된 기록을 읽을 수 없고 보관도 되지 않았습니다. 백업 파일을 먼저 받아 두세요.";
+    }
+    return [];
   }
 
   function storeRecords(records) {
@@ -385,6 +402,7 @@ def _saved_js(save):
   function renderRecords() {
     const records = loadRecords();
     savedCount.textContent = `저장된 신청 ${records.length}건`;
+    if (recordNotice) savedMsg.textContent = recordNotice;
     const table = document.createElement("table");
     const head = document.createElement("tr");
     for (const text of ["저장 시각", ...FIELDS.map((f) => f.label)]) {
@@ -492,6 +510,10 @@ def _saved_js(save):
     const file = event.target.files[0];
     event.target.value = "";
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      savedMsg.textContent = "백업 파일이 너무 큽니다. 2MB 이하의 백업 파일만 불러올 수 있습니다.";
+      return;
+    }
     let backup = null;
     try {
       backup = JSON.parse(await file.text());
@@ -501,6 +523,10 @@ def _saved_js(save):
     }
     if (!backup || backup.format !== "vibe-app-backup" || !Array.isArray(backup.records)) {
       savedMsg.textContent = "이 페이지의 백업 파일이 아닙니다.";
+      return;
+    }
+    if (backup.records.length > 5000) {
+      savedMsg.textContent = "백업 파일의 기록이 5,000건을 넘습니다. 나누어 불러와 주세요.";
       return;
     }
     const current = loadRecords();
@@ -552,6 +578,8 @@ def _render(spec, panel_source=None, github=None):
     title = html.escape(spec["name"])
     goal = html.escape(spec["goal"].strip())
     steps_html = _steps_html(input_pages, configs_by_step)
+
+    spec_hash = hashlib.sha256(json.dumps(spec, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()[:16]
 
     panel_css = _panel_css() if panel_source is not None else ""
     panel_block = _panel_html(panel_source, github) if panel_source is not None else ""
@@ -611,7 +639,7 @@ def _render(spec, panel_source=None, github=None):
 <script>
   const FIELDS = {_json_for_script(all_configs)};
   const STEPS = {_json_for_script(steps)};
-  const STORAGE_KEY = {_json_for_script("vibe-app:" + spec["name"])};
+  const STORAGE_KEY = {_json_for_script("vibe-app:" + spec_hash)};
   const APP_NAME = {_json_for_script(spec["name"])};
   const form = document.getElementById("form");
   const EMAIL = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
