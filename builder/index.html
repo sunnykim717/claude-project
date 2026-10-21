@@ -155,12 +155,10 @@
           <div><label>글자색</label><input type="color" data-bind="design.text"></div>
           <div><label>배경색</label><input type="color" data-bind="design.bg"></div>
         </div>
+        <label for="template">템플릿 (색, 글꼴, 모서리를 한 번에 정합니다)</label>
+        <select id="template"></select>
         <label for="font">글꼴</label>
-        <select id="font" data-bind="design.font">
-          <option value="system-ui, sans-serif">기본 고딕</option>
-          <option value="Georgia, serif">세리프</option>
-          <option value="ui-monospace, monospace">모노스페이스</option>
-        </select>
+        <select id="font" data-bind="design.font"></select>
         <label for="radius">모서리 반경 (0–32px)</label>
         <input type="number" id="radius" min="0" max="32" data-bind="design.radius">
         <label for="maxWidth">본문 최대 너비 (560–960px)</label>
@@ -262,12 +260,40 @@
   };
   const SPACING = { compact: 12, normal: 24, airy: 40 };
 
+  // 템플릿: 색, 글꼴, 모서리를 한 번에 정합니다. 이름은 "템플릿: 숲" 처럼 말로도 고를 수 있습니다.
   const TEMPLATES = {
-    minimal: { label: "미니멀", accent: "#111827", text: "#111827", bg: "#ffffff", font: "system-ui, sans-serif", radius: 8 },
-    ocean:   { label: "오션",   accent: "#0369a1", text: "#0c4a6e", bg: "#f0f9ff", font: "system-ui, sans-serif", radius: 14 },
-    warm:    { label: "웜",     accent: "#c2410c", text: "#431407", bg: "#fffbeb", font: "Georgia, serif",        radius: 4 },
-    night:   { label: "나이트", accent: "#a78bfa", text: "#e2e8f0", bg: "#0f172a", font: "system-ui, sans-serif", radius: 12 },
+    minimal:  { label: "미니멀",   accent: "#111827", text: "#111827", bg: "#ffffff", font: "system-ui, sans-serif", radius: 8 },
+    ocean:    { label: "오션",     accent: "#0369a1", text: "#0c4a6e", bg: "#f0f9ff", font: "system-ui, sans-serif", radius: 14 },
+    warm:     { label: "웜",       accent: "#c2410c", text: "#431407", bg: "#fffbeb", font: "Georgia, serif",        radius: 4 },
+    night:    { label: "나이트",   accent: "#a78bfa", text: "#e2e8f0", bg: "#0f172a", font: "system-ui, sans-serif", radius: 12 },
+    forest:   { label: "숲",       accent: "#166534", text: "#14532d", bg: "#f0fdf4", font: "system-ui, sans-serif", radius: 10 },
+    lavender: { label: "라벤더",   accent: "#7c3aed", text: "#3b0764", bg: "#faf5ff", font: "system-ui, sans-serif", radius: 16 },
+    coral:    { label: "코랄",     accent: "#e11d48", text: "#4c0519", bg: "#fff1f2", font: "system-ui, sans-serif", radius: 14 },
+    sunny:    { label: "햇살",     accent: "#ca8a04", text: "#422006", bg: "#fefce8", font: "system-ui, sans-serif", radius: 8 },
+    paper:    { label: "종이",     accent: "#44403c", text: "#292524", bg: "#fafaf9", font: "Batang, Georgia, serif", radius: 2 },
+    mint:     { label: "민트",     accent: "#0f766e", text: "#134e4a", bg: "#f0fdfa", font: "system-ui, sans-serif", radius: 20 },
+    navy:     { label: "네이비",   accent: "#1e3a8a", text: "#172554", bg: "#eff6ff", font: "system-ui, sans-serif", radius: 6 },
   };
+  // 글꼴 이름 → 실제 글꼴 목록. 기기에 없는 글꼴은 다음 글꼴로 넘어갑니다.
+  const FONTS = {
+    basic:    { label: "기본 고딕",     css: "system-ui, sans-serif" },
+    malgun:   { label: "맑은 고딕",     css: "'Malgun Gothic', 'Apple SD Gothic Neo', system-ui, sans-serif" },
+    nanum:    { label: "나눔고딕",      css: "'Nanum Gothic', 'NanumGothic', 'Malgun Gothic', system-ui, sans-serif" },
+    batang:   { label: "바탕 · 명조",   css: "Batang, 'Nanum Myeongjo', 'Noto Serif KR', Georgia, serif" },
+    serif:    { label: "세리프 (영문)", css: "Georgia, 'Times New Roman', serif" },
+    sans:     { label: "산세리프 (영문)", css: "'Helvetica Neue', Arial, sans-serif" },
+    mono:     { label: "모노스페이스",  css: "ui-monospace, monospace" },
+  };
+  // 글꼴 말 → 위 글꼴 이름. 더 구체적인 말을 먼저 적습니다.
+  const FONT_WORDS = [
+    [/맑은|애플/, "malgun"],
+    [/나눔/, "nanum"],
+    [/바탕|명조|신문/, "batang"],
+    [/산세리프|아리얼|헬베티카/, "sans"],
+    [/세리프/, "serif"],
+    [/모노|코드|타자|고정폭/, "mono"],
+    [/고딕|기본|돋움|굴림|깔끔한\s*글씨/, "basic"],
+  ];
 
   const DEFAULT_STATE = {
     site: {
@@ -656,12 +682,12 @@ ${navHtml}
     파랑: "#2563eb", 빨강: "#dc2626", 초록: "#16a34a", 노랑: "#eab308", 주황: "#ea580c", 보라: "#7c3aed",
     핑크: "#db2777", 검정: "#111827", 하양: "#ffffff", 하늘: "#0ea5e9",
   };
-  const FONT_RULES = [
-    [/명조|세리프|바탕|신문/, "Georgia, serif"],
-    [/모노|코드|타자|고정폭/, "ui-monospace, monospace"],
-    [/고딕|산세리프|기본|돋움|맑은|굴림|깔끔한\s*글씨/, "system-ui, sans-serif"],
-  ];
-  const TEMPLATE_WORDS = { 미니멀: "minimal", 심플: "minimal", 오션: "ocean", 바다: "ocean", 웜: "warm", 따뜻: "warm", 나이트: "night", 다크: "night", 어둡: "night" };
+  const TEMPLATE_WORDS = {
+    미니멀: "minimal", 심플: "minimal", 오션: "ocean", 바다: "ocean", 웜: "warm", 따뜻: "warm",
+    나이트: "night", 다크: "night", 어둡: "night", 숲: "forest", 초록: "forest", 라벤더: "lavender",
+    코랄: "coral", 분홍: "coral", 햇살: "sunny", 노랑: "sunny", 종이: "paper", 신문: "paper",
+    민트: "mint", 네이비: "navy", 남색: "navy",
+  };
   // "깔끔하게", "시원하게" 같은 느낌의 말로 템플릿을 추천합니다.
   const STYLE_HINTS = [
     [/깔끔|심플|단순/, "minimal", "깔끔한 느낌"],
@@ -836,10 +862,10 @@ ${navHtml}
         const name = findColorName(line);
         state.design[target] = COLOR_NAMES[name];
         applied.push(`${{ accent: "강조색", bg: "배경색", text: "글자색" }[target]} → ${name}`);
-      } else if (/글꼴|폰트|글씨체/.test(line) && FONT_RULES.some(([re]) => re.test(line))) {
-        const [, font] = FONT_RULES.find(([re]) => re.test(line));
-        state.design.font = font;
-        applied.push(`글꼴 → ${font}`);
+      } else if (/글꼴|폰트|글씨체/.test(line) && FONT_WORDS.some(([re]) => re.test(line))) {
+        const [, key] = FONT_WORDS.find(([re]) => re.test(line));
+        state.design.font = FONTS[key].css;
+        applied.push(`글꼴 → ${FONTS[key].label}`);
       } else if (/템플릿|스타일|테마/.test(line) && Object.keys(TEMPLATE_WORDS).some((w) => line.includes(w))) {
         const word = Object.keys(TEMPLATE_WORDS).find((w) => line.includes(w));
         const t = TEMPLATES[TEMPLATE_WORDS[word]];
@@ -973,8 +999,10 @@ ${navHtml}
     { question: "소개 글을 적어 주세요. 여러 줄도 됩니다.", type: "textarea", line: (v) => `소개글: ${v}` },
     { question: "연락처를 적어 주세요. 예: 02-000-0000, hello@example.com", type: "text", line: (v) => `연락처: ${v}` },
     {
-      question: "느낌을 골라 주세요.", type: "choice",
-      options: [["깔끔하게", "템플릿: 미니멀"], ["시원하게", "템플릿: 오션"], ["따뜻하게", "템플릿: 웜"], ["어둡게", "템플릿: 나이트"]],
+      question: "느낌을 골라 주세요. 누르면 색과 글꼴이 함께 바뀝니다.", type: "choice",
+      options: [["미니멀", "템플릿: 미니멀"], ["오션", "템플릿: 오션"], ["웜", "템플릿: 웜"], ["나이트", "템플릿: 나이트"],
+        ["숲", "템플릿: 숲"], ["라벤더", "템플릿: 라벤더"], ["코랄", "템플릿: 코랄"], ["햇살", "템플릿: 햇살"],
+        ["종이", "템플릿: 종이"], ["민트", "템플릿: 민트"], ["네이비", "템플릿: 네이비"]],
     },
     {
       question: "강조색을 골라 주세요.", type: "choice",
@@ -982,7 +1010,8 @@ ${navHtml}
     },
     {
       question: "글꼴을 골라 주세요.", type: "choice",
-      options: [["고딕 (기본)", "글꼴: 고딕"], ["명조 (세리프)", "글꼴: 명조"], ["모노", "글꼴: 모노"]],
+      options: [["기본 고딕", "글꼴: 기본"], ["맑은 고딕", "글꼴: 맑은 고딕"], ["나눔고딕", "글꼴: 나눔고딕"],
+        ["바탕 · 명조", "글꼴: 명조"], ["세리프 (영문)", "글꼴: 세리프"], ["산세리프 (영문)", "글꼴: 산세리프"], ["모노", "글꼴: 모노"]],
     },
     {
       question: "소식을 하나 추가할까요? 제목 | 날짜 | 요약 | 링크 순서로 적으세요. 날짜와 링크는 빼도 됩니다.",
@@ -1314,6 +1343,15 @@ ${navHtml}
     }
     setTimeout(() => { $("copyBrief").textContent = "명세서 복사"; }, 1500);
   });
+
+  // 템플릿과 글꼴 목록은 정의된 값으로 채웁니다.
+  $("template").innerHTML = Object.entries(TEMPLATES).map(([key, tpl]) => `<option value="${key}">${esc(tpl.label)}</option>`).join("");
+  $("template").addEventListener("change", (e) => {
+    undoSnapshot = clone(state);
+    applyTemplateKey(e.target.value);
+    fullRender();
+  });
+  $("font").innerHTML = Object.values(FONTS).map((f) => `<option value="${esc(f.css)}">${esc(f.label)}</option>`).join("");
 
   applyFromAddress();
   renderWizard();
