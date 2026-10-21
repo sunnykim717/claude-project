@@ -1,0 +1,15 @@
+    .code-panel { margin-top: 32px; border-top: 1px solid #cbd5e1; padding-top: 12px; }
+    .code-panel summary, .saved-panel summary { cursor: pointer; font-weight: 600; }
+    .code-panel textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 0.8rem; margin-top: 8px; }
+    .saved-panel { margin-top: 24px; }
+    .saved-panel table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    .saved-panel th, .saved-panel td { border: 1px solid #cbd5e1; padding: 4px 6px; text-align: left; vertical-align: top; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .secondary { background: #ffffff; color: var(--accent); border: 1px solid var(--accent); }
+    .nav { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+    .progress { color: var(--muted); font-size: 0.9rem; margin: 0 0 4px; }
+    .choice { display: inline-flex; align-items: center; gap: 6px; font-weight: 400; margin: 4px 0; }
+    .choice input { width: auto; }
+    fieldset { border: 0; padding: 0; margin: 0 0 14px; }
+    legend { font-weight: 600; margin-bottom: 4px; }
+    .hint { color: var(--muted); font-size: 0.9rem; }
