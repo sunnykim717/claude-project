@@ -364,6 +364,31 @@ class SiteToolTest(unittest.TestCase):
         self.assertEqual((ROOT / "content" / "home.json").read_text(encoding="utf-8"), before)
 
 
+class FontRegistryTest(unittest.TestCase):
+    """글꼴 레지스트리: 파일, 체크섬, 라이선스 파일이 서로 맞는지 확인합니다 (파일을 받는 것은 fetch_fonts.py 가 합니다)."""
+
+    def test_every_font_file_matches_its_checksum(self):
+        import hashlib
+        registry = json.loads((ROOT / "fonts" / "registry.json").read_text(encoding="utf-8"))
+        checksums = json.loads((ROOT / "fonts" / "checksums.json").read_text(encoding="utf-8"))
+        for font in registry["fonts"]:
+            if font["source"]["type"] != "npm":
+                continue
+            self.assertTrue((ROOT / "fonts" / "licenses" / f"{font['id']}-LICENSE.txt").exists(), font["id"])
+            for item in font["files"]:
+                name = f"{font['id']}-{item['weight']}.woff2"
+                rel = f"fonts/files/{name}"
+                self.assertIn(rel, checksums, name)
+                digest = hashlib.sha256((ROOT / rel).read_bytes()).hexdigest()
+                self.assertEqual(digest, checksums[rel], name)
+
+    def test_only_open_license_fonts_are_registered(self):
+        registry = json.loads((ROOT / "fonts" / "registry.json").read_text(encoding="utf-8"))
+        for font in registry["fonts"]:
+            if font["source"]["type"] == "npm":
+                self.assertEqual(font["license"], "OFL-1.1", font["id"])
+
+
 class DesignAndSchemaTest(unittest.TestCase):
     """디자인 프리셋과 설정 목록(schema.json)이 서로 맞는지 확인합니다."""
 
