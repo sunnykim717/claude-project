@@ -147,8 +147,20 @@
         <input type="text" id="subtitle" data-bind="site.subtitle" placeholder="예: 만들고 기록하는 공간">
         <label for="description">검색용 설명 (meta description, 160자 이내 권장)</label>
         <textarea id="description" data-bind="site.description"></textarea>
-        <label for="heroImage">대표 이미지 URL (https:// 로 시작)</label>
+        <label for="heroFileInput">대표 사진 (컴퓨터에서 고르기, 1MB 이하)</label>
+        <div class="row">
+          <input type="file" id="heroFileInput" accept="image/png,image/jpeg,image/webp,image/gif" class="grow">
+          <button type="button" id="heroFileClear">빼기</button>
+        </div>
+        <p class="hint" id="heroFileState"></p>
+        <label for="heroImage">또는 사진 인터넷 주소 (https:// 로 시작)</label>
         <input type="url" id="heroImage" data-bind="site.heroImage" placeholder="https://">
+        <label for="logoFileInput">로고 (컴퓨터에서 고르기, 1MB 이하, 제목 옆에 작게 나옵니다)</label>
+        <div class="row">
+          <input type="file" id="logoFileInput" accept="image/png,image/jpeg,image/webp,image/gif" class="grow">
+          <button type="button" id="logoClear">빼기</button>
+        </div>
+        <p class="hint" id="logoFileState"></p>
         <label for="lang">페이지 언어</label>
         <select id="lang" data-bind="site.lang">
           <option value="ko">한국어 (ko)</option>
@@ -180,6 +192,8 @@
           <option value="normal">보통</option>
           <option value="airy">넉넉하게</option>
         </select>
+        <label for="look">화면 스타일</label>
+        <select id="look" data-bind="design.look"></select>
       </details>
 
       <details>
@@ -284,6 +298,14 @@
     contact: "연락처",
   };
   const SPACING = { compact: 12, normal: 24, airy: 40 };
+  // 화면 스타일: 템플릿(색, 글꼴)과 따로 고릅니다.
+  const LOOKS = {
+    classic: { label: "기본 (왼쪽 정렬, 목록)" },
+    band:    { label: "색 띠 머리 (첫 화면을 색 상자로)" },
+    card:    { label: "카드형 (소식과 사업을 상자로)" },
+    center:  { label: "가운데 정렬 (차분한 소개 페이지)" },
+  };
+  const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center" };
 
   // 템플릿: 색, 글꼴, 모서리를 한 번에 정합니다. 이름은 "템플릿: 숲" 처럼 말로도 고를 수 있습니다.
   const TEMPLATES = {
@@ -326,6 +348,8 @@
       subtitle: "",
       description: "",
       heroImage: "",
+      heroFile: "",
+      logo: "",
       lang: "ko",
     },
     design: {
@@ -337,6 +361,7 @@
       radius: 8,
       maxWidth: 760,
       spacing: "normal",
+      look: "classic",
     },
     sections: [
       { id: "hero", enabled: true },
@@ -379,6 +404,8 @@
     Object.assign(s.headings, raw.headings ?? {});
     Object.assign(s.cta, raw.cta ?? {});
     Object.assign(s.social, raw.social ?? {});
+    s.site.logo = safeImageData(s.site.logo);
+    s.site.heroFile = safeImageData(s.site.heroFile);
     if (typeof raw.about === "string") s.about = raw.about;
     if (typeof raw.contact === "string") s.contact = raw.contact;
     ["support", "volunteer", "location"].forEach((k) => { if (typeof raw[k] === "string") s[k] = raw[k]; });
@@ -407,6 +434,7 @@
     ["accent", "text", "bg"].forEach((k) => { if (!/^#[0-9a-f]{6}$/i.test(d[k])) d[k] = DEFAULT_STATE.design[k]; });
     if (!TEMPLATES[d.template]) d.template = "minimal";
     if (!SPACING[d.spacing]) d.spacing = "normal";
+    if (!LOOKS[d.look]) d.look = "classic";
     d.radius = clamp(Number(d.radius), 0, 32, DEFAULT_STATE.design.radius);
     d.maxWidth = clamp(Number(d.maxWidth), 560, 960, DEFAULT_STATE.design.maxWidth);
     return s;
@@ -444,6 +472,12 @@
   }
 
   // http(s) 주소만 허용해서 javascript: 같은 주소를 막습니다.
+  const MAX_IMAGE_BYTES = 1000000;
+  // 컴퓨터에서 고른 사진(data 주소)을 확인합니다. PNG, JPG, WEBP, GIF 만 통과합니다.
+  function safeImageData(value) {
+    const s = String(value ?? "").trim();
+    return /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(s) ? s : "";
+  }
   function safeUrl(value) {
     const s = String(value ?? "").trim();
     return /^https:\/\/[^\s]+$/i.test(s) || /^http:\/\/[^\s]+$/i.test(s) ? esc(s) : "";
@@ -481,6 +515,7 @@
     else if (s.site.description.length > 160) out.push(["warn", `검색용 설명이 ${s.site.description.length}자입니다. 160자 이내를 권장합니다.`]);
 
     if (s.site.heroImage && !safeUrl(s.site.heroImage)) out.push(["err", "대표 이미지 URL 형식이 올바르지 않습니다 (https:// 필요)."]);
+    if ((s.site.heroFile || s.site.logo) && (s.site.heroFile && !safeImageData(s.site.heroFile) || s.site.logo && !safeImageData(s.site.logo))) out.push(["err", "사진 파일 형식이 올바르지 않습니다. PNG, JPG, WEBP, GIF 를 다시 고르세요."]);
 
     const textRatio = contrast(s.design.text, s.design.bg);
     if (textRatio < 4.5) out.push(["err", `글자색과 배경색의 대비가 ${textRatio.toFixed(2)}:1 입니다. WCAG AA 기준 4.5:1 이상이 필요합니다.`]);
@@ -527,8 +562,10 @@
     const s = state;
     const title = esc(s.site.title);
     if (id === "hero") {
-      const img = safeUrl(s.site.heroImage);
+      const img = safeImageData(s.site.heroFile) || safeUrl(s.site.heroImage);
+      const logo = safeImageData(s.site.logo);
       return `<header class="hero" id="hero">
+      ${logo ? `<img class="logo" src="${logo}" alt="${title} 로고">` : ""}
       ${img ? `<img src="${img}" alt="${title} 대표 이미지">` : ""}
       <h1>${title}</h1>${s.site.subtitle ? `\n      <p class="subtitle">${esc(s.site.subtitle)}</p>` : ""}
     </header>`;
@@ -654,6 +691,7 @@
     main { max-width: var(--max); margin: 0 auto; padding: var(--gap); }
     .hero { padding: calc(var(--gap) * 2) 0 var(--gap); border-bottom: 4px solid var(--accent); }
     .hero img { display: block; width: 100%; height: auto; border-radius: var(--radius); margin-bottom: 16px; }
+    .hero img.logo { width: auto; height: 56px; margin-bottom: 12px; border-radius: 0; }
     .hero h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.4rem); }
     .subtitle { margin: 8px 0 0; opacity: 0.8; }
     section { margin-top: calc(var(--gap) * 1.5); }
@@ -669,10 +707,17 @@
     .links a { color: var(--accent); }
     footer { margin-top: calc(var(--gap) * 2); padding: var(--gap) var(--gap) calc(var(--gap) * 2); border-top: 1px solid var(--accent); text-align: center; font-size: 0.85rem; opacity: 0.75; }
     a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    body.look-band .hero { background: var(--accent); color: var(--bg); border-bottom: none; border-radius: var(--radius); padding: calc(var(--gap) * 1.5); }
+    body.look-band .hero h1, body.look-band .hero .subtitle { color: var(--bg); }
+    body.look-card article { background: rgba(127, 127, 127, 0.08); border: 1px solid rgba(127, 127, 127, 0.25); border-left: 4px solid var(--accent); padding: 12px 16px; }
+    body.look-center main, body.look-center nav ul { text-align: center; }
+    body.look-center nav ul { justify-content: center; }
+    body.look-center article, body.look-center .links { text-align: center; }
+    body.look-center .links { justify-content: center; }
     @media (max-width: 600px) { main, nav { padding-left: 16px; padding-right: 16px; } }
   </style>
 </head>
-<body>
+<body class="look-${esc(d.look)}">
 ${navHtml}
 <main id="main">
   ${rendered.map((x) => x.html).join("\n  ")}
@@ -780,7 +825,7 @@ ${navHtml}
   // 자주 나오는 요청에 대해 미리 준비한 답변입니다. 이해하지 못한 줄에 가장 먼저 맞는 답을 보여 줍니다.
   const SITUATION_ANSWERS = [
     [/예쁘|멋지|귀엽|세련|디자인/, "디자인은 템플릿과 색으로 고를 수 있습니다. 예: 템플릿: 오션 / 강조색: 파랑"],
-    [/사진|이미지|그림/, "사진은 '대표 이미지' 칸에 https:// 주소를 넣어 주세요. 말로 적을 때는 빌더 화면의 '대표 이미지 URL' 칸을 쓰세요."],
+    [/사진|이미지|그림|로고/, "사진과 로고는 '대표 사진'과 '로고' 칸에서 컴퓨터의 파일을 고르세요. 1MB 이하 파일만 들어갑니다."],
     [/로그인|회원가입|계정|비밀번호/, "회원 가입과 로그인은 지원하지 않습니다. 신청 내용은 이 기기에 저장하거나 CSV 로 받으세요."],
     [/결제|송금|가격|돈|카드/, "결제 기능은 지원하지 않습니다. 금액 안내가 필요하면 소개 글이나 소식 항목에 적어 주세요."],
     [/메일|이메일로|문자로|카톡|보내/, "자동 전송은 지원하지 않습니다. 제출 내용은 CSV 또는 백업 파일로 받아 직접 보내 주세요."],
@@ -970,6 +1015,9 @@ ${navHtml}
         const [, key] = FONT_WORDS.find(([re]) => re.test(line));
         state.design.font = FONTS[key].css;
         applied.push(`글꼴 → ${FONTS[key].label}`);
+      } else if ((m = line.match(/^(?:화면\s*스타일|배치|스타일)\s*[:：]?\s*(기본|띠|카드|가운데)/))) {
+        state.design.look = LOOK_WORDS[m[1]];
+        applied.push(`화면 스타일 → ${LOOKS[state.design.look].label}`);
       } else if (/템플릿|스타일|테마/.test(line) && Object.keys(TEMPLATE_WORDS).some((w) => line.includes(w))) {
         const word = Object.keys(TEMPLATE_WORDS).find((w) => line.includes(w));
         const t = TEMPLATES[TEMPLATE_WORDS[word]];
@@ -1116,6 +1164,10 @@ ${navHtml}
       question: "글꼴을 골라 주세요.", type: "choice",
       options: [["기본 고딕", "글꼴: 기본"], ["맑은 고딕", "글꼴: 맑은 고딕"], ["나눔고딕", "글꼴: 나눔고딕"],
         ["바탕 · 명조", "글꼴: 명조"], ["세리프 (영문)", "글꼴: 세리프"], ["산세리프 (영문)", "글꼴: 산세리프"], ["모노", "글꼴: 모노"]],
+    },
+    {
+      question: "화면 모양을 골라 주세요.", type: "choice",
+      options: [["기본", "화면 스타일: 기본"], ["색 띠 머리", "화면 스타일: 띠"], ["카드형", "화면 스타일: 카드"], ["가운데 정렬", "화면 스타일: 가운데"]],
     },
     {
       question: "소식을 하나 추가할까요? 제목 | 날짜 | 요약 | 링크 순서로 적으세요. 날짜와 링크는 빼도 됩니다.",
@@ -1455,6 +1507,38 @@ ${navHtml}
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   });
 
+  // 컴퓨터의 사진을 홈페이지 데이터 안에 넣습니다. 계정도 서버도 필요 없습니다.
+  function pickImageFile(input, key) {
+    const file = input.files[0];
+    input.value = "";
+    if (!file) return;
+    if (file.size > MAX_IMAGE_BYTES) {
+      alert(`사진은 1MB 이하만 넣을 수 있습니다. 지금 파일은 약 ${Math.round(file.size / 1000)}KB 입니다. 작게 줄인 사진을 골라 주세요.`);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const data = String(reader.result);
+      if (!safeImageData(data)) {
+        alert("PNG, JPG, WEBP, GIF 사진만 넣을 수 있습니다.");
+        return;
+      }
+      undoSnapshot = clone(state);
+      state.site[key] = data;
+      fullRender();
+      updateImageStatus();
+    };
+    reader.readAsDataURL(file);
+  }
+  function updateImageStatus() {
+    $("heroFileState").textContent = state.site.heroFile ? "대표 사진이 들어 있습니다." : "대표 사진이 없습니다.";
+    $("logoFileState").textContent = state.site.logo ? "로고가 들어 있습니다." : "로고가 없습니다.";
+  }
+  $("heroFileInput").addEventListener("change", (e) => pickImageFile(e.target, "heroFile"));
+  $("logoFileInput").addEventListener("change", (e) => pickImageFile(e.target, "logo"));
+  $("heroFileClear").addEventListener("click", () => { state.site.heroFile = ""; fullRender(); updateImageStatus(); });
+  $("logoClear").addEventListener("click", () => { state.site.logo = ""; fullRender(); updateImageStatus(); });
+
   // 템플릿과 글꼴 목록은 정의된 값으로 채웁니다.
   $("template").innerHTML = Object.entries(TEMPLATES).map(([key, tpl]) => `<option value="${key}">${esc(tpl.label)}</option>`).join("");
   $("template").addEventListener("change", (e) => {
@@ -1462,10 +1546,12 @@ ${navHtml}
     applyTemplateKey(e.target.value);
     fullRender();
   });
+  $("look").innerHTML = Object.entries(LOOKS).map(([key, look]) => `<option value="${key}">${esc(look.label)}</option>`).join("");
   $("font").innerHTML = Object.values(FONTS).map((f) => `<option value="${esc(f.css)}">${esc(f.label)}</option>`).join("");
 
   applyFromAddress();
   renderWizard();
+  updateImageStatus();
   fullRender();
 </script>
 </body>
