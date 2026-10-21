@@ -1,0 +1,47 @@
+{
+  "modern-blue": {
+    "label": "모던 블루 (기본)",
+    "primaryColor": "#2563EB",
+    "backgroundColor": "#FFFFFF",
+    "textColor": "#0F172A",
+    "font": "system-ui",
+    "radius": 8,
+    "spacing": "normal"
+  },
+  "warm-orange": {
+    "label": "따뜻한 오렌지",
+    "primaryColor": "#C2410C",
+    "backgroundColor": "#FFFBEB",
+    "textColor": "#431407",
+    "font": "serif",
+    "radius": 4,
+    "spacing": "airy"
+  },
+  "ocean-teal": {
+    "label": "시원한 바다",
+    "primaryColor": "#0F766E",
+    "backgroundColor": "#F0FDFA",
+    "textColor": "#134E4A",
+    "font": "system-ui",
+    "radius": 14,
+    "spacing": "normal"
+  },
+  "minimal-mono": {
+    "label": "미니멀 흑백",
+    "primaryColor": "#111827",
+    "backgroundColor": "#FFFFFF",
+    "textColor": "#111827",
+    "font": "system-ui",
+    "radius": 0,
+    "spacing": "compact"
+  },
+  "night-dark": {
+    "label": "차분한 야간",
+    "primaryColor": "#A78BFA",
+    "backgroundColor": "#0F172A",
+    "textColor": "#E2E8F0",
+    "font": "system-ui",
+    "radius": 12,
+    "spacing": "normal"
+  }
+}

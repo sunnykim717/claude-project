@@ -28,6 +28,9 @@ SPACING_PX = {"compact": 12, "normal": 24, "airy": 40}
 # 섹션 목록이 없을 때 쓰는 기본 순서 (기존 동작과 같습니다)
 DEFAULT_SECTIONS = ["about", "items", "contact"]
 ALLOWED_SECTIONS = ("about", "items", "cta", "social", "contact")
+# 페이지 안에서 이동할 수 있는 곳(#id). 각 섹션의 id 와 같아야 합니다.
+ANCHOR_IDS = ("top", "about", "items", "cta", "social", "contact")
+ANCHOR_PATTERN = re.compile(r"^#[a-z][a-z0-9-]*$")
 SOCIAL_LABELS = (("github", "GitHub"), ("instagram", "Instagram"), ("youtube", "YouTube"))
 
 STYLE = """
@@ -46,6 +49,9 @@ STYLE = """
   .btn { display: inline-block; padding: 10px 18px; border-radius: var(--radius); background: var(--accent); color: var(--bg, #ffffff); text-decoration: none; font-weight: 700; }
   .links { list-style: none; display: flex; gap: 14px; flex-wrap: wrap; padding: 0; margin: 0; }
   .links a { color: var(--accent); }
+  nav { border-bottom: 1px solid var(--accent); padding-bottom: 8px; }
+  nav ul { list-style: none; display: flex; gap: 16px; flex-wrap: wrap; padding: 0; margin: 0; }
+  nav a { color: var(--accent); text-decoration: none; font-weight: 600; }
   footer { color: #64748b; font-size: 0.85rem; margin: 40px 0 16px; }
 """
 
@@ -53,6 +59,26 @@ STYLE = """
 def is_http_url(value):
     """http(s) 주소만 허용해서 javascript: 같은 주소를 막습니다."""
     return value.startswith(("https://", "http://"))
+
+
+def is_safe_link(value):
+    """http(s) 주소이거나, 이 페이지 안의 섹션(#about 등)만 허용합니다."""
+    if not isinstance(value, str):
+        return False
+    if value.startswith("#"):
+        return value[1:] in ANCHOR_IDS
+    return is_http_url(value)
+
+
+def validate_nav(nav, path):
+    """메뉴 목록을 검사합니다. 각 항목은 이름(label)과 주소(href)를 가집니다."""
+    if not isinstance(nav, list):
+        raise ValueError(f"{path}: 'nav' 는 목록이어야 합니다.")
+    for entry in nav:
+        if not isinstance(entry, dict) or not isinstance(entry.get("label", ""), str) or not entry.get("label"):
+            raise ValueError(f"{path}: nav 의 각 항목에는 글자로 된 'label' 이 필요합니다.")
+        if not is_safe_link(entry.get("href")):
+            raise ValueError(f"{path}: nav 의 href 는 http(s):// 주소 또는 #섹션 이어야 합니다 ({entry.get('href')}).")
 
 
 def validate_theme(theme, path):
@@ -96,7 +122,13 @@ def load_site(path):
     """데이터 파일을 읽고 필수 항목을 검사합니다."""
     with Path(path).open(encoding="utf-8") as f:
         site = json.load(f)
+    return validate_site(site, path)
 
+
+def validate_site(site, path="(입력)"):
+    """사이트 데이터를 검사합니다. 파일이 아닌 값도 같은 규칙으로 검사합니다."""
+    if not isinstance(site, dict):
+        raise ValueError(f"{path}: 최상위 값은 {{ }} 로 감싼 설정 묶음이어야 합니다.")
     if not site.get("title"):
         raise ValueError(f"{path}: 'title' 항목이 필요합니다.")
     if not isinstance(site.get("items", []), list):
@@ -108,8 +140,10 @@ def load_site(path):
         validate_theme(site["theme"], path)
     if site.get("social"):
         validate_social(site["social"], path)
-    if site.get("cta") and site["cta"].get("url") and not is_http_url(site["cta"]["url"]):
-        raise ValueError(f"{path}: cta.url 은 http(s):// 로 시작해야 합니다.")
+    if site.get("cta") and site["cta"].get("url") and not is_safe_link(site["cta"]["url"]):
+        raise ValueError(f"{path}: cta.url 은 http(s):// 주소 또는 #섹션 이어야 합니다.")
+    if "nav" in site:
+        validate_nav(site["nav"], path)
     if "sections" in site:
         sections = site["sections"]
         if not isinstance(sections, list) or len(set(sections)) != len(sections):
@@ -117,6 +151,8 @@ def load_site(path):
         unknown = [s for s in sections if s not in ALLOWED_SECTIONS]
         if unknown:
             raise ValueError(f"{path}: 알 수 없는 섹션이 있습니다 -> {', '.join(map(str, unknown))}")
+    if not isinstance(site.get("items", []), list):
+        raise ValueError(f"{path}: 'items' 는 목록이어야 합니다.")
 
     for item in site.get("items", []):
         if not isinstance(item, dict):
@@ -159,12 +195,25 @@ def render_theme(theme):
     )
 
 
-def render_text_section(title, text):
+def render_text_section(section_id, title, text):
     """소개나 연락처처럼 글 하나로 된 섹션을 HTML 로 변환합니다."""
     text = text.strip()
     if not text:
         return ""
-    return f'<section>\n    <h2>{title}</h2>\n    <p class="pre">{html.escape(text)}</p>\n  </section>'
+    return f'<section id="{section_id}">\n    <h2>{title}</h2>\n    <p class="pre">{html.escape(text)}</p>\n  </section>'
+
+
+def render_nav(site, rendered_ids):
+    """메뉴를 HTML 로 변환합니다. 화면에 없는 섹션으로 가는 메뉴는 만들지 않습니다."""
+    links = []
+    for entry in site.get("nav", []):
+        href = entry["href"]
+        if href.startswith("#") and href[1:] not in rendered_ids:
+            continue
+        links.append(f'<li><a href="{html.escape(href, quote=True)}">{html.escape(entry["label"])}</a></li>')
+    if not links:
+        return ""
+    return f'<nav aria-label="페이지 메뉴"><ul>{"".join(links)}</ul></nav>'
 
 
 def render_cta(cta):
@@ -172,7 +221,7 @@ def render_cta(cta):
     if not cta or not cta.get("url"):
         return ""
     label = html.escape(cta.get("label") or "문의하기")
-    return f'<section class="cta">\n    <a class="btn" href="{html.escape(cta["url"], quote=True)}">{label}</a>\n  </section>'
+    return f'<section id="cta" class="cta">\n    <a class="btn" href="{html.escape(cta["url"], quote=True)}">{label}</a>\n  </section>'
 
 
 def render_social(social):
@@ -186,36 +235,46 @@ def render_social(social):
         links.append(f'<li><a href="{html.escape("mailto:" + social["email"], quote=True)}">이메일</a></li>')
     if not links:
         return ""
-    return f'<section>\n    <h2>SNS</h2>\n    <ul class="links">{"".join(links)}</ul>\n  </section>'
+    return f'<section id="social">\n    <h2>SNS</h2>\n    <ul class="links">{"".join(links)}</ul>\n  </section>'
 
 
 def render_sections(site):
-    """섹션을 순서대로 HTML 로 변환합니다. 'sections' 가 없으면 기본 순서를 씁니다."""
+    """섹션을 순서대로 HTML 로 변환합니다. 'sections' 가 없으면 기본 순서를 씁니다.
+
+    반환값은 (HTML, 실제로 나온 섹션 id 목록) 입니다. 메뉴가 빈 섹션을 가리키지 않도록 씁니다.
+    """
     order = site.get("sections", DEFAULT_SECTIONS)
     # 최신 소식이 위로 오도록 날짜 기준 내림차순 정렬 (날짜가 없으면 맨 뒤)
     items = sorted(site.get("items", []), key=lambda i: i.get("date", ""), reverse=True)
 
-    parts = []
+    parts, rendered = [], []
     for name in order:
         if name == "about":
-            parts.append(render_text_section("소개", site.get("about", "")))
+            block = render_text_section("about", "소개", site.get("about", ""))
         elif name == "items":
+            block = ""
             if items:
-                parts.append("\n  ".join(render_item(item) for item in items))
+                block = '<section id="items">\n    ' + "\n    ".join(render_item(item) for item in items) + "\n  </section>"
         elif name == "cta":
-            parts.append(render_cta(site.get("cta")))
+            block = render_cta(site.get("cta"))
         elif name == "social":
-            parts.append(render_social(site.get("social")))
+            block = render_social(site.get("social"))
         elif name == "contact":
-            parts.append(render_text_section("연락처", site.get("contact", "")))
-    return "\n  ".join(part for part in parts if part)
+            block = render_text_section("contact", "연락처", site.get("contact", ""))
+        else:
+            block = ""
+        if block:
+            parts.append(block)
+            rendered.append(name)
+    return "\n  ".join(parts), rendered
 
 
 def render_page(site, now):
     """사이트 데이터를 전체 HTML 문서로 변환합니다."""
     title = html.escape(site["title"])
     subtitle = html.escape(site.get("subtitle", ""))
-    sections = render_sections(site)
+    sections, rendered = render_sections(site)
+    nav = render_nav(site, rendered)
     max_width = site.get("theme", {}).get("maxWidth", 760)
     updated = now.strftime("%Y-%m-%d %H:%M (KST)")
 
@@ -231,7 +290,8 @@ def render_page(site, now):
 </head>
 <body>
 <main>
-  <header>
+  {nav}
+  <header id="top">
     <h1>{title}</h1>
     <p class="subtitle">{subtitle}</p>
   </header>
