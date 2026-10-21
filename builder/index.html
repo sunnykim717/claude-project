@@ -356,8 +356,10 @@
     band:    { label: "색 띠 머리 (첫 화면을 색 상자로)" },
     card:    { label: "카드형 (소식과 사업을 상자로)" },
     center:  { label: "가운데 정렬 (차분한 소개 페이지)" },
+    soft:    { label: "둥근 상자 (그림자 있는 부드러운 카드)" },
+    line:    { label: "얇은 선 (글만 깔끔하게)" },
   };
-  const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center" };
+  const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center", 둥근: "soft", 선: "line" };
   const GALLERY_MAX = 12;
   // 내 템플릿: 지금 디자인을 이름 붙여 저장합니다. 이 브라우저에만 저장되며, 저장 공간이 부족하면 알려 줍니다.
   const CUSTOM_KEY = "vibe-homepage-custom-templates:v1";
@@ -445,6 +447,12 @@
     paper:    { label: "종이",     accent: "#44403c", text: "#292524", bg: "#fafaf9", font: "Batang, Georgia, serif", radius: 2 },
     mint:     { label: "민트",     accent: "#0f766e", text: "#134e4a", bg: "#f0fdfa", font: "system-ui, sans-serif", radius: 20 },
     navy:     { label: "네이비",   accent: "#1e3a8a", text: "#172554", bg: "#eff6ff", font: "system-ui, sans-serif", radius: 6 },
+    moonlight:{ label: "달빛",     accent: "#4338ca", text: "#1e1b4b", bg: "#eef2ff", font: "system-ui, sans-serif", radius: 16 },
+    blossom:  { label: "벚꽃",     accent: "#db2777", text: "#500724", bg: "#fdf2f8", font: "Batang, Georgia, serif", radius: 18 },
+    sand:     { label: "모래",     accent: "#a16207", text: "#422006", bg: "#faf7f0", font: "Batang, Georgia, serif", radius: 6 },
+    meadow:   { label: "초원",     accent: "#4d7c0f", text: "#1a2e05", bg: "#f7fee7", font: "system-ui, sans-serif", radius: 12 },
+    sunset:   { label: "노을",     accent: "#c2410c", text: "#431407", bg: "#fff7ed", font: "system-ui, sans-serif", radius: 22 },
+    ink:      { label: "먹빛",     accent: "#111111", text: "#1f2937", bg: "#f5f5f4", font: "'Nanum Gothic', system-ui, sans-serif", radius: 0 },
   };
   // 글꼴 이름 → 실제 글꼴 목록. 기기에 없는 글꼴은 다음 글꼴로 넘어갑니다.
   const FONTS = {
@@ -890,6 +898,11 @@
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
     .gallery img { width: 100%; height: auto; border-radius: var(--radius); display: block; }
     body.look-card article { background: rgba(127, 127, 127, 0.08); border: 1px solid rgba(127, 127, 127, 0.25); border-left: 4px solid var(--accent); padding: 12px 16px; }
+    body.look-soft article { background: #fff; border: none; border-left: 0; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); border-radius: calc(var(--radius) * 1.5); padding: 18px 22px; }
+    body.look-soft .hero, body.look-soft .hero-bg { border-radius: calc(var(--radius) * 1.5); }
+    body.look-line h2 { border-bottom: 1px solid var(--accent); font-weight: 500; letter-spacing: 0.02em; }
+    body.look-line article { background: none; border: none; border-top: 1px solid rgba(127, 127, 127, 0.3); border-radius: 0; padding: 14px 0; }
+    body.look-line .hero { border-bottom: 1px solid var(--accent); }
     body.look-center main, body.look-center nav ul { text-align: center; }
     body.look-center nav ul { justify-content: center; }
     body.look-center article, body.look-center .links { text-align: center; }
@@ -987,6 +1000,7 @@ ${navHtml}
     미니멀: "minimal", 심플: "minimal", 오션: "ocean", 바다: "ocean", 웜: "warm", 따뜻: "warm",
     나이트: "night", 다크: "night", 어둡: "night", 숲: "forest", 초록: "forest", 라벤더: "lavender",
     코랄: "coral", 분홍: "coral", 햇살: "sunny", 노랑: "sunny", 종이: "paper", 신문: "paper",
+    달빛: "moonlight", 보라: "moonlight", 벚꽃: "blossom", 모래: "sand", 초원: "meadow", 노을: "sunset", 먹빛: "ink", 검정: "ink",
     민트: "mint", 네이비: "navy", 남색: "navy",
   };
   // "깔끔하게", "시원하게" 같은 느낌의 말로 템플릿을 추천합니다.
@@ -1336,7 +1350,8 @@ ${navHtml}
       question: "느낌을 골라 주세요. 누르면 색과 글꼴이 함께 바뀝니다.", type: "choice",
       options: [["미니멀", "템플릿: 미니멀"], ["오션", "템플릿: 오션"], ["웜", "템플릿: 웜"], ["나이트", "템플릿: 나이트"],
         ["숲", "템플릿: 숲"], ["라벤더", "템플릿: 라벤더"], ["코랄", "템플릿: 코랄"], ["햇살", "템플릿: 햇살"],
-        ["종이", "템플릿: 종이"], ["민트", "템플릿: 민트"], ["네이비", "템플릿: 네이비"]],
+        ["종이", "템플릿: 종이"], ["민트", "템플릿: 민트"], ["네이비", "템플릿: 네이비"],
+        ["달빛", "템플릿: 달빛"], ["벚꽃", "템플릿: 벚꽃"], ["모래", "템플릿: 모래"], ["초원", "템플릿: 초원"], ["노을", "템플릿: 노을"], ["먹빛", "템플릿: 먹빛"]],
     },
     {
       question: "강조색을 골라 주세요.", type: "choice",
@@ -1349,7 +1364,7 @@ ${navHtml}
     },
     {
       question: "화면 모양을 골라 주세요.", type: "choice",
-      options: [["기본", "화면 스타일: 기본"], ["색 띠 머리", "화면 스타일: 띠"], ["카드형", "화면 스타일: 카드"], ["가운데 정렬", "화면 스타일: 가운데"]],
+      options: [["기본", "화면 스타일: 기본"], ["색 띠 머리", "화면 스타일: 띠"], ["카드형", "화면 스타일: 카드"], ["가운데 정렬", "화면 스타일: 가운데"], ["둥근 상자", "화면 스타일: 둥근"], ["얇은 선", "화면 스타일: 선"]],
     },
     {
       question: "소식을 하나 추가할까요? 제목 | 날짜 | 요약 | 링크 순서로 적으세요. 날짜와 링크는 빼도 됩니다.",
