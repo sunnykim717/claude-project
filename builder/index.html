@@ -203,6 +203,12 @@
         <select id="pattern" data-bind="design.pattern"></select>
         <label for="deco">장식 그림 (첫 화면 오른쪽 위)</label>
         <select id="deco" data-bind="design.deco"></select>
+        <details>
+          <summary>도형으로 그림 만들기 (내 그림)</summary>
+          <p class="hint">도형을 더해서 위치(x, y), 크기(s), 색(c)을 정하세요. 0~100 사이 숫자입니다. 다 만들면 위의 장식 그림에서 "내 그림"을 고르세요.</p>
+          <div id="artList"></div>
+          <div class="actions"><button type="button" id="addArt">+ 도형 추가</button></div>
+        </details>
         <label for="lang">페이지 언어</label>
         <select id="lang" data-bind="site.lang">
           <option value="ko">한국어 (ko)</option>
@@ -421,6 +427,7 @@
     heart: { label: "하트" },
     cloud: { label: "구름" },
     book: { label: "책" },
+    custom: { label: "내 그림 (도형으로 만든 것)" },
   };
   const DECO_PATHS = {
     sun: "<circle cx='50' cy='50' r='20' fill='C'/><g stroke='C' stroke-width='6' stroke-linecap='round'><path d='M50 8v12M50 80v12M8 50h12M80 50h12M19 19l8 8M73 73l8 8M19 81l8-8M73 27l8-8'/></g>",
@@ -430,6 +437,41 @@
     cloud: "<path d='M25 70 C8 70 8 46 26 44 C28 26 52 22 60 38 C68 30 88 36 86 54 C98 56 96 70 84 70 Z' fill='C'/>",
     book: "<path d='M10 25 Q30 18 50 30 Q70 18 90 25 V80 Q70 73 50 85 Q30 73 10 80 Z' fill='C'/><path d='M50 30 V85' stroke='#fff' stroke-opacity='0.6' stroke-width='3'/>",
   };
+  // 도형으로 그림 만들기: 원, 사각형, 삼각형, 별, 고리를 위치와 크기, 색을 정해 겹쳐 놓습니다.
+  const SHAPES = { circle: "원", square: "사각형", triangle: "삼각형", star: "별", ring: "고리" };
+  const ART_MAX = 12;
+  function shapeSvg(item) {
+    const c = /^#[0-9a-f]{6}$/i.test(String(item.c)) ? item.c : "#111827";
+    const x = Number(item.x), y = Number(item.y), r = Number(item.s) / 2;
+    if (item.type === "circle") return `<circle cx='${x}' cy='${y}' r='${r}' fill='${c}'/>`;
+    if (item.type === "square") return `<rect x='${x - r}' y='${y - r}' width='${r * 2}' height='${r * 2}' fill='${c}'/>`;
+    if (item.type === "triangle") return `<polygon points='${x},${y - r} ${x + r},${y + r} ${x - r},${y + r}' fill='${c}'/>`;
+    if (item.type === "ring") return `<circle cx='${x}' cy='${y}' r='${r * 0.7}' fill='none' stroke='${c}' stroke-width='${Math.max(2, r * 0.3)}'/>`;
+    if (item.type === "star") {
+      const pts = [];
+      for (let i = 0; i < 10; i++) {
+        const rad = i % 2 === 0 ? r : r * 0.45;
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        pts.push(`${(x + rad * Math.cos(a)).toFixed(1)},${(y + rad * Math.sin(a)).toFixed(1)}`);
+      }
+      return `<polygon points='${pts.join(" ")}' fill='${c}'/>`;
+    }
+    return "";
+  }
+  function customArtSvg(art) {
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${art.map(shapeSvg).join("")}</svg>`;
+    return "data:image/svg+xml," + encodeURIComponent(svg).replace(/[()']/g, (m) => "%" + m.charCodeAt(0).toString(16).toUpperCase());
+  }
+  function cleanArt(list, accent) {
+    if (!Array.isArray(list)) return [];
+    return list.slice(0, ART_MAX).map((item) => ({
+      type: SHAPES[item?.type] ? item.type : "circle",
+      x: clamp(Number(item?.x), 0, 100, 50),
+      y: clamp(Number(item?.y), 0, 100, 50),
+      s: clamp(Number(item?.s), 4, 100, 30),
+      c: /^#[0-9a-f]{6}$/i.test(String(item?.c)) ? String(item.c) : accent,
+    }));
+  }
   function decoSvg(name, color) {
     const c = /^#[0-9a-f]{6}$/i.test(color) ? color : "#111827";
     if (!DECO_PATHS[name]) return "";
@@ -538,6 +580,7 @@
       overlay: 60,
       pattern: "none",
       deco: "none",
+      art: [],
     },
     sections: [
       { id: "hero", enabled: true },
@@ -619,6 +662,7 @@
     if (!SAFE_FONT.test(String(d.font ?? "")) || !Object.values(FONTS).some((f) => f.css === d.font)) d.font = FONTS.basic.css;
     if (!PATTERNS[d.pattern]) d.pattern = "none";
     if (!DECOS[d.deco]) d.deco = "none";
+    d.art = cleanArt(d.art, d.accent);
     s.site.heroBg = safeImageData(s.site.heroBg);
     d.radius = clamp(Number(d.radius), 0, 32, DEFAULT_STATE.design.radius);
     d.maxWidth = clamp(Number(d.maxWidth), 560, 960, DEFAULT_STATE.design.maxWidth);
@@ -769,7 +813,7 @@
       const pattern = bg ? "" : patternSvg(s.design.pattern, s.design.accent);
       const heroClass = bg ? "hero hero-bg" : pattern ? "hero hero-pattern" : "hero";
       const heroStyle = bg ? ` style="background-image:url(${bg});--ov:${clamp(Number(s.design.overlay), 0, 85, 60) / 100}"` : pattern ? ` style="background-image:url(${pattern})"` : "";
-      const deco = decoSvg(s.design.deco, s.design.accent);
+      const deco = s.design.deco === "custom" ? (s.design.art.length ? customArtSvg(s.design.art) : "") : decoSvg(s.design.deco, s.design.accent);
       return `<header class="${heroClass}" id="hero"${heroStyle}>
       ${deco ? `<img class="deco" src="${deco}" alt="">` : ""}
       ${logo ? `<img class="logo" src="${logo}" alt="${title} 로고">` : ""}
@@ -1563,6 +1607,22 @@ ${navHtml}
       </div>`).join("") || `<p class="hint">항목이 없습니다.</p>`;
   }
 
+  function renderArt() {
+    $("artList").innerHTML = state.design.art.map((item, i) => `
+      <div class="card">
+        <div class="row">
+          <select data-art="${i}" data-field="type">${Object.entries(SHAPES).map(([k, v]) => `<option value="${k}" ${item.type === k ? "selected" : ""}>${v}</option>`).join("")}</select>
+          <input type="color" data-art="${i}" data-field="c" value="${esc(item.c)}">
+        </div>
+        <div class="row">
+          <label>x <input type="number" min="0" max="100" data-art="${i}" data-field="x" value="${item.x}"></label>
+          <label>y <input type="number" min="0" max="100" data-art="${i}" data-field="y" value="${item.y}"></label>
+          <label>크기 <input type="number" min="4" max="100" data-art="${i}" data-field="s" value="${item.s}"></label>
+        </div>
+        <div style="margin-top:6px"><button type="button" class="danger" data-art-remove="${i}">이 도형 지우기</button></div>
+      </div>`).join("") || `<p class="hint">도형이 없습니다. "+ 도형 추가"를 누르세요.</p>`;
+  }
+
   function renderNews() {
     $("news").innerHTML = state.news.map((n, i) => `
       <div class="card">
@@ -1609,6 +1669,7 @@ ${navHtml}
     renderSections();
     renderProjects();
     renderNews();
+    renderArt();
     refresh();
   }
 
@@ -1638,6 +1699,11 @@ ${navHtml}
       refresh();
     } else if (el.dataset.project !== undefined) {
       state.projects[Number(el.dataset.project)][el.dataset.field] = el.value;
+      refresh();
+    } else if (el.dataset.art !== undefined) {
+      const item = state.design.art[Number(el.dataset.art)];
+      const field = el.dataset.field;
+      item[field] = field === "type" || field === "c" ? el.value : clamp(Number(el.value), field === "s" ? 4 : 0, field === "s" ? 100 : 100, 50);
       refresh();
     } else if (el.dataset.news !== undefined) {
       state.news[Number(el.dataset.news)][el.dataset.field] = el.value;
@@ -1695,6 +1761,15 @@ ${navHtml}
     }
     if (el.dataset.remove !== undefined) {
       state.projects.splice(Number(el.dataset.remove), 1);
+      return fullRender();
+    }
+    if (el.dataset.artRemove !== undefined) {
+      state.design.art.splice(Number(el.dataset.artRemove), 1);
+      return fullRender();
+    }
+    if (el.id === "addArt") {
+      if (state.design.art.length >= ART_MAX) { alert(`도형은 최대 ${ART_MAX}개까지 넣을 수 있습니다.`); return; }
+      state.design.art.push({ type: "circle", x: 50, y: 50, s: 40, c: state.design.accent });
       return fullRender();
     }
     if (el.dataset.newsRemove !== undefined) {
