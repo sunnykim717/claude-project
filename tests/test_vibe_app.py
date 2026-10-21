@@ -112,7 +112,7 @@ class CodePanelTest(unittest.TestCase):
 
     def test_github_button_only_when_configured(self):
         self.assertNotIn('id="github-link"', ba.build_html(_spec()))
-        github = ba.validate_github("내아이디/내저장소", "main", "index.html")
+        github = ba.validate_github("owner-name/repo-name", "main", "index.html")
         self.assertIn('id="github-link"', ba.build_html(_spec(), github))
 
     def test_github_settings_validated(self):
