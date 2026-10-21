@@ -75,6 +75,7 @@
     .brief-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px; }
     .brief { width: 100%; min-height: 320px; font-family: ui-monospace, monospace; font-size: 0.8rem; white-space: pre; }
     .hint { font-size: 0.8rem; color: var(--muted); margin: 4px 0 0; }
+    .gh-steps { margin: 6px 0; padding-left: 20px; } .gh-steps li { margin: 6px 0; }
     .gallery-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
     .gallery-list figure { margin: 0; font-size: 0.75rem; }
     .gallery-list img { width: 100%; height: 70px; object-fit: cover; border-radius: 6px; display: block; }
@@ -127,6 +128,16 @@
       <input type="file" id="galleryFileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
       <p class="hint" id="galleryState"></p>
       <div id="galleryList" class="gallery-list"></div>
+    </details>
+
+    <details open>
+      <summary>GitHub에 올리기 도우미 (선택)</summary>
+      <p class="hint">GitHub 계정이 있을 때만 필요합니다. 아이디와 비밀번호는 이 화면에 적지 않습니다. 아래 단계 버튼을 차례로 누르세요.</p>
+      <label for="ghUser">GitHub 아이디</label>
+      <input type="text" id="ghUser" placeholder="예: minsu-kim" autocomplete="off">
+      <label for="ghRepo">저장소 이름</label>
+      <input type="text" id="ghRepo" value="my-homepage" autocomplete="off">
+      <div id="ghLinks"></div>
     </details>
 
     <details class="advanced">
@@ -1833,6 +1844,28 @@ ${navHtml}
   $("logoFileInput").addEventListener("change", (e) => pickImageFile(e.target, "logo"));
   $("heroFileClear").addEventListener("click", () => { state.site.heroFile = ""; fullRender(); updateImageStatus(); });
   $("logoClear").addEventListener("click", () => { state.site.logo = ""; fullRender(); updateImageStatus(); });
+
+  function renderGithubHelper() {
+    const user = $("ghUser").value.trim();
+    const repo = $("ghRepo").value.trim();
+    const okUser = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(user);
+    const okRepo = /^[A-Za-z0-9._-]{1,100}$/.test(repo) && !/^\.+$/.test(repo);
+    if (!user && !repo) { $("ghLinks").innerHTML = ""; return; }
+    if (!okUser || !okRepo) {
+      $("ghLinks").innerHTML = '<p class="hint">아이디는 영문, 숫자, 하이픈(-)만 쓸 수 있습니다. 저장소 이름은 영문, 숫자, 점(.), 밑줄(_), 하이픈(-)만 쓸 수 있습니다.</p>';
+      return;
+    }
+    const base = `https://github.com/${user}/${repo}`;
+    $("ghLinks").innerHTML = `<ol class="gh-steps">
+      <li><a href="https://github.com/new?name=${repo}" target="_blank" rel="noopener">1. 저장소 만들기 (Public 으로 고르세요)</a></li>
+      <li><a href="${base}/upload/main" target="_blank" rel="noopener">2. 파일 올리기 (받은 index.html 을 끌어다 놓기)</a></li>
+      <li><a href="${base}/settings/pages" target="_blank" rel="noopener">3. 주소 켜기 (Source 를 Deploy from a branch, main, / (root) 로)</a></li>
+    </ol>
+    <p class="hint">완료되면 주소는 <code>https://${user}.github.io/${repo}/</code> 입니다. 몇 분 걸릴 수 있습니다.</p>`;
+  }
+  $("ghUser").addEventListener("input", renderGithubHelper);
+  $("ghRepo").addEventListener("input", renderGithubHelper);
+  renderGithubHelper();
 
   $("fillStarter").addEventListener("click", () => {
     if (!confirm("지금 적은 내용을 기본 구성으로 바꿉니다. 계속할까요? (되돌리기로 되돌릴 수 있습니다)")) return;
