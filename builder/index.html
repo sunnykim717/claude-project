@@ -35,6 +35,22 @@
     .row { display: flex; gap: 8px; align-items: center; }
     .grow { flex: 1; }
     .check { display: flex; align-items: center; color: var(--text); margin: 6px 0; font-size: 0.9rem; }
+    /* 질문 마법사: 한 화면에 질문 하나, 큰 버튼 */
+    .wiz-progress { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 4px 0 14px; }
+    .wiz-progress > div { height: 100%; background: var(--accent); transition: width 0.2s; }
+    .wiz-count { font-size: 0.85rem; color: var(--muted); margin: 0 0 6px; }
+    .wiz-q { font-size: 1.2rem; font-weight: 700; line-height: 1.4; margin: 0 0 12px; }
+    .wiz-note { font-size: 0.9rem; color: var(--muted); margin: 0 0 10px; }
+    .wiz-input { font-size: 1rem; padding: 12px; }
+    .wiz-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 6px 0 14px; }
+    .wiz-card { min-height: 64px; font-size: 1rem; font-weight: 600; border: 2px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); }
+    .wiz-card:hover { border-color: var(--accent); }
+    .wiz-nav { display: flex; gap: 8px; justify-content: space-between; margin: 10px 0 6px; flex-wrap: wrap; }
+    .wiz-btn { min-height: 48px; padding: 10px 18px; font-size: 1rem; border-radius: 10px; }
+    .wiz-result { font-size: 0.9rem; color: var(--ok); margin: 0 0 8px; }
+    .wiz-done { text-align: center; padding: 8px 0 4px; }
+    .wiz-done h3 { font-size: 1.2rem; margin: 6px 0 4px; }
+    .wiz-done .wiz-btn { width: 100%; margin-top: 8px; }
     .card { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin: 8px 0; }
     .sec-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
     .sec-row .grow { font-size: 0.9rem; }
@@ -978,26 +994,35 @@ ${navHtml}
 
   function renderWizard() {
     const box = $("wizardBox");
-    if (wizardStep >= WIZARD_STEPS.length) {
-      box.innerHTML = `<p>${wizardMessage}</p><p><strong>끝났습니다.</strong> 오른쪽 미리보기를 확인하고, 필요하면 칸을 직접 고치세요.</p>` +
-        '<div class="actions"><button type="button" data-wizard="restart">처음부터 다시</button></div>';
+    const total = WIZARD_STEPS.length;
+    if (wizardStep >= total) {
+      box.innerHTML = `<div class="wiz-done">` +
+        `<h3>완성되었습니다</h3>` +
+        `<p class="wiz-note">미리보기에서 모습을 확인하고, 마음에 들면 파일을 받으세요.</p>` +
+        `<button type="button" class="wiz-btn primary" data-wizard="preview">미리보기 보기</button>` +
+        `<button type="button" class="wiz-btn" data-wizard="download">홈페이지 파일 받기</button>` +
+        `<button type="button" class="wiz-btn" data-wizard="restart">처음부터 다시</button>` +
+        `</div>`;
       return;
     }
     const step = WIZARD_STEPS[wizardStep];
+    const percent = Math.round((wizardStep / total) * 100);
     let input = "";
     if (step.type === "choice") {
-      input = `<div class="actions">${step.options.map(([label], i) => `<button type="button" data-choice="${i}">${esc(label)}</button>`).join("")}</div>`;
+      input = `<div class="wiz-cards">${step.options.map(([label], i) => `<button type="button" class="wiz-card" data-choice="${i}">${esc(label)}</button>`).join("")}</div>`;
     } else if (step.type === "textarea") {
-      input = '<textarea id="wizardInput" rows="3"></textarea>';
+      input = '<textarea id="wizardInput" class="wiz-input" rows="4"></textarea>';
     } else {
-      input = `<input type="text" id="wizardInput" placeholder="${esc(step.placeholder || "")}">`;
+      input = `<input type="text" id="wizardInput" class="wiz-input" placeholder="${esc(step.placeholder || "")}">`;
     }
-    const nav = `<button type="button" data-wizard="skip">건너뛰기</button>` +
-      (wizardStep > 0 ? '<button type="button" data-wizard="prev">이전</button>' : "") +
-      (step.type === "choice" ? "" : '<button type="button" data-wizard="next" class="primary">다음</button>');
-    box.innerHTML = `<p class="hint">${wizardStep + 1} / ${WIZARD_STEPS.length}</p>` +
-      `<p>${wizardMessage}</p><p><strong>${esc(step.question)}</strong></p>${input}` +
-      `<div class="actions">${nav}</div>`;
+    const back = wizardStep > 0 ? '<button type="button" class="wiz-btn" data-wizard="prev">이전</button>' : "<span></span>";
+    const skip = '<button type="button" class="wiz-btn" data-wizard="skip">건너뛰기</button>';
+    const next = step.type === "choice" ? "" : '<button type="button" class="wiz-btn primary" data-wizard="next">다음</button>';
+    box.innerHTML = `<div class="wiz-progress"><div style="width:${percent}%"></div></div>` +
+      `<p class="wiz-count">${wizardStep + 1} / ${total}</p>` +
+      (wizardMessage ? `<p class="wiz-result">${wizardMessage}</p>` : "") +
+      `<p class="wiz-q">${esc(step.question)}</p>${input}` +
+      `<div class="wiz-nav">${back}<span>${skip}${next}</span></div>`;
   }
 
   function advanceWizard() {
@@ -1019,6 +1044,10 @@ ${navHtml}
       wizardStep = 0;
       wizardMessage = "";
       renderWizard();
+    } else if (action === "preview") {
+      document.querySelector(".preview").scrollIntoView({ behavior: "smooth" });
+    } else if (action === "download") {
+      $("download").click();
     } else if (action === "prev") {
       wizardStep -= 1;
       wizardMessage = "";
