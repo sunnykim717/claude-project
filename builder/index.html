@@ -184,6 +184,8 @@
         <p class="hint" id="heroBgState"></p>
         <label for="overlay">배경 사진 위 색 막 진하기 (<span id="overlayValue"></span>%)</label>
         <input type="range" id="overlay" min="0" max="85" step="5" data-bind="design.overlay">
+        <label for="pattern">그림 배경 (사진을 넣지 않을 때, 강조색을 따라 그려집니다)</label>
+        <select id="pattern" data-bind="design.pattern"></select>
         <label for="lang">페이지 언어</label>
         <select id="lang" data-bind="site.lang">
           <option value="ko">한국어 (ko)</option>
@@ -203,6 +205,11 @@
         </div>
         <label for="template">템플릿 (색, 글꼴, 모서리를 한 번에 정합니다)</label>
         <select id="template"></select>
+        <div class="row" style="margin-top:6px">
+          <button type="button" id="saveTemplate" class="grow">지금 디자인을 내 템플릿으로 저장</button>
+          <button type="button" id="deleteTemplate" class="danger">★ 내 템플릿 지우기</button>
+        </div>
+        <p class="hint">내 템플릿은 이 브라우저에만 저장됩니다. 다른 컴퓨터에서 쓰려면 작업 저장 파일에 디자인이 함께 들어 있으니 그 파일을 쓰세요.</p>
         <label for="font">글꼴</label>
         <select id="font" data-bind="design.font"></select>
         <label for="radius">모서리 반경 (0–32px)</label>
@@ -337,6 +344,63 @@
   };
   const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center" };
   const GALLERY_MAX = 12;
+  // 내 템플릿: 지금 디자인을 이름 붙여 저장합니다. 이 브라우저에만 저장되며, 저장 공간이 부족하면 알려 줍니다.
+  const CUSTOM_KEY = "vibe-homepage-custom-templates:v1";
+  const SAFE_FONT = /^[A-Za-z0-9 ,'\-]{1,200}$/;
+  function cleanCustomTemplates(raw) {
+    const out = {};
+    Object.entries(raw && typeof raw === "object" ? raw : {}).forEach(([key, item]) => {
+      if (!/^my-[a-z0-9]{1,24}$/.test(key) || !item || typeof item !== "object") return;
+      const hex = (v) => (/^#[0-9a-f]{6}$/i.test(String(v)) ? String(v) : null);
+      const accent = hex(item.accent), text = hex(item.text), bg = hex(item.bg);
+      if (!accent || !text || !bg || !SAFE_FONT.test(String(item.font ?? ""))) return;
+      out[key] = {
+        label: String(item.label ?? "내 템플릿").slice(0, 20), accent, text, bg, font: String(item.font),
+        radius: clamp(Number(item.radius), 0, 32, 8), look: LOOKS[item.look] ? item.look : "classic",
+        overlay: clamp(Number(item.overlay), 0, 85, 60), pattern: PATTERNS[item.pattern] ? item.pattern : "none",
+      };
+    });
+    return out;
+  }
+  function loadCustomTemplates() {
+    try {
+      return cleanCustomTemplates(JSON.parse(localStorage.getItem(CUSTOM_KEY) || "{}"));
+    } catch (e) {
+      return {};
+    }
+  }
+  function saveCustomTemplates(obj) {
+    try {
+      localStorage.setItem(CUSTOM_KEY, JSON.stringify(obj));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function allTemplates() {
+    return { ...TEMPLATES, ...loadCustomTemplates() };
+  }
+
+  // 그림 배경: 파일을 올리지 않고 고르는 무늬입니다. 강조색을 따라 그립니다.
+  const PATTERNS = {
+    none:   { label: "없음" },
+    dots:   { label: "점무늬" },
+    waves:  { label: "물결" },
+    stripes:{ label: "빗금" },
+    grid:   { label: "격자" },
+  };
+  function patternSvg(name, color) {
+    const c = /^#[0-9a-f]{6}$/i.test(color) ? color : "#111827";
+    const shapes = {
+      dots: `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><circle cx='4' cy='4' r='2' fill='${c}' fill-opacity='0.25'/></svg>`,
+      waves: `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='40'><path d='M0 20 Q15 0 30 20 T60 20 T90 20 T120 20' fill='none' stroke='${c}' stroke-opacity='0.25' stroke-width='3'/></svg>`,
+      stripes: `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><path d='M0 16 L16 0' stroke='${c}' stroke-opacity='0.2' stroke-width='3'/></svg>`,
+      grid: `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><path d='M32 0 H0 V32' fill='none' stroke='${c}' stroke-opacity='0.2'/></svg>`,
+    };
+    const svg = shapes[name];
+    if (!svg) return "";
+    return "data:image/svg+xml," + encodeURIComponent(svg).replace(/[()']/g, (m) => "%" + m.charCodeAt(0).toString(16).toUpperCase());
+  }
   // 기본 구성: 버튼 하나로 빈 틀을 채웁니다. [ ] 안의 글은 안내이므로 바꿔서 쓰세요.
   const STARTER = {
     about: "[여기에 기관이 하는 일과 설립 목적을 적어 주세요.]\n[대표 인사말이나 활동 연혁도 좋습니다.]",
@@ -410,6 +474,7 @@
       spacing: "normal",
       look: "classic",
       overlay: 60,
+      pattern: "none",
     },
     sections: [
       { id: "hero", enabled: true },
@@ -486,10 +551,11 @@
 
     const d = s.design;
     ["accent", "text", "bg"].forEach((k) => { if (!/^#[0-9a-f]{6}$/i.test(d[k])) d[k] = DEFAULT_STATE.design[k]; });
-    if (!TEMPLATES[d.template]) d.template = "minimal";
+    if (!allTemplates()[d.template]) d.template = "minimal";
     if (!SPACING[d.spacing]) d.spacing = "normal";
     if (!LOOKS[d.look]) d.look = "classic";
     d.overlay = clamp(Number(d.overlay), 0, 85, 60);
+    if (!PATTERNS[d.pattern]) d.pattern = "none";
     s.site.heroBg = safeImageData(s.site.heroBg);
     d.radius = clamp(Number(d.radius), 0, 32, DEFAULT_STATE.design.radius);
     d.maxWidth = clamp(Number(d.maxWidth), 560, 960, DEFAULT_STATE.design.maxWidth);
@@ -635,8 +701,9 @@
       const img = safeImageData(s.site.heroFile) || safeUrl(s.site.heroImage);
       const logo = safeImageData(s.site.logo);
       const bg = safeImageData(s.site.heroBg);
-      const heroClass = bg ? "hero hero-bg" : "hero";
-      const heroStyle = bg ? ` style="background-image:url(${bg});--ov:${clamp(Number(s.design.overlay), 0, 85, 60) / 100}"` : "";
+      const pattern = bg ? "" : patternSvg(s.design.pattern, s.design.accent);
+      const heroClass = bg ? "hero hero-bg" : pattern ? "hero hero-pattern" : "hero";
+      const heroStyle = bg ? ` style="background-image:url(${bg});--ov:${clamp(Number(s.design.overlay), 0, 85, 60) / 100}"` : pattern ? ` style="background-image:url(${pattern})"` : "";
       return `<header class="${heroClass}" id="hero"${heroStyle}>
       ${logo ? `<img class="logo" src="${logo}" alt="${title} 로고">` : ""}
       ${img ? `<img src="${img}" alt="${title} 대표 이미지">` : ""}
@@ -777,6 +844,7 @@
     .hero h1 { line-height: 1.3; }
     .hero img { display: block; width: 100%; height: auto; border-radius: var(--radius); margin-bottom: 16px; }
     .hero-bg { position: relative; overflow: hidden; color: #fff; background-size: cover; background-position: center; border-bottom: none; border-radius: var(--radius); padding-left: var(--gap); padding-right: var(--gap); min-height: 220px; display: flex; flex-direction: column; justify-content: center; }
+    .hero-pattern { border-bottom: none; border-radius: var(--radius); padding-left: var(--gap); padding-right: var(--gap); min-height: 180px; display: flex; flex-direction: column; justify-content: center; background-color: var(--bg); }
     .hero-bg::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, var(--ov, 0.45)); }
     .hero-bg > * { position: relative; }
     .hero-bg h1, .hero-bg .subtitle { color: #fff; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
@@ -1142,8 +1210,10 @@ ${navHtml}
   }
 
   function applyTemplateKey(key) {
-    const t = TEMPLATES[key];
+    const t = allTemplates()[key];
+    if (!t) return;
     Object.assign(state.design, { template: key, accent: t.accent, text: t.text, bg: t.bg, font: t.font, radius: t.radius });
+    if (t.look) Object.assign(state.design, { look: t.look, overlay: t.overlay, pattern: t.pattern });
   }
 
   function findColorName(line) {
@@ -1369,8 +1439,8 @@ ${navHtml}
   }
 
   function renderTemplates() {
-    $("templates").innerHTML = Object.entries(TEMPLATES).map(([key, t]) =>
-      `<button type="button" data-template="${key}" class="${key === state.design.template ? "primary" : ""}">${t.label}</button>`
+    $("templates").innerHTML = Object.entries(allTemplates()).map(([key, t]) =>
+      `<button type="button" data-template="${key}" class="${key === state.design.template ? "primary" : ""}">${key.startsWith("my-") ? "★ " : ""}${esc(t.label)}</button>`
     ).join("");
   }
 
@@ -1468,8 +1538,10 @@ ${navHtml}
   }
 
   function applyTemplate(key) {
-    const t = TEMPLATES[key];
+    const t = allTemplates()[key];
+    if (!t) return;
     Object.assign(state.design, { template: key, accent: t.accent, text: t.text, bg: t.bg, font: t.font, radius: t.radius });
+    if (t.look) Object.assign(state.design, { look: t.look, overlay: t.overlay, pattern: t.pattern });
     fullRender();
   }
 
@@ -1780,12 +1852,40 @@ ${navHtml}
   });
 
   // 템플릿과 글꼴 목록은 정의된 값으로 채웁니다.
-  $("template").innerHTML = Object.entries(TEMPLATES).map(([key, tpl]) => `<option value="${key}">${esc(tpl.label)}</option>`).join("");
+  function renderTemplateSelect() {
+    $("template").innerHTML = Object.entries(allTemplates()).map(([key, tpl]) => `<option value="${key}">${key.startsWith("my-") ? "★ " : ""}${esc(tpl.label)}</option>`).join("");
+    $("template").value = state.design.template;
+  }
+  renderTemplateSelect();
+  $("saveTemplate").addEventListener("click", () => {
+    const name = (prompt("이 디자인의 이름을 적어 주세요 (예: 우리 기관 색)") || "").trim().slice(0, 20);
+    if (!name) return;
+    const d = state.design;
+    const all = loadCustomTemplates();
+    all[`my-${Date.now().toString(36)}`] = { label: name, accent: d.accent, text: d.text, bg: d.bg, font: d.font, radius: d.radius, look: d.look, overlay: d.overlay, pattern: d.pattern };
+    if (!saveCustomTemplates(all)) { alert("저장 공간이 부족해 템플릿을 저장하지 못했습니다. 사진을 줄이거나 몇 개 지워 주세요."); return; }
+    renderTemplates();
+    renderTemplateSelect();
+    alert(`"${name}" 템플릿을 저장했습니다. ★ 표시로 다시 고를 수 있습니다.`);
+  });
+  $("deleteTemplate").addEventListener("click", () => {
+    const key = state.design.template;
+    if (!key.startsWith("my-")) { alert("기본 템플릿은 지울 수 없습니다. 지울 ★ 내 템플릿을 먼저 고르세요."); return; }
+    if (!confirm("이 내 템플릿을 지울까요? 지금 디자인은 그대로 남습니다.")) return;
+    const all = loadCustomTemplates();
+    delete all[key];
+    saveCustomTemplates(all);
+    state.design.template = "minimal";
+    renderTemplates();
+    renderTemplateSelect();
+    fullRender();
+  });
   $("template").addEventListener("change", (e) => {
     undoSnapshot = clone(state);
     applyTemplateKey(e.target.value);
     fullRender();
   });
+  $("pattern").innerHTML = Object.entries(PATTERNS).map(([key, item]) => `<option value="${key}">${esc(item.label)}</option>`).join("");
   $("look").innerHTML = Object.entries(LOOKS).map(([key, look]) => `<option value="${key}">${esc(look.label)}</option>`).join("");
   $("font").innerHTML = Object.values(FONTS).map((f) => `<option value="${esc(f.css)}">${esc(f.label)}</option>`).join("");
 
