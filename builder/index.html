@@ -201,6 +201,8 @@
         <input type="range" id="overlay" min="0" max="85" step="5" data-bind="design.overlay">
         <label for="pattern">그림 배경 (사진을 넣지 않을 때, 강조색을 따라 그려집니다)</label>
         <select id="pattern" data-bind="design.pattern"></select>
+        <label for="deco">장식 그림 (첫 화면 오른쪽 위)</label>
+        <select id="deco" data-bind="design.deco"></select>
         <label for="lang">페이지 언어</label>
         <select id="lang" data-bind="site.lang">
           <option value="ko">한국어 (ko)</option>
@@ -410,6 +412,31 @@
     checks: { label: "바둑판" },
     diagonal:{ label: "사선 물방울" },
   };
+  // 장식 그림: 첫 화면 오른쪽 위에 놓이는 작은 그림입니다. 강조색을 따라 그립니다.
+  const DECOS = {
+    none: { label: "없음" },
+    sun: { label: "해" },
+    leaf: { label: "나뭇잎" },
+    star: { label: "별" },
+    heart: { label: "하트" },
+    cloud: { label: "구름" },
+    book: { label: "책" },
+  };
+  const DECO_PATHS = {
+    sun: "<circle cx='50' cy='50' r='20' fill='C'/><g stroke='C' stroke-width='6' stroke-linecap='round'><path d='M50 8v12M50 80v12M8 50h12M80 50h12M19 19l8 8M73 73l8 8M19 81l8-8M73 27l8-8'/></g>",
+    leaf: "<path d='M20 80 C20 40 45 15 85 15 C85 55 60 80 20 80 Z' fill='C'/><path d='M20 80 L60 40' stroke='#fff' stroke-opacity='0.6' stroke-width='3' fill='none'/>",
+    star: "<path d='M50 8 L61 38 L93 38 L67 57 L77 88 L50 70 L23 88 L33 57 L7 38 L39 38 Z' fill='C'/>",
+    heart: "<path d='M50 85 C15 60 8 40 22 26 C34 14 48 22 50 34 C52 22 66 14 78 26 C92 40 85 60 50 85 Z' fill='C'/>",
+    cloud: "<path d='M25 70 C8 70 8 46 26 44 C28 26 52 22 60 38 C68 30 88 36 86 54 C98 56 96 70 84 70 Z' fill='C'/>",
+    book: "<path d='M10 25 Q30 18 50 30 Q70 18 90 25 V80 Q70 73 50 85 Q30 73 10 80 Z' fill='C'/><path d='M50 30 V85' stroke='#fff' stroke-opacity='0.6' stroke-width='3'/>",
+  };
+  function decoSvg(name, color) {
+    const c = /^#[0-9a-f]{6}$/i.test(color) ? color : "#111827";
+    if (!DECO_PATHS[name]) return "";
+    const shape = DECO_PATHS[name].split("C").join(c);
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${shape}</svg>`;
+    return "data:image/svg+xml," + encodeURIComponent(svg).replace(/[()']/g, (m) => "%" + m.charCodeAt(0).toString(16).toUpperCase());
+  }
   function patternSvg(name, color) {
     const c = /^#[0-9a-f]{6}$/i.test(color) ? color : "#111827";
     const shapes = {
@@ -510,6 +537,7 @@
       look: "classic",
       overlay: 60,
       pattern: "none",
+      deco: "none",
     },
     sections: [
       { id: "hero", enabled: true },
@@ -590,6 +618,7 @@
     d.overlay = clamp(Number(d.overlay), 0, 85, 60);
     if (!SAFE_FONT.test(String(d.font ?? "")) || !Object.values(FONTS).some((f) => f.css === d.font)) d.font = FONTS.basic.css;
     if (!PATTERNS[d.pattern]) d.pattern = "none";
+    if (!DECOS[d.deco]) d.deco = "none";
     s.site.heroBg = safeImageData(s.site.heroBg);
     d.radius = clamp(Number(d.radius), 0, 32, DEFAULT_STATE.design.radius);
     d.maxWidth = clamp(Number(d.maxWidth), 560, 960, DEFAULT_STATE.design.maxWidth);
@@ -740,7 +769,9 @@
       const pattern = bg ? "" : patternSvg(s.design.pattern, s.design.accent);
       const heroClass = bg ? "hero hero-bg" : pattern ? "hero hero-pattern" : "hero";
       const heroStyle = bg ? ` style="background-image:url(${bg});--ov:${clamp(Number(s.design.overlay), 0, 85, 60) / 100}"` : pattern ? ` style="background-image:url(${pattern})"` : "";
+      const deco = decoSvg(s.design.deco, s.design.accent);
       return `<header class="${heroClass}" id="hero"${heroStyle}>
+      ${deco ? `<img class="deco" src="${deco}" alt="">` : ""}
       ${logo ? `<img class="logo" src="${logo}" alt="${title} 로고">` : ""}
       ${img ? `<img src="${img}" alt="${title} 대표 이미지">` : ""}
       <h1>${title}</h1>${s.site.subtitle ? `\n      <p class="subtitle">${esc(s.site.subtitle)}</p>` : ""}
@@ -881,6 +912,8 @@
     .hero img { display: block; width: 100%; height: auto; border-radius: var(--radius); margin-bottom: 16px; }
     .hero-bg { position: relative; overflow: hidden; color: #fff; background-size: cover; background-position: center; border-bottom: none; border-radius: var(--radius); padding-left: var(--gap); padding-right: var(--gap); min-height: 220px; display: flex; flex-direction: column; justify-content: center; }
     .hero-pattern { border-bottom: none; border-radius: var(--radius); padding-left: var(--gap); padding-right: var(--gap); min-height: 180px; display: flex; flex-direction: column; justify-content: center; background-color: var(--bg); }
+    .hero { position: relative; }
+    .hero img.deco { position: absolute; right: 12px; top: 12px; width: 84px; height: 84px; margin: 0; opacity: 0.9; border-radius: 0; }
     .hero-bg::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, var(--ov, 0.45)); }
     .hero-bg > * { position: relative; }
     .hero-bg h1, .hero-bg .subtitle { color: #fff; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
@@ -1981,6 +2014,7 @@ ${navHtml}
     applyTemplateKey(e.target.value);
     fullRender();
   });
+  $("deco").innerHTML = Object.entries(DECOS).map(([key, item]) => `<option value="${key}">${esc(item.label)}</option>`).join("");
   $("pattern").innerHTML = Object.entries(PATTERNS).map(([key, item]) => `<option value="${key}">${esc(item.label)}</option>`).join("");
   $("look").innerHTML = Object.entries(LOOKS).map(([key, look]) => `<option value="${key}">${esc(look.label)}</option>`).join("");
   $("font").innerHTML = Object.values(FONTS).map((f) => `<option value="${esc(f.css)}">${esc(f.label)}</option>`).join("");
