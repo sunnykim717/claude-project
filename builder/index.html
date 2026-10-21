@@ -236,7 +236,8 @@
   <section class="preview">
     <div class="preview-bar">
       <div class="row">
-        <label for="viewport" style="margin:0">미리보기 너비</label>
+        <strong>미리보기</strong>
+        <label for="viewport" style="margin:0">너비</label>
         <select id="viewport">
           <option value="100%">데스크톱 (전체)</option>
           <option value="768px">태블릿 768px</option>
@@ -244,6 +245,7 @@
         </select>
       </div>
       <span class="hint" id="saveState"></span>
+      <button type="button" id="openPreview" title="완성된 모습을 새 탭에서 크게 봅니다.">새 창에서 크게 보기</button>
     </div>
     <div class="frame-wrap">
       <iframe class="preview-frame" id="frame" title="미리보기"></iframe>
@@ -1444,6 +1446,13 @@ ${navHtml}
       $("copyBrief").textContent = "복사됨";
     }
     setTimeout(() => { $("copyBrief").textContent = "명세서 복사"; }, 1500);
+  });
+
+  // 새 탭에서 완성된 모습을 봅니다. 파일을 만들지 않고 브라우저 안에서만 엽니다.
+  $("openPreview").addEventListener("click", () => {
+    const url = URL.createObjectURL(new Blob([buildHtml()], { type: "text/html;charset=utf-8" }));
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   });
 
   // 템플릿과 글꼴 목록은 정의된 값으로 채웁니다.
