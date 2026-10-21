@@ -33,8 +33,8 @@ jobs:
         run: python update_homepage.py
 
       - name: Commit changes
-        # PR 에서는 검사만 하고, 커밋은 main 에 반영될 때만 합니다.
-        if: github.event_name != 'pull_request'
+        # 커밋은 main 브랜치에서만 합니다. PR 과 기능 브랜치에서는 검사만 합니다.
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
