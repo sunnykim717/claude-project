@@ -16,6 +16,9 @@ NGO, 사회복지법인, 비영리 법인의 기관 소개와 후원 모금 홈�
 | `content/projects.json` | 주요 사업 목록 (제목, 날짜, 설명, 링크) |
 | `content/support.json` | 후원 안내 글, 후원 방법 목록, 영수증·사용 내역 안내 |
 | `content/news.json` | 소식 목록 (제목, 날짜, 설명, 링크) |
+| `content/transparency.json` | 투명성·재무 공개: 사업·재무 자료, 사업비 구성, 외부 확인 경로 |
+| `content/volunteer.json` | 자원봉사 안내: 활동 종류, 신청 방법 |
+| `content/privacy.json` | 개인정보 처리방침 (바닥글에 자동으로 링크됩니다) |
 | `content/contact.json` | 문의 글, 이메일, SNS 링크 |
 | `public/images/` | 그림 파일 (아직 페이지에 넣는 설정은 없습니다) |
 | `src/components/` | 머리글, 첫 화면, 바닥글의 모양 (`{{이름}}` 자리에 값이 들어갑니다) |

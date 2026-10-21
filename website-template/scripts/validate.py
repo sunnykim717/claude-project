@@ -13,7 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 # 이 템플릿이 만드는 페이지: 주소 -> 파일 이름
 PAGE_FILES = {"/": "index.html", "/about": "about.html", "/projects": "projects.html",
-              "/support": "support.html", "/news": "news.html", "/contact": "contact.html"}
+              "/support": "support.html", "/transparency": "transparency.html", "/news": "news.html",
+              "/volunteer": "volunteer.html", "/contact": "contact.html", "/privacy": "privacy.html"}
 ALLOWED_FONTS = {"system-ui", "serif", "mono"}
 SPACINGS = {"compact", "normal", "airy"}
 LAYOUTS = {"classic", "modern", "card", "minimal"}
@@ -42,7 +43,8 @@ FILES = {
     "site": "config/site.json", "nav": "config/navigation.json", "theme": "config/theme.json",
     "home": "content/home.json", "about": "content/about.json",
     "projects": "content/projects.json", "support": "content/support.json",
-    "news": "content/news.json", "contact": "content/contact.json",
+    "transparency": "content/transparency.json", "volunteer": "content/volunteer.json",
+    "privacy": "content/privacy.json", "news": "content/news.json", "contact": "content/contact.json",
 }
 
 
@@ -122,6 +124,15 @@ def validate(root):
     support = data["support"]
     if isinstance(support, dict):
         check_items(errors, "content/support.json", "후원 방법", support.get("ways", []))
+    transparency = data["transparency"]
+    if isinstance(transparency, dict):
+        check_items(errors, "content/transparency.json", "자료", transparency.get("reports", []))
+    volunteer = data["volunteer"]
+    if isinstance(volunteer, dict):
+        check_items(errors, "content/volunteer.json", "활동", volunteer.get("positions", []))
+    privacy = data["privacy"]
+    if isinstance(privacy, dict):
+        check_items(errors, "content/privacy.json", "항목", privacy.get("items", []))
 
     contact = data["contact"]
     if isinstance(contact, dict):

@@ -9,7 +9,8 @@
 
   var PAGE_FILES = {
     "/": "index.html", "/about": "about.html", "/projects": "projects.html",
-    "/support": "support.html", "/news": "news.html", "/contact": "contact.html"
+    "/support": "support.html", "/transparency": "transparency.html", "/news": "news.html",
+    "/volunteer": "volunteer.html", "/contact": "contact.html", "/privacy": "privacy.html"
   };
   var ALLOWED_FONTS = ["system-ui", "serif", "mono"];
   var SPACINGS = ["compact", "normal", "airy"];
@@ -19,7 +20,8 @@
     site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
     home: "content/home.json", about: "content/about.json",
     projects: "content/projects.json", support: "content/support.json",
-    news: "content/news.json", contact: "content/contact.json"
+    transparency: "content/transparency.json", volunteer: "content/volunteer.json",
+    privacy: "content/privacy.json", news: "content/news.json", contact: "content/contact.json"
   };
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -134,6 +136,12 @@
     if (isObject(news)) checkItems(errors, "content/news.json", "소식", news.items);
     var support = data.support;
     if (isObject(support)) checkItems(errors, "content/support.json", "후원 방법", support.ways);
+    var transparency = data.transparency;
+    if (isObject(transparency)) checkItems(errors, "content/transparency.json", "자료", transparency.reports);
+    var volunteer = data.volunteer;
+    if (isObject(volunteer)) checkItems(errors, "content/volunteer.json", "활동", volunteer.positions);
+    var privacy = data.privacy;
+    if (isObject(privacy)) checkItems(errors, "content/privacy.json", "항목", privacy.items);
 
     var contact = data.contact;
     if (isObject(contact)) {
@@ -205,6 +213,7 @@
       return '<li><a href="' + esc(social[pair[0]]) + '">' + pair[1] + "</a></li>";
     });
     if (links.length) lines.push('<ul class="links">' + links.join("") + "</ul>");
+    lines.push('<p><a href="privacy.html">개인정보 처리방침</a></p>');
     return fill(files["src/components/Footer.html"], { name: esc(site.name), contact: lines.join("") });
   }
 
@@ -274,6 +283,24 @@
     if (support.notice) supportMain += block("안내", '<p class="pre">' + esc(support.notice) + "</p>");
     page("support.html", support.title, supportMain, support.body);
     page("news.html", data.news.title, block(data.news.title, projectArticles(data.news.items || [])), data.news.title);
+    var transparency = data.transparency;
+    page("transparency.html", transparency.title,
+      block(transparency.title, '<p class="pre">' + esc(transparency.body) + "</p>") +
+      block("사업 · 재무 자료", projectArticles(transparency.reports || [])) +
+      block("사업비 구성", '<p class="pre">' + esc(transparency.costs) + "</p>") +
+      block("외부 확인", '<p class="pre">' + esc(transparency.disclosure) + "</p>"),
+      transparency.body);
+    var volunteer = data.volunteer;
+    page("volunteer.html", volunteer.title,
+      block(volunteer.title, '<p class="pre">' + esc(volunteer.body) + "</p>") +
+      block("활동 종류", projectArticles(volunteer.positions || [])) +
+      block("신청 방법", '<p class="pre">' + esc(volunteer.apply) + "</p>"),
+      volunteer.body);
+    var privacy = data.privacy;
+    page("privacy.html", privacy.title,
+      block(privacy.title, '<p class="pre">' + esc(privacy.body) + "</p>") +
+      block("처리 항목", projectArticles(privacy.items || [])),
+      privacy.body);
     page("contact.html", data.contact.title,
       block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body);
     return pages;

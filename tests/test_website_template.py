@@ -77,7 +77,8 @@ class GenerateTest(unittest.TestCase):
         with _Copy() as root:
             out = root / "dist"
             self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
-            for name in ("index.html", "about.html", "projects.html", "support.html", "news.html", "contact.html"):
+            for name in ("index.html", "about.html", "projects.html", "support.html", "transparency.html",
+                         "news.html", "volunteer.html", "contact.html", "privacy.html"):
                 self.assertTrue((out / name).exists(), name)
             about = (out / "about.html").read_text(encoding="utf-8")
             self.assertIn('href="projects.html"', about)

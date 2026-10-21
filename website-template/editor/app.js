@@ -4,7 +4,8 @@
   var KEY_FILES = {
     site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
     home: "content/home.json", about: "content/about.json", projects: "content/projects.json",
-    support: "content/support.json", news: "content/news.json", contact: "content/contact.json"
+    support: "content/support.json", transparency: "content/transparency.json", volunteer: "content/volunteer.json",
+    privacy: "content/privacy.json", news: "content/news.json", contact: "content/contact.json"
   };
   var THEME_KEYS = ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout"];
   var PATH_HELP = [
@@ -13,6 +14,9 @@
     "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
     "about.title / about.body",
     "support.title / support.body / support.notice, support.ways.번호.title / .summary",
+    "transparency.title / transparency.body / transparency.costs / transparency.disclosure, transparency.reports.번호.title / .summary",
+    "volunteer.title / volunteer.body / volunteer.apply, volunteer.positions.번호.title / .summary",
+    "privacy.title / privacy.body, privacy.items.번호.title / .summary",
     "news.title, news.items.번호.title / .date / .summary / .url",
     "projects.title, projects.items.번호.title / .date / .summary / .url",
     "contact.title / contact.body / contact.email, contact.social.github / .instagram / .youtube",

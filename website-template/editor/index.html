@@ -91,7 +91,8 @@
 
   var PAGE_FILES = {
     "/": "index.html", "/about": "about.html", "/projects": "projects.html",
-    "/support": "support.html", "/news": "news.html", "/contact": "contact.html"
+    "/support": "support.html", "/transparency": "transparency.html", "/news": "news.html",
+    "/volunteer": "volunteer.html", "/contact": "contact.html", "/privacy": "privacy.html"
   };
   var ALLOWED_FONTS = ["system-ui", "serif", "mono"];
   var SPACINGS = ["compact", "normal", "airy"];
@@ -101,7 +102,8 @@
     site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
     home: "content/home.json", about: "content/about.json",
     projects: "content/projects.json", support: "content/support.json",
-    news: "content/news.json", contact: "content/contact.json"
+    transparency: "content/transparency.json", volunteer: "content/volunteer.json",
+    privacy: "content/privacy.json", news: "content/news.json", contact: "content/contact.json"
   };
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -216,6 +218,12 @@
     if (isObject(news)) checkItems(errors, "content/news.json", "소식", news.items);
     var support = data.support;
     if (isObject(support)) checkItems(errors, "content/support.json", "후원 방법", support.ways);
+    var transparency = data.transparency;
+    if (isObject(transparency)) checkItems(errors, "content/transparency.json", "자료", transparency.reports);
+    var volunteer = data.volunteer;
+    if (isObject(volunteer)) checkItems(errors, "content/volunteer.json", "활동", volunteer.positions);
+    var privacy = data.privacy;
+    if (isObject(privacy)) checkItems(errors, "content/privacy.json", "항목", privacy.items);
 
     var contact = data.contact;
     if (isObject(contact)) {
@@ -287,6 +295,7 @@
       return '<li><a href="' + esc(social[pair[0]]) + '">' + pair[1] + "</a></li>";
     });
     if (links.length) lines.push('<ul class="links">' + links.join("") + "</ul>");
+    lines.push('<p><a href="privacy.html">개인정보 처리방침</a></p>');
     return fill(files["src/components/Footer.html"], { name: esc(site.name), contact: lines.join("") });
   }
 
@@ -356,6 +365,24 @@
     if (support.notice) supportMain += block("안내", '<p class="pre">' + esc(support.notice) + "</p>");
     page("support.html", support.title, supportMain, support.body);
     page("news.html", data.news.title, block(data.news.title, projectArticles(data.news.items || [])), data.news.title);
+    var transparency = data.transparency;
+    page("transparency.html", transparency.title,
+      block(transparency.title, '<p class="pre">' + esc(transparency.body) + "</p>") +
+      block("사업 · 재무 자료", projectArticles(transparency.reports || [])) +
+      block("사업비 구성", '<p class="pre">' + esc(transparency.costs) + "</p>") +
+      block("외부 확인", '<p class="pre">' + esc(transparency.disclosure) + "</p>"),
+      transparency.body);
+    var volunteer = data.volunteer;
+    page("volunteer.html", volunteer.title,
+      block(volunteer.title, '<p class="pre">' + esc(volunteer.body) + "</p>") +
+      block("활동 종류", projectArticles(volunteer.positions || [])) +
+      block("신청 방법", '<p class="pre">' + esc(volunteer.apply) + "</p>"),
+      volunteer.body);
+    var privacy = data.privacy;
+    page("privacy.html", privacy.title,
+      block(privacy.title, '<p class="pre">' + esc(privacy.body) + "</p>") +
+      block("처리 항목", projectArticles(privacy.items || [])),
+      privacy.body);
     page("contact.html", data.contact.title,
       block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body);
     return pages;
@@ -380,12 +407,15 @@
 <script>
 const DEFAULT_FILES = {
   "config/site.json": "{\n  \"name\": \"○○ 비영리 단체\",\n  \"description\": \"비영리 단체의 활동과 후원을 안내하는 홈페이지\",\n  \"language\": \"ko\",\n  \"domain\": \"\"\n}\n",
-  "config/navigation.json": "[\n  {\n    \"label\": \"홈\",\n    \"path\": \"/\"\n  },\n  {\n    \"label\": \"기관소개\",\n    \"path\": \"/about\"\n  },\n  {\n    \"label\": \"주요사업\",\n    \"path\": \"/projects\"\n  },\n  {\n    \"label\": \"후원안내\",\n    \"path\": \"/support\"\n  },\n  {\n    \"label\": \"소식\",\n    \"path\": \"/news\"\n  },\n  {\n    \"label\": \"문의\",\n    \"path\": \"/contact\"\n  }\n]\n",
+  "config/navigation.json": "[\n  {\n    \"label\": \"홈\",\n    \"path\": \"/\"\n  },\n  {\n    \"label\": \"기관소개\",\n    \"path\": \"/about\"\n  },\n  {\n    \"label\": \"주요사업\",\n    \"path\": \"/projects\"\n  },\n  {\n    \"label\": \"후원안내\",\n    \"path\": \"/support\"\n  },\n  {\n    \"label\": \"투명성\",\n    \"path\": \"/transparency\"\n  },\n  {\n    \"label\": \"소식\",\n    \"path\": \"/news\"\n  },\n  {\n    \"label\": \"자원봉사\",\n    \"path\": \"/volunteer\"\n  },\n  {\n    \"label\": \"문의\",\n    \"path\": \"/contact\"\n  }\n]\n",
   "config/theme.json": "{\n  \"primaryColor\": \"#15803D\",\n  \"backgroundColor\": \"#F7FEF9\",\n  \"textColor\": \"#14532D\",\n  \"font\": \"system-ui\",\n  \"radius\": 10,\n  \"spacing\": \"normal\",\n  \"layout\": \"classic\"\n}\n",
   "content/home.json": "{\n  \"hero\": {\n    \"title\": \"함께 만드는 더 나은 세상\",\n    \"subtitle\": \"○○ 비영리 단체는 필요한 곳에 따뜻한 손길을 전합니다\",\n    \"buttonText\": \"후원하기\",\n    \"buttonLink\": \"/support\"\n  },\n  \"intro\": \"우리 단체가 하는 일과 함께하는 방법을 소개합니다. 단체의 활동 소개를 여기에 적어 주세요.\"\n}\n",
   "content/about.json": "{\n  \"title\": \"기관 소개\",\n  \"body\": \"단체의 설립 목적, 활동 대상, 주요 성과를 여기에 적어 주세요. 확인된 사실만 적어 주세요.\"\n}\n",
   "content/projects.json": "{\n  \"title\": \"주요 사업\",\n  \"items\": [\n    {\n      \"title\": \"사업 이름\",\n      \"date\": \"2026-01-15\",\n      \"summary\": \"사업 대상과 내용을 한두 문장으로 적어 주세요.\",\n      \"url\": \"\"\n    }\n  ]\n}\n",
   "content/support.json": "{\n  \"title\": \"후원 안내\",\n  \"body\": \"여러분의 후원이 우리 단체의 활동을 이어 가는 힘이 됩니다. 후원금이 어디에 쓰이는지 여기에 적어 주세요.\",\n  \"ways\": [\n    {\n      \"title\": \"정기 후원\",\n      \"summary\": \"매월 일정한 금액을 후원해 주세요. 신청 방법을 적어 주세요.\"\n    },\n    {\n      \"title\": \"일시 후원\",\n      \"summary\": \"원하실 때 한 번 후원하실 수 있습니다. 방법을 적어 주세요.\"\n    }\n  ],\n  \"notice\": \"기부금 영수증 발급 방법과 후원금 사용 내역 공개 방법을 여기에 적어 주세요. 확인된 내용만 적어 주세요.\"\n}\n",
+  "content/transparency.json": "{\n  \"title\": \"투명성 · 재무 공개\",\n  \"body\": \"단체의 재정과 사업 내용을 연도별로 공개합니다. 자료는 확인된 것만 올려 주세요.\",\n  \"reports\": [\n    {\n      \"title\": \"연간 사업보고서\",\n      \"date\": \"\",\n      \"summary\": \"사업 내용과 성과를 정리한 보고서를 연도별로 올려 주세요.\",\n      \"url\": \"\"\n    },\n    {\n      \"title\": \"재무제표 · 감사보고서\",\n      \"date\": \"\",\n      \"summary\": \"외부 감사를 거친 재무 자료를 올려 주세요.\",\n      \"url\": \"\"\n    }\n  ],\n  \"costs\": \"사업비, 관리비, 모금비의 비율을 실제 수치로 적어 주세요.\",\n  \"disclosure\": \"국세청 공익법인 공시 등 외부에서 확인할 수 있는 경로를 안내해 주세요.\"\n}\n",
+  "content/volunteer.json": "{\n  \"title\": \"자원봉사 안내\",\n  \"body\": \"함께 봉사해 주실 분을 기다립니다. 활동 종류와 시간, 교육 내용을 확인하고 신청해 주세요.\",\n  \"positions\": [\n    {\n      \"title\": \"방과후 학습 도우미\",\n      \"date\": \"\",\n      \"summary\": \"활동 시간, 교육 내용, 필요한 자격을 적어 주세요.\",\n      \"url\": \"\"\n    },\n    {\n      \"title\": \"행사 진행 봉사\",\n      \"date\": \"\",\n      \"summary\": \"행사 날짜와 활동 내용을 적어 주세요.\",\n      \"url\": \"\"\n    }\n  ],\n  \"apply\": \"신청 방법과 문의처를 적어 주세요.\"\n}\n",
+  "content/privacy.json": "{\n  \"title\": \"개인정보 처리방침\",\n  \"body\": \"단체는 후원과 문의에 필요한 최소한의 개인정보만 처리합니다. 아래 내용을 실제 운영 방식에 맞게 고쳐 주세요.\",\n  \"items\": [\n    {\n      \"title\": \"수집 항목\",\n      \"date\": \"\",\n      \"summary\": \"실제로 받는 항목을 적어 주세요. 예: 이름, 연락처, 이메일\",\n      \"url\": \"\"\n    },\n    {\n      \"title\": \"수집 목적\",\n      \"date\": \"\",\n      \"summary\": \"예: 후원금 영수증 발급, 문의 응대\",\n      \"url\": \"\"\n    },\n    {\n      \"title\": \"보유 기간\",\n      \"date\": \"\",\n      \"summary\": \"목적을 달성한 뒤 보관하는 기간을 적어 주세요.\",\n      \"url\": \"\"\n    },\n    {\n      \"title\": \"문의처\",\n      \"date\": \"\",\n      \"summary\": \"개인정보 담당자 연락처를 적어 주세요.\",\n      \"url\": \"\"\n    }\n  ]\n}\n",
   "content/news.json": "{\n  \"title\": \"소식\",\n  \"items\": [\n    {\n      \"title\": \"새 소식 제목\",\n      \"date\": \"2026-01-15\",\n      \"summary\": \"소식 내용을 한두 문장으로 적어 주세요.\",\n      \"url\": \"\"\n    }\n  ]\n}\n",
   "content/contact.json": "{\n  \"title\": \"문의 · 자원봉사 · 참여\",\n  \"body\": \"후원, 자원봉사, 협력 문의는 아래 이메일로 연락해 주세요.\",\n  \"email\": \"hello@example.com\",\n  \"social\": {\n    \"github\": \"\",\n    \"instagram\": \"\",\n    \"youtube\": \"\"\n  }\n}\n",
   "src/components/Header.html": "<header class=\"site-header\">\n  <a class=\"brand\" href=\"index.html\">{{brand}}<\/a>\n  <nav aria-label=\"페이지 메뉴\">\n    <ul>{{links}}<\/ul>\n  <\/nav>\n<\/header>\n",
@@ -502,7 +532,8 @@ const DESIGNS = {
   var KEY_FILES = {
     site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
     home: "content/home.json", about: "content/about.json", projects: "content/projects.json",
-    support: "content/support.json", news: "content/news.json", contact: "content/contact.json"
+    support: "content/support.json", transparency: "content/transparency.json", volunteer: "content/volunteer.json",
+    privacy: "content/privacy.json", news: "content/news.json", contact: "content/contact.json"
   };
   var THEME_KEYS = ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout"];
   var PATH_HELP = [
@@ -511,6 +542,9 @@ const DESIGNS = {
     "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
     "about.title / about.body",
     "support.title / support.body / support.notice, support.ways.번호.title / .summary",
+    "transparency.title / transparency.body / transparency.costs / transparency.disclosure, transparency.reports.번호.title / .summary",
+    "volunteer.title / volunteer.body / volunteer.apply, volunteer.positions.번호.title / .summary",
+    "privacy.title / privacy.body, privacy.items.번호.title / .summary",
     "news.title, news.items.번호.title / .date / .summary / .url",
     "projects.title, projects.items.번호.title / .date / .summary / .url",
     "contact.title / contact.body / contact.email, contact.social.github / .instagram / .youtube",

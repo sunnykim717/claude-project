@@ -99,6 +99,7 @@ def footer_html(root, site, contact):
              for key, name in social_names if (contact.get("social") or {}).get(key)]
     if links:
         lines.append(f'<ul class="links">{"".join(links)}</ul>')
+    lines.append('<p><a href="privacy.html">개인정보 처리방침</a></p>')
     return fill(read_part(root, "src/components/Footer.html"), {
         "name": esc(site["name"]),
         "contact": "".join(lines),
@@ -176,6 +177,24 @@ def build_pages(root, data):
     news = data["news"]
     page("news.html", news["title"],
          block(news["title"], project_articles(news.get("items", []))), news["title"])
+    transparency = data["transparency"]
+    page("transparency.html", transparency["title"],
+         block(transparency["title"], f'<p class="pre">{esc(transparency["body"])}</p>')
+         + block("사업 · 재무 자료", project_articles(transparency.get("reports", [])))
+         + block("사업비 구성", f'<p class="pre">{esc(transparency["costs"])}</p>')
+         + block("외부 확인", f'<p class="pre">{esc(transparency["disclosure"])}</p>'),
+         transparency["body"])
+    volunteer = data["volunteer"]
+    page("volunteer.html", volunteer["title"],
+         block(volunteer["title"], f'<p class="pre">{esc(volunteer["body"])}</p>')
+         + block("활동 종류", project_articles(volunteer.get("positions", [])))
+         + block("신청 방법", f'<p class="pre">{esc(volunteer["apply"])}</p>'),
+         volunteer["body"])
+    privacy = data["privacy"]
+    page("privacy.html", privacy["title"],
+         block(privacy["title"], f'<p class="pre">{esc(privacy["body"])}</p>')
+         + block("처리 항목", project_articles(privacy.get("items", []))),
+         privacy["body"])
     page("contact.html", contact["title"],
          block(contact["title"], f'<p class="pre">{esc(contact["body"])}</p>'),
          contact["body"])
