@@ -90,5 +90,51 @@ class MainTest(unittest.TestCase):
             self.assertEqual(ba.main([str(bad), "--out", str(Path(d) / "x.html")]), 1)
 
 
+class CodePanelTest(unittest.TestCase):
+    def test_copy_source_is_page_without_panel(self):
+        page = ba.build_html(_spec())
+        self.assertIn('id="source"', page)
+        # 상자 안의 코드는 상자 자체를 뺀 페이지여야 합니다.
+        source = html_unescape(page.split('id="source" readonly rows="8" aria-label="페이지 코드">')[1].split("</textarea>")[0])
+        self.assertTrue(source.startswith("<!doctype html>"))
+        self.assertNotIn('id="code-panel"', source)
+        self.assertNotIn('id="source"', source)
+
+    def test_copy_source_has_no_user_input(self):
+        page = ba.build_html(_spec())
+        source = html_unescape(page.split('aria-label="페이지 코드">')[1].split("</textarea>")[0])
+        self.assertNotIn("홍길동", source)
+
+    def test_download_and_copy_buttons_present(self):
+        page = ba.build_html(_spec())
+        self.assertIn('id="copy-code"', page)
+        self.assertIn('id="download-code"', page)
+
+    def test_github_button_only_when_configured(self):
+        self.assertNotIn('id="github-link"', ba.build_html(_spec()))
+        github = ba.validate_github("내아이디/내저장소", "main", "index.html")
+        self.assertIn('id="github-link"', ba.build_html(_spec(), github))
+
+    def test_github_settings_validated(self):
+        with self.assertRaises(ValueError):
+            ba.validate_github("bad repo", "main", "index.html")
+        with self.assertRaises(ValueError):
+            ba.validate_github("a/b", "main; rm", "index.html")
+        with self.assertRaises(ValueError):
+            ba.validate_github("a/b", "main", "../index.html")
+        self.assertIsNone(ba.validate_github(None, "main", "index.html"))
+
+    def test_github_repo_and_path_embedded_as_json(self):
+        github = ba.validate_github("a/b", "main", "site/index.html")
+        page = ba.build_html(_spec(), github)
+        self.assertIn('"repo": "a/b"', page)
+        self.assertIn('"path": "site/index.html"', page)
+
+
+def html_unescape(text):
+    import html as _html
+    return _html.unescape(text)
+
+
 if __name__ == "__main__":
     unittest.main()

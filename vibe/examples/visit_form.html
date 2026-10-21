@@ -14,7 +14,7 @@
     .field { margin-bottom: 14px; }
     label { display: block; font-weight: 600; margin-bottom: 4px; }
     input, select, textarea { width: 100%; padding: 9px; font: inherit; border: 1px solid #94a3b8; border-radius: 6px; background: #ffffff; color: #0f172a; }
-    input:focus, select:focus, textarea:focus, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     .err { color: var(--err); font-size: 0.9rem; margin: 4px 0 0; min-height: 0; }
     .err:empty { display: none; }
     button { padding: 10px 18px; font: inherit; font-weight: 700; border: 0; border-radius: 6px; background: var(--accent); color: #ffffff; cursor: pointer; }
@@ -23,6 +23,12 @@
     dt { font-weight: 600; margin-top: 8px; }
     dd { margin: 2px 0 0 0; }
     [hidden] { display: none !important; }
+    .code-panel { margin-top: 32px; border-top: 1px solid #cbd5e1; padding-top: 12px; }
+    .code-panel summary { cursor: pointer; font-weight: 600; }
+    .code-panel textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 0.8rem; margin-top: 8px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .secondary { background: #ffffff; color: var(--accent); border: 1px solid var(--accent); }
+    .hint { color: var(--muted); font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -63,6 +69,159 @@
     <dl id="summary"></dl>
     <button type="button" id="again">다시 입력</button>
   </section>
+  
+  <details id="code-panel" class="code-panel">
+    <summary>코드 가져가기</summary>
+    <p class="hint">아래 코드를 복사해서 <code>index.html</code> 로 저장하면 이 페이지가 그대로 동작합니다. 입력 내용은 들어 있지 않습니다.</p>
+    <textarea id="source" readonly rows="8" aria-label="페이지 코드">&lt;!doctype html&gt;
+&lt;html lang=&quot;ko&quot;&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;utf-8&quot;&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+  &lt;title&gt;방문 신청 페이지&lt;/title&gt;
+  &lt;style&gt;
+    :root { color-scheme: light dark; --accent: #2563eb; --err: #b91c1c; --muted: #64748b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; line-height: 1.6; background: #ffffff; color: #0f172a; }
+    main { max-width: 560px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 1.5rem; margin: 12px 0 4px; }
+    .goal { color: var(--muted); margin: 0 0 16px; }
+    .field { margin-bottom: 14px; }
+    label { display: block; font-weight: 600; margin-bottom: 4px; }
+    input, select, textarea { width: 100%; padding: 9px; font: inherit; border: 1px solid #94a3b8; border-radius: 6px; background: #ffffff; color: #0f172a; }
+    input:focus, select:focus, textarea:focus, button:focus-visible, summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .err { color: var(--err); font-size: 0.9rem; margin: 4px 0 0; min-height: 0; }
+    .err:empty { display: none; }
+    button { padding: 10px 18px; font: inherit; font-weight: 700; border: 0; border-radius: 6px; background: var(--accent); color: #ffffff; cursor: pointer; }
+    .rules { color: var(--muted); font-size: 0.9rem; padding-left: 18px; }
+    dl { margin: 12px 0; }
+    dt { font-weight: 600; margin-top: 8px; }
+    dd { margin: 2px 0 0 0; }
+    [hidden] { display: none !important; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;main&gt;
+  &lt;section id=&quot;form-view&quot;&gt;
+    &lt;h1&gt;방문 신청 페이지&lt;/h1&gt;
+    &lt;p class=&quot;goal&quot;&gt;방문을 원하는 사람이 날짜와 인원을 적어 신청하고, 신청이 접수되었다는 안내를 보는 페이지입니다.&lt;/p&gt;
+    &lt;form id=&quot;form&quot; novalidate&gt;
+    &lt;div class=&quot;field&quot;&gt;&lt;label for=&quot;f1&quot;&gt;이름 *&lt;/label&gt;
+      &lt;input type=&quot;text&quot; id=&quot;f1&quot; name=&quot;f1&quot; aria-describedby=&quot;f1-err&quot; required&gt;
+      &lt;p class=&quot;err&quot; id=&quot;f1-err&quot; role=&quot;alert&quot;&gt;&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&quot;field&quot;&gt;&lt;label for=&quot;f2&quot;&gt;연락 이메일 *&lt;/label&gt;
+      &lt;input type=&quot;email&quot; id=&quot;f2&quot; name=&quot;f2&quot; aria-describedby=&quot;f2-err&quot; required&gt;
+      &lt;p class=&quot;err&quot; id=&quot;f2-err&quot; role=&quot;alert&quot;&gt;&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&quot;field&quot;&gt;&lt;label for=&quot;f3&quot;&gt;연락처&lt;/label&gt;
+      &lt;input type=&quot;tel&quot; id=&quot;f3&quot; name=&quot;f3&quot; aria-describedby=&quot;f3-err&quot;&gt;
+      &lt;p class=&quot;err&quot; id=&quot;f3-err&quot; role=&quot;alert&quot;&gt;&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&quot;field&quot;&gt;&lt;label for=&quot;f4&quot;&gt;방문 날짜 *&lt;/label&gt;
+      &lt;input type=&quot;date&quot; id=&quot;f4&quot; name=&quot;f4&quot; aria-describedby=&quot;f4-err&quot; required&gt;
+      &lt;p class=&quot;err&quot; id=&quot;f4-err&quot; role=&quot;alert&quot;&gt;&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&quot;field&quot;&gt;&lt;label for=&quot;f5&quot;&gt;방문 인원 *&lt;/label&gt;
+      &lt;input type=&quot;number&quot; id=&quot;f5&quot; name=&quot;f5&quot; aria-describedby=&quot;f5-err&quot; required min=&quot;1&quot; max=&quot;20&quot;&gt;
+      &lt;p class=&quot;err&quot; id=&quot;f5-err&quot; role=&quot;alert&quot;&gt;&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&quot;field&quot;&gt;&lt;label for=&quot;f6&quot;&gt;방문 목적 *&lt;/label&gt;
+      &lt;select id=&quot;f6&quot; name=&quot;f6&quot; aria-describedby=&quot;f6-err&quot; required&gt;&lt;option value=&quot;&quot;&gt;선택하세요&lt;/option&gt;&lt;option value=&quot;상담&quot;&gt;상담&lt;/option&gt;&lt;option value=&quot;견학&quot;&gt;견학&lt;/option&gt;&lt;option value=&quot;기타&quot;&gt;기타&lt;/option&gt;&lt;/select&gt;
+      &lt;p class=&quot;err&quot; id=&quot;f6-err&quot; role=&quot;alert&quot;&gt;&lt;/p&gt;&lt;/div&gt;
+    &lt;div class=&quot;field&quot;&gt;&lt;label for=&quot;f7&quot;&gt;요청 사항&lt;/label&gt;
+      &lt;textarea id=&quot;f7&quot; name=&quot;f7&quot; aria-describedby=&quot;f7-err&quot; rows=&quot;3&quot;&gt;&lt;/textarea&gt;
+      &lt;p class=&quot;err&quot; id=&quot;f7-err&quot; role=&quot;alert&quot;&gt;&lt;/p&gt;&lt;/div&gt;
+      &lt;button type=&quot;submit&quot;&gt;제출&lt;/button&gt;
+    &lt;/form&gt;
+    &lt;ul class=&quot;rules&quot;&gt;&lt;li&gt;방문 날짜는 오늘보다 이전으로 고를 수 없습니다.&lt;/li&gt;&lt;li&gt;방문 인원은 1명 이상 20명 이하여야 합니다.&lt;/li&gt;&lt;li&gt;필수 입력이 비어 있으면 제출 버튼을 누를 때 빨간 안내 문구를 보여 줍니다.&lt;/li&gt;&lt;li&gt;제출하면 &amp;#x27;접수 완료&amp;#x27; 화면으로 이동하고, 입력한 이름과 방문 날짜를 함께 보여 줍니다.&lt;/li&gt;&lt;/ul&gt;
+  &lt;/section&gt;
+
+  &lt;section id=&quot;done-view&quot; hidden&gt;
+    &lt;h1&gt;접수 완료&lt;/h1&gt;
+    &lt;p class=&quot;goal&quot;&gt;제출되었습니다. 입력한 내용은 이 브라우저 화면에서만 보입니다.&lt;/p&gt;
+    &lt;dl id=&quot;summary&quot;&gt;&lt;/dl&gt;
+    &lt;button type=&quot;button&quot; id=&quot;again&quot;&gt;다시 입력&lt;/button&gt;
+  &lt;/section&gt;
+  
+&lt;/main&gt;
+
+&lt;script&gt;
+  const FIELDS = [{&quot;id&quot;: &quot;f1&quot;, &quot;label&quot;: &quot;이름&quot;, &quot;type&quot;: &quot;text&quot;, &quot;required&quot;: true, &quot;options&quot;: [], &quot;min&quot;: null, &quot;max&quot;: null, &quot;minToday&quot;: false}, {&quot;id&quot;: &quot;f2&quot;, &quot;label&quot;: &quot;연락 이메일&quot;, &quot;type&quot;: &quot;email&quot;, &quot;required&quot;: true, &quot;options&quot;: [], &quot;min&quot;: null, &quot;max&quot;: null, &quot;minToday&quot;: false}, {&quot;id&quot;: &quot;f3&quot;, &quot;label&quot;: &quot;연락처&quot;, &quot;type&quot;: &quot;phone&quot;, &quot;required&quot;: false, &quot;options&quot;: [], &quot;min&quot;: null, &quot;max&quot;: null, &quot;minToday&quot;: false}, {&quot;id&quot;: &quot;f4&quot;, &quot;label&quot;: &quot;방문 날짜&quot;, &quot;type&quot;: &quot;date&quot;, &quot;required&quot;: true, &quot;options&quot;: [], &quot;min&quot;: null, &quot;max&quot;: null, &quot;minToday&quot;: true}, {&quot;id&quot;: &quot;f5&quot;, &quot;label&quot;: &quot;방문 인원&quot;, &quot;type&quot;: &quot;number&quot;, &quot;required&quot;: true, &quot;options&quot;: [], &quot;min&quot;: 1, &quot;max&quot;: 20, &quot;minToday&quot;: false}, {&quot;id&quot;: &quot;f6&quot;, &quot;label&quot;: &quot;방문 목적&quot;, &quot;type&quot;: &quot;select&quot;, &quot;required&quot;: true, &quot;options&quot;: [&quot;상담&quot;, &quot;견학&quot;, &quot;기타&quot;], &quot;min&quot;: null, &quot;max&quot;: null, &quot;minToday&quot;: false}, {&quot;id&quot;: &quot;f7&quot;, &quot;label&quot;: &quot;요청 사항&quot;, &quot;type&quot;: &quot;textarea&quot;, &quot;required&quot;: false, &quot;options&quot;: [], &quot;min&quot;: null, &quot;max&quot;: null, &quot;minToday&quot;: false}];
+  const form = document.getElementById(&quot;form&quot;);
+  const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const PHONE = /^[0-9+\-() ]{7,20}$/;
+  const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+  function todayIso() {
+    const d = new Date();
+    const pad = (n) =&gt; String(n).padStart(2, &quot;0&quot;);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  function messageFor(field, raw) {
+    const value = raw.trim();
+    if (!value) return field.required ? &quot;필수 입력입니다.&quot; : &quot;&quot;;
+    if (field.type === &quot;email&quot; &amp;&amp; !EMAIL.test(value)) return &quot;이메일 형식이 올바르지 않습니다.&quot;;
+    if (field.type === &quot;phone&quot; &amp;&amp; !PHONE.test(value)) return &quot;전화번호 형식이 올바르지 않습니다. 숫자와 하이픈을 사용해 주세요.&quot;;
+    if (field.type === &quot;date&quot;) {
+      if (!DATE.test(value)) return &quot;날짜는 YYYY-MM-DD 형식으로 입력해 주세요.&quot;;
+      if (field.minToday &amp;&amp; value &lt; todayIso()) return &quot;오늘보다 이전 날짜는 고를 수 없습니다.&quot;;
+    }
+    if (field.type === &quot;number&quot;) {
+      const n = Number(value);
+      if (Number.isNaN(n)) return &quot;숫자를 입력해 주세요.&quot;;
+      if (field.min !== null &amp;&amp; n &lt; field.min) return `${field.min} 이상이어야 합니다.`;
+      if (field.max !== null &amp;&amp; n &gt; field.max) return `${field.max} 이하여야 합니다.`;
+    }
+    return &quot;&quot;;
+  }
+
+  form.addEventListener(&quot;submit&quot;, (event) =&gt; {
+    event.preventDefault();
+    let firstInvalid = null;
+    for (const field of FIELDS) {
+      const el = document.getElementById(field.id);
+      const message = messageFor(field, el.value);
+      document.getElementById(field.id + &quot;-err&quot;).textContent = message;
+      el.setAttribute(&quot;aria-invalid&quot;, message ? &quot;true&quot; : &quot;false&quot;);
+      if (message &amp;&amp; !firstInvalid) firstInvalid = el;
+    }
+    if (firstInvalid) {
+      firstInvalid.focus();
+      return;
+    }
+    showSummary();
+  });
+
+  function showSummary() {
+    const summary = document.getElementById(&quot;summary&quot;);
+    summary.replaceChildren();
+    for (const field of FIELDS) {
+      const value = document.getElementById(field.id).value.trim();
+      const dt = document.createElement(&quot;dt&quot;);
+      dt.textContent = field.label;
+      const dd = document.createElement(&quot;dd&quot;);
+      dd.textContent = value || &quot;-&quot;;
+      summary.append(dt, dd);
+    }
+    document.getElementById(&quot;form-view&quot;).hidden = true;
+    document.getElementById(&quot;done-view&quot;).hidden = false;
+  }
+
+  document.getElementById(&quot;again&quot;).addEventListener(&quot;click&quot;, () =&gt; {
+    form.reset();
+    document.querySelectorAll(&quot;.err&quot;).forEach((el) =&gt; { el.textContent = &quot;&quot;; });
+    document.getElementById(&quot;done-view&quot;).hidden = true;
+    document.getElementById(&quot;form-view&quot;).hidden = false;
+  });
+
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+</textarea>
+    <div class="actions">
+      <button type="button" id="copy-code">코드 복사</button>
+      <button type="button" id="download-code" class="secondary">index.html 로 내려받기</button>
+      
+    </div>
+    <p id="code-msg" class="hint" role="status"></p>
+  </details>
 </main>
 
 <script>
@@ -96,16 +255,12 @@
     return "";
   }
 
-  function valueOf(el) {
-    return el.value;
-  }
-
   form.addEventListener("submit", (event) => {
     event.preventDefault();
     let firstInvalid = null;
     for (const field of FIELDS) {
       const el = document.getElementById(field.id);
-      const message = messageFor(field, valueOf(el));
+      const message = messageFor(field, el.value);
       document.getElementById(field.id + "-err").textContent = message;
       el.setAttribute("aria-invalid", message ? "true" : "false");
       if (message && !firstInvalid) firstInvalid = el;
@@ -121,7 +276,7 @@
     const summary = document.getElementById("summary");
     summary.replaceChildren();
     for (const field of FIELDS) {
-      const value = valueOf(document.getElementById(field.id)).trim();
+      const value = document.getElementById(field.id).value.trim();
       const dt = document.createElement("dt");
       dt.textContent = field.label;
       const dd = document.createElement("dd");
@@ -130,7 +285,6 @@
     }
     document.getElementById("form-view").hidden = true;
     document.getElementById("done-view").hidden = false;
-    document.getElementById("done-view").querySelector("h1").focus?.();
   }
 
   document.getElementById("again").addEventListener("click", () => {
@@ -139,6 +293,49 @@
     document.getElementById("done-view").hidden = true;
     document.getElementById("form-view").hidden = false;
   });
+
+  const copyBtn = document.getElementById("copy-code");
+  const source = document.getElementById("source");
+  const codeMsg = document.getElementById("code-msg");
+  const GITHUB = null;
+
+  copyBtn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(source.value);
+      codeMsg.textContent = "코드를 복사했습니다. index.html 파일에 붙여 넣어 저장하세요.";
+    } catch (err) {
+      source.focus();
+      source.select();
+      const ok = document.execCommand("copy");
+      codeMsg.textContent = ok
+        ? "코드를 복사했습니다. index.html 파일에 붙여 넣어 저장하세요."
+        : "복사하지 못했습니다. 코드 상자를 눌러 직접 선택한 뒤 복사해 주세요.";
+    }
+  });
+
+  document.getElementById("download-code").addEventListener("click", () => {
+    const blob = new Blob([source.value], { type: "text/html;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "index.html";
+    link.click();
+    URL.revokeObjectURL(link.href);
+    codeMsg.textContent = "index.html 을 내려받았습니다. GitHub 에 올릴 때는 '파일 추가 → 파일 업로드'를 쓰세요.";
+  });
+
+  const githubBtn = document.getElementById("github-link");
+  if (githubBtn && GITHUB) {
+    githubBtn.addEventListener("click", () => {
+      const url = `https://github.com/${GITHUB.repo}/new/${GITHUB.branch}`
+        + `?filename=${encodeURIComponent(GITHUB.path)}&value=${encodeURIComponent(source.value)}`;
+      if (url.length > 7000) {
+        codeMsg.textContent = "코드가 길어 링크로 보낼 수 없습니다. '코드 복사'를 누른 뒤 GitHub 에서 붙여 넣어 주세요.";
+        return;
+      }
+      window.open(url, "_blank", "noopener");
+      codeMsg.textContent = "GitHub 새 파일 화면을 열었습니다. 그 화면에서 Commit 을 눌러 저장하세요.";
+    });
+  }
 </script>
 </body>
 </html>
