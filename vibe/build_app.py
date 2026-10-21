@@ -252,6 +252,13 @@ def _saved_html(save):
       <button type="button" id="download-csv" class="secondary">CSV 로 내려받기</button>
       <button type="button" id="clear-saved" class="secondary">저장 목록 모두 지우기</button>
     </div>
+    <div class="actions">
+      <button type="button" id="make-backup" class="secondary">백업 파일 만들기</button>
+      <button type="button" id="share-backup" class="secondary">백업 파일 보내기</button>
+      <button type="button" id="restore-backup" class="secondary">백업 파일 불러오기</button>
+      <input type="file" id="restore-file" accept="application/json,.json" hidden>
+    </div>
+    <p class="hint">백업 파일은 이 기기의 기록을 모두 담은 파일입니다. 다른 기기에서 불러오면 기록이 합쳐집니다. 같은 기록은 한 번만 들어갑니다.</p>
     <p id="saved-msg" class="hint" role="status"></p>
   </details>"""
 
@@ -393,6 +400,80 @@ def _saved_js(save):
     renderRecords();
   });
 
+  function backupFile() {
+    const text = JSON.stringify({
+      format: "vibe-app-backup",
+      version: 1,
+      app: APP_NAME,
+      exportedAt: new Date().toISOString(),
+      records: loadRecords(),
+    }, null, 2);
+    const name = `${APP_NAME}-백업-${new Date().toISOString().slice(0, 10)}.json`;
+    return new File([text], name, { type: "application/json" });
+  }
+
+  document.getElementById("make-backup").addEventListener("click", () => {
+    const file = backupFile();
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(file);
+    link.download = file.name;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    savedMsg.textContent = "백업 파일을 내려받았습니다. 이 파일을 보내거나 다른 기기에서 불러오세요.";
+  });
+
+  document.getElementById("share-backup").addEventListener("click", async () => {
+    const file = backupFile();
+    if (!navigator.canShare || !navigator.canShare({ files: [file] })) {
+      savedMsg.textContent = "이 브라우저에서는 바로 보내기를 쓸 수 없습니다. '백업 파일 만들기'로 받은 뒤 직접 보내 주세요.";
+      return;
+    }
+    try {
+      await navigator.share({ files: [file], title: file.name });
+      savedMsg.textContent = "백업 파일을 보냈습니다.";
+    } catch (err) {
+      if (err && err.name === "AbortError") return; // 사용자가 보내기를 취소한 경우
+      savedMsg.textContent = "보내지 못했습니다. '백업 파일 만들기'로 받은 뒤 직접 보내 주세요.";
+    }
+  });
+
+  document.getElementById("restore-backup").addEventListener("click", () => {
+    document.getElementById("restore-file").click();
+  });
+
+  document.getElementById("restore-file").addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    event.target.value = "";
+    if (!file) return;
+    let backup = null;
+    try {
+      backup = JSON.parse(await file.text());
+    } catch (err) {
+      savedMsg.textContent = "백업 파일을 읽을 수 없습니다. 이 페이지에서 만든 백업 파일인지 확인해 주세요.";
+      return;
+    }
+    if (!backup || backup.format !== "vibe-app-backup" || !Array.isArray(backup.records)) {
+      savedMsg.textContent = "이 페이지의 백업 파일이 아닙니다.";
+      return;
+    }
+    const current = loadRecords();
+    const seen = new Set(current.map((r) => r.at + JSON.stringify(r.data)));
+    let added = 0;
+    for (const r of backup.records) {
+      if (!r || typeof r.at !== "string" || !r.data || typeof r.data !== "object") continue;
+      const key = r.at + JSON.stringify(r.data);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      current.push({ at: r.at, data: r.data });
+      added++;
+    }
+    const note = backup.app && backup.app !== APP_NAME ? " (다른 신청 페이지의 백업입니다)" : "";
+    savedMsg.textContent = storeRecords(current)
+      ? `${added}건을 불러와 합쳤습니다.${note}`
+      : "이 브라우저에서는 저장할 수 없어 불러오지 못했습니다.";
+    renderRecords();
+  });
+
   renderRecords();"""
 
 
@@ -484,6 +565,7 @@ def _render(spec, panel_source=None, github=None):
   const FIELDS = {_json_for_script(all_configs)};
   const STEPS = {_json_for_script(steps)};
   const STORAGE_KEY = {_json_for_script("vibe-app:" + spec["name"])};
+  const APP_NAME = {_json_for_script(spec["name"])};
   const form = document.getElementById("form");
   const EMAIL = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
   const PHONE = /^[0-9+\\-() ]{{7,20}}$/;

@@ -631,6 +631,27 @@ ${navHtml}
   // 소개, 연락처 같은 섹션을 "숨겨 줘", "보여 줘"로 켜고 끕니다.
   const SECTION_TOGGLE = /^(소개|연락처|SNS|버튼|프로젝트|소식)\s*(?:은|는)?\s*(숨겨|숨기|빼|안\s*보이|보여|보이게|넣어|표시)/;
   const SECTION_BY_WORD = { 소개: "about", 연락처: "contact", SNS: "social", 버튼: "cta", 프로젝트: "projects", 소식: "projects" };
+  // 자주 나오는 요청에 대해 미리 준비한 답변입니다. 이해하지 못한 줄에 가장 먼저 맞는 답을 보여 줍니다.
+  const SITUATION_ANSWERS = [
+    [/예쁘|멋지|귀엽|세련|디자인/, "디자인은 템플릿과 색으로 고를 수 있습니다. 예: 템플릿: 오션 / 강조색: 파랑"],
+    [/사진|이미지|그림/, "사진은 '대표 이미지' 칸에 https:// 주소를 넣어 주세요. 말로 적을 때는 빌더 화면의 '대표 이미지 URL' 칸을 쓰세요."],
+    [/로그인|회원가입|계정|비밀번호/, "회원 가입과 로그인은 지원하지 않습니다. 신청 내용은 이 기기에 저장하거나 CSV 로 받으세요."],
+    [/결제|송금|가격|돈|카드/, "결제 기능은 지원하지 않습니다. 금액 안내가 필요하면 소개 글이나 소식 항목에 적어 주세요."],
+    [/메일|이메일로|문자로|카톡|보내/, "자동 전송은 지원하지 않습니다. 제출 내용은 CSV 또는 백업 파일로 받아 직접 보내 주세요."],
+    [/저장|기록/, "저장은 명세의 save: true 로 켭니다. 저장된 내용은 이 기기에만 있으므로 백업 파일로 옮기세요."],
+    [/날짜|시간|요일/, "날짜는 2026-11-03 처럼, 시간은 14:30 처럼 적어 주세요. 예: 소식 추가: 행사 | 2026-11-03 | ..."],
+    [/글자|폰트 크기|크게|작게/, "글자 크기는 빌더에서 바꿀 수 없습니다. 글꼴은 '글꼴: 명조' 처럼 고를 수 있습니다."],
+    [/순서|먼저|나중|위로|아래로/, "소식은 날짜 순으로 정렬됩니다. 섹션 순서는 빌더 화면의 ▲▼ 버튼으로 바꿔 주세요."],
+    [/지우|삭제|빼|없애/, "지울 때는 '소식 삭제: 제목' 또는 '연락처 빼 줘' 처럼 적어 주세요."],
+    [/추가|넣어|더/, "추가할 때는 '소식 추가: 제목 | 날짜 | 요약 | 링크' 처럼 적어 주세요."],
+    [/https?:|www\./, "링크는 https:// 로 시작하는 주소로 적어 주세요. 예: 버튼: 문의하기 | https://example.com"],
+  ];
+  const GENERIC_ANSWER = "이해하지 못했습니다. 제목:, 소개:, 소개글:, 연락처:, 소식 추가:, 버튼:, 강조색: 중 하나로 다시 적어 보세요.";
+
+  function answerFor(line) {
+    const hit = SITUATION_ANSWERS.find(([pattern]) => pattern.test(line));
+    return hit ? hit[1] : GENERIC_ANSWER;
+  }
   const SOCIAL_BY_WORD = { 깃허브: "github", 깃헙: "github", github: "github", 인스타: "instagram", 인스타그램: "instagram", 유튜브: "youtube", youtube: "youtube", 이메일: "email" };
   let undoSnapshot = null;
 
@@ -776,7 +797,7 @@ ${navHtml}
     fullRender();
     const lines = [];
     if (applied.length) lines.push("<strong>적용됨</strong>", ...applied.map((x) => `✓ ${esc(x)}`));
-    if (notUnderstood.length) lines.push("<strong>이해하지 못한 줄</strong>", ...notUnderstood.map((x) => `! ${esc(x)}`));
+    if (notUnderstood.length) lines.push("<strong>이해하지 못한 줄</strong>", ...notUnderstood.flatMap((x) => [`! ${esc(x)}`, `&nbsp;&nbsp;→ ${esc(answerFor(x))}`]));
     if (notUnderstood.length) {
       lines.push("예: 제목:, 소개:, 소개글:, 연락처:, 강조색:, 글꼴:, 템플릿:, 소식 추가:, 버튼:, 인스타:, 모서리:, 여백:, 연락처 빼 줘");
     }

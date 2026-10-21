@@ -214,6 +214,20 @@ class MultiStepAndSaveTest(unittest.TestCase):
         self.assertIn("\\uFEFF", page)
 
 
+class BackupTest(unittest.TestCase):
+    def test_backup_controls_only_when_saving(self):
+        self.assertNotIn('id="make-backup"', ba.build_html(_spec()))
+        page = ba.build_html(_spec(save=True))
+        for control in ("make-backup", "share-backup", "restore-backup", "restore-file"):
+            self.assertIn(f'id="{control}"', page)
+
+    def test_backup_format_and_duplicate_guard_in_script(self):
+        page = ba.build_html(_spec(save=True))
+        self.assertIn('format: "vibe-app-backup"', page)
+        self.assertIn("const seen = new Set(", page)
+        self.assertIn('const APP_NAME = "방문 신청 페이지";', page)
+
+
 def mb_validate(spec):
     from vibe.make_brief import validate_spec
     return validate_spec(spec)
