@@ -51,6 +51,8 @@ python scripts/site_tool.py build --out dist
 | `content/projects.json` | 주요 사업 목록 (제목, 날짜, 설명, 링크) |
 | `content/support.json` | 후원 안내 글, 후원 방법 목록, 영수증·사용 내역 안내 |
 | `content/news.json` | 소식 목록 (제목, 날짜, 설명, 링크) |
+| `content/greetings.json`, `history.json`, `events.json`, `stories.json`, `library.json`, `faq.json`, `location.json` | 추가 페이지 (제목, 본문, 목록) |
+| `config/custom.css` | 직접 쓰는 CSS |
 | `content/transparency.json` | 투명성·재무 공개: 사업·재무 자료, 사업비 구성, 외부 확인 경로 |
 | `content/volunteer.json` | 자원봉사 안내: 활동 종류, 신청 방법 |
 | `content/privacy.json` | 개인정보 처리방침 (바닥글에 자동으로 링크됩니다) |
@@ -62,6 +64,25 @@ python scripts/site_tool.py build --out dist
 | `scripts/validate.py` | 설정과 콘텐츠가 맞는지 검사 |
 | `scripts/generate.py` | 검사 후 `dist/` 에 페이지 만들기 |
 | `.github/workflows/deploy.yml` | GitHub Pages 에 배포 (새 저장소의 루트로 복사해서 씁니다) |
+
+## 꾸미기 선택지
+
+| 무엇을 | 고를 수 있는 것 | 어디에 적나요? |
+| --- | --- | --- |
+| 디자인 한 번에 | 25가지 (`designs` 명령으로 목록 확인) | `design 이름` 또는 `new --design` |
+| 글꼴 | system-ui, sans, myeongjo, rounded, humanist, modern-latin, serif, classic-latin, mono | `theme.font` |
+| 여백 | tight, compact, normal, airy, spacious | `theme.spacing` |
+| 배치 | classic, modern, card, minimal, wide, bold | `theme.layout` |
+| 메뉴 모양 | row(가로), center(가운데), buttons(버튼), stack(세로) | `theme.menu` |
+| 배경 사진 | 사진 한 장 (배경색 위에 얇은 막) | `theme.backgroundImage` |
+| 로고 | 사진 한 장 (머리글 이름 앞) | `site.logo` |
+| 페이지 사진 | 대표 사진 한 장 + 갤러리 최대 12장 | 페이지의 `image`, `gallery` |
+| 페이지 | 기본 8개 + 추가 7개 (인사말, 연혁, 행사·캠페인, 활동 이야기, 자료실, 자주 묻는 질문, 오시는 길) | 메뉴에 `add-menu` |
+| 첫 화면 칸 순서 | intro, projects, news 중 골라 순서대로 | `home.sections` |
+| 직접 쓰는 CSS | 모든 페이지 맨 뒤에 붙음 | `config/custom.css` |
+
+- 메뉴 추가: `add-menu 오시는 길 | /location`, 삭제: `remove-menu 번호` (편집기와 `site_tool.py` 모두 가능)
+- 직접 쓰는 CSS 에는 `url(`, `@import`, `<` 를 쓸 수 없습니다. 배경 사진은 `theme.backgroundImage` 로 넣으세요.
 
 ## 설치 없이 쓰기 (편집기)
 
