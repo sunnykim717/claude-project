@@ -541,6 +541,27 @@
     meadow:   { label: "초원",     accent: "#4d7c0f", text: "#1a2e05", bg: "#f7fee7", font: "system-ui, sans-serif", radius: 12 },
     sunset:   { label: "노을",     accent: "#c2410c", text: "#431407", bg: "#fff7ed", font: "system-ui, sans-serif", radius: 22 },
     ink:      { label: "먹빛",     accent: "#111111", text: "#1f2937", bg: "#f5f5f4", font: "'Nanum Gothic', system-ui, sans-serif", radius: 0 },
+    mist: { label: "안개", accent: "#0891b2", text: "#164e63", bg: "#f0fdff", font: "system-ui, sans-serif", radius: 10 },
+    plum: { label: "자두", accent: "#86198f", text: "#4a044e", bg: "#fdf4ff", font: "system-ui, sans-serif", radius: 12 },
+    burgundy: { label: "버건디", accent: "#7f1d1d", text: "#450a0a", bg: "#fef2f2", font: "Batang, Georgia, serif", radius: 4 },
+    olive: { label: "올리브", accent: "#3f6212", text: "#1a2e05", bg: "#f7f9ec", font: "'Nanum Gothic', 'NanumGothic', 'Malgun Gothic', system-ui, sans-serif", radius: 6 },
+    lemon: { label: "레몬", accent: "#a16207", text: "#422006", bg: "#fefce8", font: "system-ui, sans-serif", radius: 16 },
+    vanilla: { label: "바닐라", accent: "#92400e", text: "#451a03", bg: "#fffdf7", font: "'Gowun Batang', Batang, Georgia, serif", radius: 8 },
+    charcoal: { label: "숯", accent: "#fbbf24", text: "#f8fafc", bg: "#1f2937", font: "system-ui, sans-serif", radius: 6 },
+    midnight: { label: "밤하늘", accent: "#a5b4fc", text: "#e0e7ff", bg: "#0b1020", font: "system-ui, sans-serif", radius: 12 },
+    celadon: { label: "청자", accent: "#0f766e", text: "#134e4a", bg: "#ecfdf5", font: "'Gowun Batang', Batang, Georgia, serif", radius: 14 },
+    apricot: { label: "살구", accent: "#ea580c", text: "#7c2d12", bg: "#fff7ed", font: "system-ui, sans-serif", radius: 18 },
+    wisteria: { label: "등나무", accent: "#7c3aed", text: "#2e1065", bg: "#f5f3ff", font: "'Gowun Dodum', 'Noto Sans KR', system-ui, sans-serif", radius: 16 },
+    blush: { label: "블러시", accent: "#be185d", text: "#500724", bg: "#fdf2f8", font: "system-ui, sans-serif", radius: 10 },
+    dandelion: { label: "민들레", accent: "#ca8a04", text: "#1c1917", bg: "#fefce8", font: "'Jua', 'Noto Sans KR', system-ui, sans-serif", radius: 20 },
+    forest3: { label: "숲속", accent: "#365314", text: "#1a2e05", bg: "#f7fee7", font: "'Nanum Myeongjo', 'Noto Serif KR', Georgia, serif", radius: 4 },
+    beach: { label: "해변", accent: "#0284c7", text: "#0c4a6e", bg: "#fefce3", font: "system-ui, sans-serif", radius: 14 },
+    ember: { label: "불씨", accent: "#fbbf24", text: "#fef3c7", bg: "#292524", font: "system-ui, sans-serif", radius: 8 },
+    ice: { label: "얼음", accent: "#0284c7", text: "#0c4a6e", bg: "#f0f9ff", font: "system-ui, sans-serif", radius: 6 },
+    cherry: { label: "체리", accent: "#b91c1c", text: "#450a0a", bg: "#fff5f5", font: "'Do Hyeon', 'Noto Sans KR', system-ui, sans-serif", radius: 6 },
+    pastel: { label: "파스텔", accent: "#6366f1", text: "#312e81", bg: "#fafaff", font: "'Jua', 'Noto Sans KR', system-ui, sans-serif", radius: 22 },
+    stone: { label: "돌", accent: "#57534e", text: "#292524", bg: "#fafaf9", font: "'Noto Sans KR', system-ui, sans-serif", radius: 2 },
+    grape: { label: "청포도", accent: "#4c1d95", text: "#2e1065", bg: "#ede9fe", font: "'Gowun Dodum', 'Noto Sans KR', system-ui, sans-serif", radius: 12 },
     teal:     { label: "청록",     accent: "#0e7490", text: "#083344", bg: "#ecfeff", font: "system-ui, sans-serif", radius: 10 },
     rose:     { label: "장미",     accent: "#9f1239", text: "#4c0519", bg: "#fff1f2", font: "Batang, Georgia, serif", radius: 4 },
     gold:     { label: "황금",     accent: "#92400e", text: "#451a03", bg: "#fffbeb", font: "Batang, Georgia, serif", radius: 2 },
@@ -702,7 +723,8 @@
     if (!SPACING[d.spacing]) d.spacing = "normal";
     if (!LOOKS[d.look]) d.look = "classic";
     d.overlay = clamp(Number(d.overlay), 0, 85, 60);
-    if (!SAFE_FONT.test(String(d.font ?? "")) || !Object.values(FONTS).some((f) => f.css === d.font)) d.font = FONTS.basic.css;
+    const knownFonts = [...Object.values(FONTS).map((f) => f.css), ...Object.values(TEMPLATES).map((x) => x.font)];
+    if (!SAFE_FONT.test(String(d.font ?? "")) || !knownFonts.includes(d.font)) d.font = FONTS.basic.css;
     if (!PATTERNS[d.pattern]) d.pattern = "none";
     if (!DECOS[d.deco]) d.deco = "none";
     d.art = cleanArt(d.art, d.accent);
@@ -1136,6 +1158,7 @@ ${navHtml}
     핑크: "#db2777", 검정: "#111827", 하양: "#ffffff", 하늘: "#0ea5e9",
   };
   const TEMPLATE_WORDS = {
+    안개: "mist", 자두: "plum", 버건디: "burgundy", 올리브: "olive", 레몬: "lemon", 바닐라: "vanilla", 숯: "charcoal", 밤하늘: "midnight", 청자: "celadon", 살구: "apricot", 등나무: "wisteria", 블러시: "blush", 민들레: "dandelion", 숲속: "forest3", 해변: "beach", 불씨: "ember", 얼음: "ice", 체리: "cherry", 파스텔: "pastel", 돌: "stone", 청포도: "grape",
     미니멀: "minimal", 심플: "minimal", 오션: "ocean", 바다: "ocean", 웜: "warm", 따뜻: "warm",
     나이트: "night", 다크: "night", 어둡: "night", 숲: "forest", 초록: "forest", 라벤더: "lavender",
     코랄: "coral", 분홍: "coral", 햇살: "sunny", 노랑: "sunny", 종이: "paper", 신문: "paper",
