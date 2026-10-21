@@ -1,0 +1,43 @@
+# 이 파일은 새 홈페이지 저장소의 루트 .github/workflows/ 에 복사해서 씁니다.
+# 설정을 검사하고 페이지를 만든 뒤 GitHub Pages 에 올립니다. 계정 외의 설치는 필요 없습니다.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 설정 검사
+        run: python scripts/validate.py
+      - name: 페이지 만들기
+        run: python scripts/generate.py --out dist
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

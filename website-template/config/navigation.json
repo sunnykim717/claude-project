@@ -1,0 +1,6 @@
+[
+  {"label": "홈", "path": "/"},
+  {"label": "기관소개", "path": "/about"},
+  {"label": "주요사업", "path": "/projects"},
+  {"label": "문의", "path": "/contact"}
+]
