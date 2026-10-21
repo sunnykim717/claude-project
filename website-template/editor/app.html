@@ -29,12 +29,20 @@
     .preview iframe { width: 100%; height: calc(100vh - 150px); min-height: 420px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
     @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } aside { max-height: none; border-right: 0; } .preview iframe { height: 70vh; } }
     .gallery-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+    .field { display: grid; gap: 4px; margin: 10px 0; font-size: 0.9rem; }
+    .field > span, .sub > span { font-weight: 600; }
+    .sub { display: grid; gap: 4px; margin: 6px 0; font-size: 0.85rem; }
+    .list-title { font-weight: 600; margin: 12px 0 4px; font-size: 0.9rem; }
+    .item { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin: 8px 0; }
+    .item legend { font-size: 0.85rem; color: var(--muted); padding: 0 4px; }
   </style>
 </head>
 <body>
 <header>
   <h1>홈페이지 편집기 (설치 없이, 명령어 입력 없이)</h1>
   <div class="row">
+    <button type="button" class="secondary" id="btn-folder">내 홈페이지 폴더 불러오기</button>
+    <input type="file" id="file-folder" webkitdirectory multiple hidden>
     <button type="button" class="secondary" id="btn-import">설정 불러오기</button>
     <input type="file" id="file-import" accept="application/json,.json" hidden>
     <button type="button" class="secondary" id="btn-export">설정 저장 (파일)</button>
@@ -50,6 +58,13 @@
 
 <div class="layout">
   <aside>
+    <section class="panel">
+      <h2>글 쓰기</h2>
+      <p class="hint">고를 페이지를 정하고 칸을 고치면 바로 저장됩니다. 줄 바꿈이 필요한 글도 여기서 씁니다.</p>
+      <select id="form-page" aria-label="글을 고칠 페이지"></select>
+      <div id="form-fields"></div>
+    </section>
+
     <section class="panel">
       <h2>명령 입력</h2>
       <p class="hint">명령을 적고 Enter 를 누르거나 <b>실행</b> 을 누르세요. 아래 버튼을 누르면 명령이 채워집니다.</p>

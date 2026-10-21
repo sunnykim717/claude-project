@@ -470,6 +470,198 @@
     URL.revokeObjectURL(link.href);
   }
 
+  // 글 쓰기 칸: 페이지 파일의 글과 목록을 입력 칸으로 보여 줍니다. 줄 바꿈이 필요한 글도 여기서 씁니다.
+  var FORM_SKIP = ["image", "imageAlt", "logo", "backgroundImage", "gallery", "sections"];
+  var FIELD_LABELS = {
+    title: "제목", body: "본문", intro: "소개 글", subtitle: "부제목", buttonText: "버튼 글", buttonLink: "버튼 주소",
+    name: "이름", description: "검색용 설명", language: "언어 (ko, en, ja)", email: "이메일",
+    notice: "안내", costs: "사업비 구성", disclosure: "외부 확인", apply: "신청 방법",
+    label: "메뉴 이름", path: "주소", github: "GitHub 주소", instagram: "Instagram 주소", youtube: "YouTube 주소",
+    summary: "설명", date: "날짜 (2026-01-15)", url: "관련 주소 (https:// 로 시작, 없으면 비움)"
+  };
+  var LONG_FIELDS = ["body", "intro", "notice", "costs", "disclosure", "apply", "summary", "description"];
+  var ITEM_KEYS = ["title", "date", "summary", "url"];
+
+  function isPlainObject(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function labelOf(key) {
+    return FIELD_LABELS[key] || key;
+  }
+
+  function getAt(data, path) {
+    return path.reduce(function (node, key) { return node[key]; }, data);
+  }
+
+  function setAt(data, path, value) {
+    getAt(data, path.slice(0, -1))[path[path.length - 1]] = value;
+  }
+
+  // 글 칸과 목록 칸을 찾습니다. 숫자나 사진 칸은 건너뜁니다.
+  function formNodes(obj, prefix) {
+    var nodes = [];
+    Object.keys(obj).forEach(function (key) {
+      if (FORM_SKIP.indexOf(key) !== -1) return;
+      var value = obj[key];
+      var path = prefix.concat([key]);
+      if (typeof value === "string") {
+        nodes.push({ kind: "text", path: path, key: key });
+      } else if (Array.isArray(value) && value.every(isPlainObject)) {
+        nodes.push({ kind: "list", path: path, key: key });
+      } else if (isPlainObject(value)) {
+        nodes = nodes.concat(formNodes(value, path));
+      }
+    });
+    return nodes;
+  }
+
+  // 한 번에 한 파일을 고치고 검사합니다. 틀리면 저장하지 않고 되돌립니다.
+  function editFile(file, mutate, message) {
+    commit(function (f) {
+      var data = JSON.parse(f[KEY_FILES[file]]);
+      mutate(data);
+      f[KEY_FILES[file]] = JSON.stringify(data, null, 2) + "\n";
+    }, message);
+  }
+
+  function inputFor(key, value) {
+    var input = LONG_FIELDS.indexOf(key) !== -1 ? document.createElement("textarea") : document.createElement("input");
+    if (input.tagName === "INPUT") input.type = "text";
+    input.value = typeof value === "string" ? value : "";
+    return input;
+  }
+
+  function textField(file, data, node) {
+    var label = document.createElement("label");
+    label.className = "field";
+    var caption = document.createElement("span");
+    caption.textContent = labelOf(node.key);
+    var input = inputFor(node.key, getAt(data, node.path));
+    input.addEventListener("change", function () {
+      editFile(file, function (d) { setAt(d, node.path, input.value); }, labelOf(node.key) + " 을(를) 고쳤습니다.");
+    });
+    label.append(caption, input);
+    return label;
+  }
+
+  function listField(file, data, node) {
+    var wrap = document.createElement("div");
+    wrap.className = "field";
+    var items = getAt(data, node.path);
+    var heading = document.createElement("p");
+    heading.className = "list-title";
+    heading.textContent = labelOf(node.key) + " (" + items.length + "개)";
+    wrap.append(heading);
+    items.forEach(function (item, index) {
+      var box = document.createElement("fieldset");
+      box.className = "item";
+      var legend = document.createElement("legend");
+      legend.textContent = (index + 1) + "번";
+      box.append(legend);
+      ITEM_KEYS.forEach(function (k) {
+        var row = document.createElement("label");
+        row.className = "sub";
+        var caption = document.createElement("span");
+        caption.textContent = labelOf(k);
+        var input = inputFor(k, item[k]);
+        input.addEventListener("change", function () {
+          editFile(file, function (d) { getAt(d, node.path)[index][k] = input.value; }, labelOf(k) + " 을(를) 고쳤습니다.");
+        });
+        row.append(caption, input);
+        box.append(row);
+      });
+      var remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "secondary";
+      remove.textContent = "이 항목 빼기";
+      remove.addEventListener("click", function () {
+        editFile(file, function (d) { getAt(d, node.path).splice(index, 1); }, labelOf(node.key) + " 에서 항목을 뺐습니다.");
+        renderForm();
+      });
+      box.append(remove);
+      wrap.append(box);
+    });
+    var add = document.createElement("button");
+    add.type = "button";
+    add.className = "secondary";
+    add.textContent = "항목 더하기";
+    add.addEventListener("click", function () {
+      editFile(file, function (d) { getAt(d, node.path).push({ title: "새 항목", date: "", summary: "", url: "" }); }, labelOf(node.key) + " 에 항목을 더했습니다.");
+      renderForm();
+    });
+    wrap.append(add);
+    return wrap;
+  }
+
+  function renderForm() {
+    var box = document.getElementById("form-fields");
+    var file = document.getElementById("form-page").value;
+    box.replaceChildren();
+    var data = JSON.parse(files[KEY_FILES[file]]);
+    formNodes(data, []).forEach(function (node) {
+      box.append(node.kind === "text" ? textField(file, data, node) : listField(file, data, node));
+    });
+  }
+
+  // 글 칸에 맞는 목록 이름을 채웁니다. 첫 화면과 기관 정보를 포함해 설정 파일 전부를 고를 수 있습니다.
+  function fillFormPages() {
+    var select = document.getElementById("form-page");
+    Object.keys(KEY_FILES).filter(function (key) { return key !== "nav" && key !== "theme"; }).forEach(function (key) {
+      select.add(new Option(PAGE_LABELS[key] || key, key));
+    });
+  }
+
+  // 미리보기 목록: 모든 페이지를 고를 수 있습니다.
+  function fillPreviewPages() {
+    var select = document.getElementById("page-select");
+    select.replaceChildren();
+    Object.keys(SCHEMA.pages).forEach(function (route) {
+      var file = SCHEMA.pages[route];
+      var key = route === "/" ? "home" : route.slice(1);
+      select.add(new Option(PAGE_LABELS[key] || file, file));
+    });
+  }
+
+  // 홈페이지 저장소 폴더를 통째로 불러와 이어서 고칩니다. 쓰는 파일만 골라 읽습니다.
+  var IMAGE_NAME = /\.(png|jpe?g|gif|webp)$/i;
+
+  function readFileAs(file, asDataUrl) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = function () { reject(reader.error); };
+      if (asDataUrl) reader.readAsDataURL(file);
+      else reader.readAsText(file, "utf-8");
+    });
+  }
+
+  function importFolder(picked) {
+    if (!window.confirm("지금 편집 중인 내용을 이 폴더의 내용으로 바꿉니다. 계속할까요?")) return;
+    var jobs = [];
+    Array.prototype.forEach.call(picked, function (file) {
+      var rel = (file.webkitRelativePath || file.name).split("/").slice(1).join("/");
+      if (IMAGE_NAME.test(rel) && rel.indexOf("public/images/") === 0) jobs.push({ rel: rel, file: file, asDataUrl: true });
+      else if (Object.prototype.hasOwnProperty.call(DEFAULT_FILES, rel)) jobs.push({ rel: rel, file: file, asDataUrl: false });
+    });
+    if (!jobs.length) return say("이 폴더에서 홈페이지 파일을 찾지 못했습니다. config 와 content 폴더가 들어 있는 저장소 폴더를 골라 주세요.", false);
+    Promise.all(jobs.map(function (job) {
+      return readFileAs(job.file, job.asDataUrl).then(function (value) { return { rel: job.rel, value: value }; });
+    })).then(function (results) {
+      var next = clone(DEFAULT_FILES);
+      results.forEach(function (r) { next[r.rel] = r.value; });
+      files = next;
+      var saved = persist();
+      var errors = validateCurrent();
+      render();
+      renderForm();
+      var text = "폴더를 불러왔습니다 (" + results.length + "개 파일).";
+      if (errors.length) text += "\n고칠 곳:\n- " + errors.join("\n- ");
+      if (!saved) text += "\n브라우저 저장 공간이 부족합니다. 설정 저장(파일)을 받아 두세요.";
+      say(text, !errors.length && saved);
+    }, function () { say("폴더의 파일을 읽지 못했습니다.", false); });
+  }
+
   function init() {
     var examples = document.getElementById("examples");
     EXAMPLES.forEach(function (cmd) {
@@ -491,21 +683,26 @@
     document.getElementById("btn-design").addEventListener("click", function () { applyDesign(select.value); });
 
     var pageSelect = document.getElementById("page-select");
-    ["index.html", "about.html", "projects.html", "contact.html"].forEach(function (name) {
-      var opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      pageSelect.append(opt);
-    });
+    fillPreviewPages();
     pageSelect.addEventListener("change", function () { currentPage = pageSelect.value; render(); });
 
+    fillFormPages();
+    document.getElementById("form-page").addEventListener("change", renderForm);
+    document.getElementById("btn-folder").addEventListener("click", function () { document.getElementById("file-folder").click(); });
+    document.getElementById("file-folder").addEventListener("change", function (event) {
+      var picked = Array.prototype.slice.call(event.target.files);
+      event.target.value = "";
+      if (picked.length) importFolder(picked);
+    });
+
     var command = document.getElementById("command");
-    document.getElementById("btn-run").addEventListener("click", function () { runCommand(command.value); render(); });
+    document.getElementById("btn-run").addEventListener("click", function () { runCommand(command.value); render(); renderForm(); });
     command.addEventListener("keydown", function (event) {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
         runCommand(command.value);
         render();
+        renderForm();
       }
     });
     document.getElementById("btn-help").addEventListener("click", function () { runCommand("help"); });
@@ -545,6 +742,7 @@
             files = merged;
             persist();
             render();
+            renderForm();
             say("설정을 불러왔습니다.", true);
           } else {
             say("이 파일은 홈페이지 설정이 아니거나 오류가 있습니다.", false);
@@ -560,6 +758,7 @@
       files = clone(DEFAULT_FILES);
       persist();
       render();
+      renderForm();
       say("처음 상태로 되돌렸습니다.", true);
     });
 
