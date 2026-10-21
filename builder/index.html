@@ -109,6 +109,7 @@
     <li>다 됐으면 <b>📄 홈페이지 파일 받기</b> 를 누르세요. 받은 파일을 더블클릭하면 브라우저에서 열립니다.</li>
     <li>내일 이어서 하려면 <b>💾 작업 저장</b> 으로 파일을 받아 두세요. 다시 열 때는 <b>📂 작업 불러오기</b> 로 그 파일을 고릅니다.</li>
   </ol>
+  <p class="next"><button type="button" id="fillStarter" class="primary">기본 구성 채우기 (안내 문구 포함)</button> 누르면 소개, 사업, 소식, 후원, 자원봉사, 오시는 길, 질문, 연락처 칸이 한 번에 채워집니다. [ ] 안의 글을 바꿔 쓰세요.</p>
   <p class="next">다음 단계: 내 GitHub 계정에 올리고 키우는 방법은 <a href="https://github.com/sunnykim717/claude-project/blob/main/website-template/docs/%EB%8B%A4%EC%9D%8C-%EB%8B%A8%EA%B3%84-%EB%82%98%EB%A7%8C%EC%9D%98-%ED%99%88%ED%8E%98%EC%9D%B4%EC%A7%80.md" target="_blank" rel="noopener">안내서 보기</a> 를 누르세요.</p>
 </div>
 
@@ -242,6 +243,12 @@
         <div id="projects"></div>
         <button id="addProject">+ 항목 추가</button>
       </details>
+      <details>
+        <summary>소식 목록 (자세한 내용과 사진 포함)</summary>
+        <p class="hint">소식은 날짜가 빠른 순이 아니라 최신 순으로 보입니다. "자세한 내용"을 적으면 제목을 눌러 펼쳐 볼 수 있습니다.</p>
+        <div id="news"></div>
+        <button id="addNews">+ 소식 추가</button>
+      </details>
 
       <details>
         <summary>버튼과 SNS 링크</summary>
@@ -322,6 +329,21 @@
   };
   const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center" };
   const GALLERY_MAX = 12;
+  // 기본 구성: 버튼 하나로 빈 틀을 채웁니다. [ ] 안의 글은 안내이므로 바꿔서 쓰세요.
+  const STARTER = {
+    about: "[여기에 기관이 하는 일과 설립 목적을 적어 주세요.]\n[대표 인사말이나 활동 연혁도 좋습니다.]",
+    projects: [
+      { title: "[사업 이름 1]", summary: "[사업 대상과 내용을 적어 주세요.]", url: "", date: "", tag: "사업", body: "", photo: "" },
+      { title: "[사업 이름 2]", summary: "[사업 대상과 내용을 적어 주세요.]", url: "", date: "", tag: "사업", body: "", photo: "" },
+      { title: "[사업 이름 3]", summary: "[사업 대상과 내용을 적어 주세요.]", url: "", date: "", tag: "사업", body: "", photo: "" },
+    ],
+    news: [{ title: "[첫 소식 제목]", date: "", summary: "[소식 내용을 적어 주세요. 날짜를 적으면 목록 순서가 자동으로 맞춰집니다.]", url: "", body: "", photo: "" }],
+    support: "[후원 방법과 계좌 안내를 적어 주세요.]\n[후원금을 어디에 쓰는지 함께 적으면 믿음이 커집니다.]",
+    volunteer: "[모집하는 봉사 활동과 신청 방법을 적어 주세요.]",
+    location: "[주소]\n[교통 안내 (버스, 지하철 등)]\n[운영 시간]",
+    faq: [{ q: "[자주 받는 질문]", a: "[답변을 적어 주세요.]" }],
+    contact: "[전화번호]\n[이메일]\n[운영 시간]",
+  };
 
   // 템플릿: 색, 글꼴, 모서리를 한 번에 정합니다. 이름은 "템플릿: 숲" 처럼 말로도 고를 수 있습니다.
   const TEMPLATES = {
@@ -403,7 +425,7 @@
     faq: [],
     gallery: [],
     projects: [
-      { title: "첫 번째 프로젝트", summary: "", url: "", date: "", tag: "" },
+      { title: "첫 번째 프로젝트", summary: "", url: "", date: "", tag: "", body: "", photo: "" },
     ],
     cta: { label: "문의하기", url: "" },
     social: { github: "", instagram: "", youtube: "", email: "" },
@@ -431,7 +453,7 @@
     if (typeof raw.contact === "string") s.contact = raw.contact;
     ["support", "volunteer", "location"].forEach((k) => { if (typeof raw[k] === "string") s[k] = raw[k]; });
     if (Array.isArray(raw.news)) {
-      s.news = raw.news.map((n) => ({ title: String(n?.title ?? ""), date: String(n?.date ?? ""), summary: String(n?.summary ?? ""), url: String(n?.url ?? "") }));
+      s.news = raw.news.map((n) => ({ title: String(n?.title ?? ""), date: String(n?.date ?? ""), summary: String(n?.summary ?? ""), url: String(n?.url ?? ""), body: String(n?.body ?? ""), photo: safeImageData(n?.photo) }));
     }
     if (Array.isArray(raw.faq)) {
       s.faq = raw.faq.map((f) => ({ q: String(f?.q ?? ""), a: String(f?.a ?? "") }));
@@ -440,6 +462,7 @@
       s.projects = raw.projects.map((p) => ({
         title: String(p?.title ?? ""), summary: String(p?.summary ?? ""), url: String(p?.url ?? ""),
         date: String(p?.date ?? ""), tag: String(p?.tag ?? ""),
+        body: String(p?.body ?? ""), photo: safeImageData(p?.photo),
       }));
     }
     if (Array.isArray(raw.sections)) {
@@ -567,6 +590,7 @@
     if (s.social.email && !emailHref(s.social.email)) out.push(["err", "이메일 형식이 올바르지 않습니다."]);
 
     if (!s.sections.some((x) => x.enabled)) out.push(["warn", "켜진 섹션이 하나도 없습니다."]);
+    if (/\[[^\]]+\]/.test(JSON.stringify([s.about, s.support, s.volunteer, s.location, s.contact, s.projects, s.news, s.faq]))) out.push(["warn", "[ ] 안내 문구가 남아 있습니다. 실제 내용으로 바꿔 주세요."]);
     if (out.every((x) => x[0] === "ok")) out.unshift(["ok", "모든 검수 항목을 통과했습니다."]);
     return out;
   }
@@ -578,6 +602,18 @@
     if (id === "contact") return state.headings.contact;
     if (id === "cta") return state.cta.label || "문의";
     return state.headings[id] || SECTION_LABELS[id];
+  }
+
+  // 자세히 보기: 자세한 내용과 사진을 제목 아래에 펼쳐서 보여 줍니다.
+  function detailHtml(item, label) {
+    const photo = safeImageData(item.photo);
+    const body = String(item.body ?? "");
+    if (!body.trim() && !photo) return "";
+    return `<details class="more">
+        <summary>자세히 보기</summary>
+        ${photo ? `<img src="${photo}" alt="${esc(item.title)} 사진" loading="lazy">` : ""}
+        ${body.trim() ? `<p class="pre">${esc(body)}</p>` : ""}
+      </details>`;
   }
 
   function renderSection(id) {
@@ -607,6 +643,7 @@
         <h3>${name}${p.tag ? ` <span class="tag">${esc(p.tag)}</span>` : ""}</h3>
         ${p.date ? `<time datetime="${esc(p.date)}">${esc(p.date)}</time>` : ""}
         ${p.summary ? `<p>${esc(p.summary)}</p>` : ""}
+        ${detailHtml(p, s.headings.projects)}
       </article>`;
       });
       if (!items.length) return "";
@@ -651,6 +688,7 @@
         <h3>${name}</h3>
         ${n.date ? `<time datetime="${esc(n.date)}">${esc(n.date)}</time>` : ""}
         ${n.summary ? `<p>${esc(n.summary)}</p>` : ""}
+        ${detailHtml(n, s.headings.news)}
       </article>`;
       });
       if (!items.length) return "";
@@ -739,6 +777,8 @@
     a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     body.look-band .hero { background: var(--accent); color: var(--bg); border-bottom: none; border-radius: var(--radius); padding: calc(var(--gap) * 1.5); }
     body.look-band .hero h1, body.look-band .hero .subtitle { color: var(--bg); }
+    details.more { margin: 8px 0 0; } details.more summary { font-weight: 600; color: var(--accent); cursor: pointer; }
+    details.more img { display: block; max-width: 100%; height: auto; border-radius: var(--radius); margin: 8px 0; }
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
     .gallery img { width: 100%; height: auto; border-radius: var(--radius); display: block; }
     body.look-card article { background: rgba(127, 127, 127, 0.08); border: 1px solid rgba(127, 127, 127, 0.25); border-left: 4px solid var(--accent); padding: 12px 16px; }
@@ -980,7 +1020,7 @@ ${navHtml}
         }
         item.summary = extra.join(" ");
         if (item.title) {
-          state.news.push(item);
+          state.news.push({ ...item, body: "", photo: "" });
           applied.push(`소식 추가 → ${item.title}${item.date ? ` (${item.date})` : ""}`);
         } else {
           notUnderstood.push(line);
@@ -996,7 +1036,7 @@ ${navHtml}
         }
         item.summary = extra.join(" ");
         if (item.title) {
-          state.projects.push(item);
+          state.projects.push({ ...item, body: "", photo: "" });
           applied.push(`소식 추가 → ${item.title}${item.date ? ` (${item.date})` : ""}`);
         } else {
           notUnderstood.push(line);
@@ -1333,12 +1373,38 @@ ${navHtml}
         </div>
         <label>링크 (https:// 로 시작)</label>
         <input type="text" data-project="${i}" data-field="url" value="${esc(p.url)}">
+        <label>자세한 내용 (펼쳐서 볼 때 나옵니다)</label>
+        <textarea data-project="${i}" data-field="body" placeholder="대상, 기간, 진행 방법, 결과 등을 자세히 적어 보세요.">${esc(p.body)}</textarea>
+        <label>사진 (1장, 컴퓨터에서 고르기)</label>
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-photo="project:${i}">
+        ${safeImageData(p.photo) ? `<p class="hint">사진이 들어 있습니다. <button type="button" data-photo-clear="project:${i}">사진 빼기</button></p>` : ""}
         <div style="margin-top:6px;display:flex;gap:6px">
           <button type="button" data-project-move="${i}:-1" ${i === 0 ? "disabled" : ""}>▲ 위로</button>
           <button type="button" data-project-move="${i}:1" ${i === state.projects.length - 1 ? "disabled" : ""}>▼ 아래로</button>
           <button type="button" class="danger" data-remove="${i}">삭제</button>
         </div>
       </div>`).join("") || `<p class="hint">항목이 없습니다.</p>`;
+  }
+
+  function renderNews() {
+    $("news").innerHTML = state.news.map((n, i) => `
+      <div class="card">
+        <label>제목</label>
+        <input type="text" data-news="${i}" data-field="title" value="${esc(n.title)}">
+        <div class="row">
+          <div class="grow"><label>날짜 (YYYY-MM-DD)</label><input type="text" data-news="${i}" data-field="date" value="${esc(n.date)}"></div>
+        </div>
+        <label>요약 (목록에 보입니다)</label>
+        <textarea data-news="${i}" data-field="summary">${esc(n.summary)}</textarea>
+        <label>자세한 내용 (펼쳐서 볼 때 나옵니다)</label>
+        <textarea data-news="${i}" data-field="body">${esc(n.body)}</textarea>
+        <label>링크 (https:// 로 시작)</label>
+        <input type="text" data-news="${i}" data-field="url" value="${esc(n.url)}">
+        <label>사진 (1장, 컴퓨터에서 고르기)</label>
+        <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-photo="news:${i}">
+        ${safeImageData(n.photo) ? `<p class="hint">사진이 들어 있습니다. <button type="button" data-photo-clear="news:${i}">사진 빼기</button></p>` : ""}
+        <div style="margin-top:6px"><button type="button" class="danger" data-news-remove="${i}">이 소식 삭제</button></div>
+      </div>`).join("") || `<p class="hint">소식이 없습니다.</p>`;
   }
 
   function renderChecks() {
@@ -1359,6 +1425,7 @@ ${navHtml}
     renderTemplates();
     renderSections();
     renderProjects();
+    renderNews();
     refresh();
   }
 
@@ -1387,11 +1454,33 @@ ${navHtml}
     } else if (el.dataset.project !== undefined) {
       state.projects[Number(el.dataset.project)][el.dataset.field] = el.value;
       refresh();
+    } else if (el.dataset.news !== undefined) {
+      state.news[Number(el.dataset.news)][el.dataset.field] = el.value;
+      refresh();
     }
   });
 
-  document.addEventListener("change", (e) => {
+  document.addEventListener("change", async (e) => {
     const el = e.target;
+    if (el.dataset.photo !== undefined) {
+      const file = el.files[0];
+      el.value = "";
+      if (!file) return;
+      if (!isPhotoFile(file)) { alert("PNG, JPG, WEBP, GIF 사진만 넣을 수 있습니다."); return; }
+      let data;
+      try {
+        data = await resizeImage(file, 900, "image/jpeg", 0.8);
+      } catch (err) {
+        alert("사진을 읽지 못했습니다. 다른 사진을 골라 주세요.");
+        return;
+      }
+      if (data.length > MAX_STORED_CHARS) { alert("사진이 너무 복잡해서 줄이지 못했습니다. 다른 사진을 골라 주세요."); return; }
+      const [kind, i] = el.dataset.photo.split(":");
+      undoSnapshot = clone(state);
+      (kind === "news" ? state.news : state.projects)[Number(i)].photo = data;
+      fullRender();
+      return;
+    }
     if (el.dataset.bind && el.type === "checkbox") {
       setPath(state, el.dataset.bind, el.checked);
       refresh();
@@ -1423,8 +1512,23 @@ ${navHtml}
       state.projects.splice(Number(el.dataset.remove), 1);
       return fullRender();
     }
+    if (el.dataset.newsRemove !== undefined) {
+      undoSnapshot = clone(state);
+      state.news.splice(Number(el.dataset.newsRemove), 1);
+      return fullRender();
+    }
+    if (el.dataset.photoClear !== undefined) {
+      const [kind, i] = el.dataset.photoClear.split(":");
+      const list = kind === "news" ? state.news : state.projects;
+      list[Number(i)].photo = "";
+      return fullRender();
+    }
+    if (el.id === "addNews") {
+      state.news.push({ title: "새 소식", date: "", summary: "", body: "", url: "", photo: "" });
+      return fullRender();
+    }
     if (el.id === "addProject") {
-      state.projects.push({ title: "새 프로젝트", summary: "", url: "", date: "", tag: "" });
+      state.projects.push({ title: "새 프로젝트", summary: "", url: "", date: "", tag: "", body: "", photo: "" });
       return fullRender();
     }
   });
@@ -1623,6 +1727,23 @@ ${navHtml}
   $("logoFileInput").addEventListener("change", (e) => pickImageFile(e.target, "logo"));
   $("heroFileClear").addEventListener("click", () => { state.site.heroFile = ""; fullRender(); updateImageStatus(); });
   $("logoClear").addEventListener("click", () => { state.site.logo = ""; fullRender(); updateImageStatus(); });
+
+  $("fillStarter").addEventListener("click", () => {
+    if (!confirm("지금 적은 내용을 기본 구성으로 바꿉니다. 계속할까요? (되돌리기로 되돌릴 수 있습니다)")) return;
+    undoSnapshot = clone(state);
+    const starter = clone(STARTER);
+    state.about = starter.about;
+    state.projects = starter.projects;
+    state.news = starter.news;
+    state.support = starter.support;
+    state.volunteer = starter.volunteer;
+    state.location = starter.location;
+    state.faq = starter.faq;
+    state.contact = starter.contact;
+    ["news", "support", "volunteer", "location", "faq", "projects", "about", "contact"].forEach((id) => setSection(id, true));
+    fullRender();
+    updateImageStatus();
+  });
 
   // 템플릿과 글꼴 목록은 정의된 값으로 채웁니다.
   $("template").innerHTML = Object.entries(TEMPLATES).map(([key, tpl]) => `<option value="${key}">${esc(tpl.label)}</option>`).join("");
