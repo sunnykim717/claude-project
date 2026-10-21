@@ -201,6 +201,8 @@
         <input type="range" id="overlay" min="0" max="85" step="5" data-bind="design.overlay">
         <label for="pattern">그림 배경 (사진을 넣지 않을 때, 강조색을 따라 그려집니다)</label>
         <select id="pattern" data-bind="design.pattern"></select>
+        <label for="deco">장식 그림 (첫 화면 오른쪽 위)</label>
+        <select id="deco" data-bind="design.deco"></select>
         <label for="lang">페이지 언어</label>
         <select id="lang" data-bind="site.lang">
           <option value="ko">한국어 (ko)</option>
@@ -358,8 +360,10 @@
     center:  { label: "가운데 정렬 (차분한 소개 페이지)" },
     soft:    { label: "둥근 상자 (그림자 있는 부드러운 카드)" },
     line:    { label: "얇은 선 (글만 깔끔하게)" },
+    poster:  { label: "포스터 (큰 제목과 굵은 머리말)" },
+    side:    { label: "옆줄 (제목 옆에 색 막대)" },
   };
-  const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center", 둥근: "soft", 선: "line" };
+  const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center", 둥근: "soft", 선: "line", 포스터: "poster", 옆줄: "side" };
   const GALLERY_MAX = 12;
   // 내 템플릿: 지금 디자인을 이름 붙여 저장합니다. 이 브라우저에만 저장되며, 저장 공간이 부족하면 알려 줍니다.
   const CUSTOM_KEY = "vibe-homepage-custom-templates:v1";
@@ -405,7 +409,34 @@
     waves:  { label: "물결" },
     stripes:{ label: "빗금" },
     grid:   { label: "격자" },
+    checks: { label: "바둑판" },
+    diagonal:{ label: "사선 물방울" },
   };
+  // 장식 그림: 첫 화면 오른쪽 위에 놓이는 작은 그림입니다. 강조색을 따라 그립니다.
+  const DECOS = {
+    none: { label: "없음" },
+    sun: { label: "해" },
+    leaf: { label: "나뭇잎" },
+    star: { label: "별" },
+    heart: { label: "하트" },
+    cloud: { label: "구름" },
+    book: { label: "책" },
+  };
+  const DECO_PATHS = {
+    sun: "<circle cx='50' cy='50' r='20' fill='C'/><g stroke='C' stroke-width='6' stroke-linecap='round'><path d='M50 8v12M50 80v12M8 50h12M80 50h12M19 19l8 8M73 73l8 8M19 81l8-8M73 27l8-8'/></g>",
+    leaf: "<path d='M20 80 C20 40 45 15 85 15 C85 55 60 80 20 80 Z' fill='C'/><path d='M20 80 L60 40' stroke='#fff' stroke-opacity='0.6' stroke-width='3' fill='none'/>",
+    star: "<path d='M50 8 L61 38 L93 38 L67 57 L77 88 L50 70 L23 88 L33 57 L7 38 L39 38 Z' fill='C'/>",
+    heart: "<path d='M50 85 C15 60 8 40 22 26 C34 14 48 22 50 34 C52 22 66 14 78 26 C92 40 85 60 50 85 Z' fill='C'/>",
+    cloud: "<path d='M25 70 C8 70 8 46 26 44 C28 26 52 22 60 38 C68 30 88 36 86 54 C98 56 96 70 84 70 Z' fill='C'/>",
+    book: "<path d='M10 25 Q30 18 50 30 Q70 18 90 25 V80 Q70 73 50 85 Q30 73 10 80 Z' fill='C'/><path d='M50 30 V85' stroke='#fff' stroke-opacity='0.6' stroke-width='3'/>",
+  };
+  function decoSvg(name, color) {
+    const c = /^#[0-9a-f]{6}$/i.test(color) ? color : "#111827";
+    if (!DECO_PATHS[name]) return "";
+    const shape = DECO_PATHS[name].split("C").join(c);
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${shape}</svg>`;
+    return "data:image/svg+xml," + encodeURIComponent(svg).replace(/[()']/g, (m) => "%" + m.charCodeAt(0).toString(16).toUpperCase());
+  }
   function patternSvg(name, color) {
     const c = /^#[0-9a-f]{6}$/i.test(color) ? color : "#111827";
     const shapes = {
@@ -413,6 +444,8 @@
       waves: `<svg xmlns='http://www.w3.org/2000/svg' width='120' height='40'><path d='M0 20 Q15 0 30 20 T60 20 T90 20 T120 20' fill='none' stroke='${c}' stroke-opacity='0.25' stroke-width='3'/></svg>`,
       stripes: `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><path d='M0 16 L16 0' stroke='${c}' stroke-opacity='0.2' stroke-width='3'/></svg>`,
       grid: `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><path d='M32 0 H0 V32' fill='none' stroke='${c}' stroke-opacity='0.2'/></svg>`,
+      checks: `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><rect width='12' height='12' fill='${c}' fill-opacity='0.12'/><rect x='12' y='12' width='12' height='12' fill='${c}' fill-opacity='0.12'/></svg>`,
+      diagonal: `<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><circle cx='6' cy='6' r='2.5' fill='${c}' fill-opacity='0.2'/><circle cx='20' cy='20' r='2.5' fill='${c}' fill-opacity='0.2'/></svg>`,
     };
     const svg = shapes[name];
     if (!svg) return "";
@@ -453,6 +486,12 @@
     meadow:   { label: "초원",     accent: "#4d7c0f", text: "#1a2e05", bg: "#f7fee7", font: "system-ui, sans-serif", radius: 12 },
     sunset:   { label: "노을",     accent: "#c2410c", text: "#431407", bg: "#fff7ed", font: "system-ui, sans-serif", radius: 22 },
     ink:      { label: "먹빛",     accent: "#111111", text: "#1f2937", bg: "#f5f5f4", font: "'Nanum Gothic', system-ui, sans-serif", radius: 0 },
+    teal:     { label: "청록",     accent: "#0e7490", text: "#083344", bg: "#ecfeff", font: "system-ui, sans-serif", radius: 10 },
+    rose:     { label: "장미",     accent: "#9f1239", text: "#4c0519", bg: "#fff1f2", font: "Batang, Georgia, serif", radius: 4 },
+    gold:     { label: "황금",     accent: "#92400e", text: "#451a03", bg: "#fffbeb", font: "Batang, Georgia, serif", radius: 2 },
+    slate:    { label: "슬레이트", accent: "#334155", text: "#0f172a", bg: "#f1f5f9", font: "system-ui, sans-serif", radius: 8 },
+    lime:     { label: "라임",     accent: "#65a30d", text: "#1a2e05", bg: "#fefce8", font: "system-ui, sans-serif", radius: 26 },
+    cocoa:    { label: "코코아",   accent: "#78350f", text: "#2c1607", bg: "#fdf8f3", font: "'Nanum Gothic', system-ui, sans-serif", radius: 14 },
   };
   // 글꼴 이름 → 실제 글꼴 목록. 기기에 없는 글꼴은 다음 글꼴로 넘어갑니다.
   const FONTS = {
@@ -498,6 +537,7 @@
       look: "classic",
       overlay: 60,
       pattern: "none",
+      deco: "none",
     },
     sections: [
       { id: "hero", enabled: true },
@@ -578,6 +618,7 @@
     d.overlay = clamp(Number(d.overlay), 0, 85, 60);
     if (!SAFE_FONT.test(String(d.font ?? "")) || !Object.values(FONTS).some((f) => f.css === d.font)) d.font = FONTS.basic.css;
     if (!PATTERNS[d.pattern]) d.pattern = "none";
+    if (!DECOS[d.deco]) d.deco = "none";
     s.site.heroBg = safeImageData(s.site.heroBg);
     d.radius = clamp(Number(d.radius), 0, 32, DEFAULT_STATE.design.radius);
     d.maxWidth = clamp(Number(d.maxWidth), 560, 960, DEFAULT_STATE.design.maxWidth);
@@ -728,7 +769,9 @@
       const pattern = bg ? "" : patternSvg(s.design.pattern, s.design.accent);
       const heroClass = bg ? "hero hero-bg" : pattern ? "hero hero-pattern" : "hero";
       const heroStyle = bg ? ` style="background-image:url(${bg});--ov:${clamp(Number(s.design.overlay), 0, 85, 60) / 100}"` : pattern ? ` style="background-image:url(${pattern})"` : "";
+      const deco = decoSvg(s.design.deco, s.design.accent);
       return `<header class="${heroClass}" id="hero"${heroStyle}>
+      ${deco ? `<img class="deco" src="${deco}" alt="">` : ""}
       ${logo ? `<img class="logo" src="${logo}" alt="${title} 로고">` : ""}
       ${img ? `<img src="${img}" alt="${title} 대표 이미지">` : ""}
       <h1>${title}</h1>${s.site.subtitle ? `\n      <p class="subtitle">${esc(s.site.subtitle)}</p>` : ""}
@@ -869,6 +912,8 @@
     .hero img { display: block; width: 100%; height: auto; border-radius: var(--radius); margin-bottom: 16px; }
     .hero-bg { position: relative; overflow: hidden; color: #fff; background-size: cover; background-position: center; border-bottom: none; border-radius: var(--radius); padding-left: var(--gap); padding-right: var(--gap); min-height: 220px; display: flex; flex-direction: column; justify-content: center; }
     .hero-pattern { border-bottom: none; border-radius: var(--radius); padding-left: var(--gap); padding-right: var(--gap); min-height: 180px; display: flex; flex-direction: column; justify-content: center; background-color: var(--bg); }
+    .hero { position: relative; }
+    .hero img.deco { position: absolute; right: 12px; top: 12px; width: 84px; height: 84px; margin: 0; opacity: 0.9; border-radius: 0; }
     .hero-bg::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, var(--ov, 0.45)); }
     .hero-bg > * { position: relative; }
     .hero-bg h1, .hero-bg .subtitle { color: #fff; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35); }
@@ -900,6 +945,11 @@
     body.look-card article { background: rgba(127, 127, 127, 0.08); border: 1px solid rgba(127, 127, 127, 0.25); border-left: 4px solid var(--accent); padding: 12px 16px; }
     body.look-soft article { background: #fff; border: none; border-left: 0; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); border-radius: calc(var(--radius) * 1.5); padding: 18px 22px; }
     body.look-soft .hero, body.look-soft .hero-bg { border-radius: calc(var(--radius) * 1.5); }
+    body.look-poster h2 { font-size: 2rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 0; padding-bottom: 0; }
+    body.look-poster h2::after { content: ""; display: block; width: 56px; height: 6px; background: var(--accent); margin-top: 6px; }
+    body.look-poster article h3 { font-size: 1.35rem; font-weight: 800; }
+    body.look-side h2 { border-bottom: 0; padding-left: 12px; border-left: 6px solid var(--accent); line-height: 1.2; }
+    body.look-side article { border-left: 1px solid rgba(127, 127, 127, 0.3); background: none; }
     body.look-line h2 { border-bottom: 1px solid var(--accent); font-weight: 500; letter-spacing: 0.02em; }
     body.look-line article { background: none; border: none; border-top: 1px solid rgba(127, 127, 127, 0.3); border-radius: 0; padding: 14px 0; }
     body.look-line .hero { border-bottom: 1px solid var(--accent); }
@@ -1000,6 +1050,7 @@ ${navHtml}
     미니멀: "minimal", 심플: "minimal", 오션: "ocean", 바다: "ocean", 웜: "warm", 따뜻: "warm",
     나이트: "night", 다크: "night", 어둡: "night", 숲: "forest", 초록: "forest", 라벤더: "lavender",
     코랄: "coral", 분홍: "coral", 햇살: "sunny", 노랑: "sunny", 종이: "paper", 신문: "paper",
+    청록: "teal", 장미: "rose", 황금: "gold", 금색: "gold", 슬레이트: "slate", 회색: "slate", 라임: "lime", 코코아: "cocoa", 갈색: "cocoa",
     달빛: "moonlight", 보라: "moonlight", 벚꽃: "blossom", 모래: "sand", 초원: "meadow", 노을: "sunset", 먹빛: "ink", 검정: "ink",
     민트: "mint", 네이비: "navy", 남색: "navy",
   };
@@ -1351,7 +1402,8 @@ ${navHtml}
       options: [["미니멀", "템플릿: 미니멀"], ["오션", "템플릿: 오션"], ["웜", "템플릿: 웜"], ["나이트", "템플릿: 나이트"],
         ["숲", "템플릿: 숲"], ["라벤더", "템플릿: 라벤더"], ["코랄", "템플릿: 코랄"], ["햇살", "템플릿: 햇살"],
         ["종이", "템플릿: 종이"], ["민트", "템플릿: 민트"], ["네이비", "템플릿: 네이비"],
-        ["달빛", "템플릿: 달빛"], ["벚꽃", "템플릿: 벚꽃"], ["모래", "템플릿: 모래"], ["초원", "템플릿: 초원"], ["노을", "템플릿: 노을"], ["먹빛", "템플릿: 먹빛"]],
+        ["달빛", "템플릿: 달빛"], ["벚꽃", "템플릿: 벚꽃"], ["모래", "템플릿: 모래"], ["초원", "템플릿: 초원"], ["노을", "템플릿: 노을"], ["먹빛", "템플릿: 먹빛"],
+        ["청록", "템플릿: 청록"], ["장미", "템플릿: 장미"], ["황금", "템플릿: 황금"], ["슬레이트", "템플릿: 슬레이트"], ["라임", "템플릿: 라임"], ["코코아", "템플릿: 코코아"]],
     },
     {
       question: "강조색을 골라 주세요.", type: "choice",
@@ -1364,7 +1416,7 @@ ${navHtml}
     },
     {
       question: "화면 모양을 골라 주세요.", type: "choice",
-      options: [["기본", "화면 스타일: 기본"], ["색 띠 머리", "화면 스타일: 띠"], ["카드형", "화면 스타일: 카드"], ["가운데 정렬", "화면 스타일: 가운데"], ["둥근 상자", "화면 스타일: 둥근"], ["얇은 선", "화면 스타일: 선"]],
+      options: [["기본", "화면 스타일: 기본"], ["색 띠 머리", "화면 스타일: 띠"], ["카드형", "화면 스타일: 카드"], ["가운데 정렬", "화면 스타일: 가운데"], ["둥근 상자", "화면 스타일: 둥근"], ["얇은 선", "화면 스타일: 선"], ["포스터", "화면 스타일: 포스터"], ["옆줄", "화면 스타일: 옆줄"]],
     },
     {
       question: "소식을 하나 추가할까요? 제목 | 날짜 | 요약 | 링크 순서로 적으세요. 날짜와 링크는 빼도 됩니다.",
@@ -1962,6 +2014,7 @@ ${navHtml}
     applyTemplateKey(e.target.value);
     fullRender();
   });
+  $("deco").innerHTML = Object.entries(DECOS).map(([key, item]) => `<option value="${key}">${esc(item.label)}</option>`).join("");
   $("pattern").innerHTML = Object.entries(PATTERNS).map(([key, item]) => `<option value="${key}">${esc(item.label)}</option>`).join("");
   $("look").innerHTML = Object.entries(LOOKS).map(([key, look]) => `<option value="${key}">${esc(look.label)}</option>`).join("");
   $("font").innerHTML = Object.values(FONTS).map((f) => `<option value="${esc(f.css)}">${esc(f.label)}</option>`).join("");
