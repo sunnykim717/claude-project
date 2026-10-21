@@ -164,3 +164,7 @@ html[data-motion="reduce"] *, html[data-motion="reduce"] *::before, html[data-mo
 
 /* 프리셋 미리보기 안내 */
 .preview-note { color: var(--muted); font-size: 0.95rem; }
+
+/* 추가 옵션 (theme.json): 메뉴 고정, 큰 버튼 */
+body.menu-sticky .site-header { position: sticky; top: 0; z-index: 10; background: var(--bg); }
+body.button-large .button { min-height: 52px; padding: 14px 26px; font-size: 1.05rem; }

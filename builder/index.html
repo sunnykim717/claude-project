@@ -616,11 +616,11 @@ ${navHtml}
     핑크: "#db2777", 검정: "#111827", 하양: "#ffffff", 하늘: "#0ea5e9",
   };
   const FONT_RULES = [
-    [/명조|세리프/, "Georgia, serif"],
-    [/모노|코드/, "ui-monospace, monospace"],
-    [/고딕|산세리프|기본/, "system-ui, sans-serif"],
+    [/명조|세리프|바탕|신문/, "Georgia, serif"],
+    [/모노|코드|타자|고정폭/, "ui-monospace, monospace"],
+    [/고딕|산세리프|기본|돋움|맑은|굴림|깔끔한\s*글씨/, "system-ui, sans-serif"],
   ];
-  const TEMPLATE_WORDS = { 미니멀: "minimal", 오션: "ocean", 웜: "warm", 나이트: "night", 다크: "night" };
+  const TEMPLATE_WORDS = { 미니멀: "minimal", 심플: "minimal", 오션: "ocean", 바다: "ocean", 웜: "warm", 따뜻: "warm", 나이트: "night", 다크: "night", 어둡: "night" };
   // "깔끔하게", "시원하게" 같은 느낌의 말로 템플릿을 추천합니다.
   const STYLE_HINTS = [
     [/깔끔|심플|단순/, "minimal", "깔끔한 느낌"],
@@ -629,7 +629,7 @@ ${navHtml}
     [/어둡|밤|다크|야간/, "night", "어두운 느낌"],
   ];
   // 소개, 연락처 같은 섹션을 "숨겨 줘", "보여 줘"로 켜고 끕니다.
-  const SECTION_TOGGLE = /^(소개|연락처|SNS|버튼|프로젝트|소식)\s*(?:은|는)?\s*(숨겨|숨기|빼|안\s*보이|보여|보이게|넣어|표시)/;
+  const SECTION_TOGGLE = /^(소개|연락처|SNS|버튼|프로젝트|소식)\s*(?:은|는|을|를|이|가)?\s*(숨겨|숨기|빼|안\s*보이|보여|보이게|넣어|표시|나타내|띄워)/;
   const SECTION_BY_WORD = { 소개: "about", 연락처: "contact", SNS: "social", 버튼: "cta", 프로젝트: "projects", 소식: "projects" };
   // 자주 나오는 요청에 대해 미리 준비한 답변입니다. 이해하지 못한 줄에 가장 먼저 맞는 답을 보여 줍니다.
   const SITUATION_ANSWERS = [
@@ -662,19 +662,64 @@ ${navHtml}
       .trim();
   }
 
+  // 같은 뜻의 다른 말을 정해진 말로 바꿉니다. 예: "홈페이지 이름은 나의 작업실" → "제목: 나의 작업실"
+  const ALIASES = [
+    [/^(?:홈페이지|사이트|기관|단체)?\s*(?:이름|명칭)\s*(?:은|는|을|를|이|가|:|：)?\s*/, "제목: "],
+    [/^(?:한\s*줄\s*설명|설명|소개\s*문구)\s*(?:은|는|을|를|:|：)?\s*/, "한 줄 소개: "],
+    [/^(?:본문|소개\s*내용|자세한\s*소개)\s*(?:은|는|을|를|:|：)?\s*/, "소개글: "],
+    [/^(?:새\s*소식|소식\s*등록|소식\s*하나|글\s*추가)\s*(?:은|는|을|를|:|：)?\s*/, "소식 추가: "],
+    [/^(?:홈페이지\s*)?(?:색|색깔)\s*(?:은|는|을|를|:|：)?\s*/, "강조색: "],
+  ];
+  // 날짜를 2026-11-03 형식으로 바꿉니다. "2026년 11월 3일" 도 알아듣습니다.
+  function normalizeDate(text) {
+    return text.replace(/(\d{4})\s*[년.\-\/]\s*(\d{1,2})\s*[월.\-\/]\s*(\d{1,2})\s*일?/g,
+      (_, y, m, d) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`);
+  }
+  function canonicalLine(line) {
+    let out = normalizeDate(line.trim());
+    for (const [pattern, replacement] of ALIASES) {
+      if (pattern.test(out)) return replacement + out.replace(pattern, "");
+    }
+    return out;
+  }
+
   function parseNaturalText(text) {
     const applied = [];
     const notUnderstood = [];
+    let wantsUndo = false;
 
     // 직접 고른 디자인 값이 있으면 "깔끔하게" 같은 느낌 추천은 덮어쓰지 않습니다.
     const hasExplicitDesign = /색|강조|배경|글자|글씨|글꼴|폰트|템플릿|테마|모서리|여백/.test(text);
     // 소개 글 바로 다음 줄들은 소개 글의 이어지는 내용으로 붙입니다.
     let aboutOpen = false;
-    for (const line of text.split("\n").map((l) => l.trim()).filter(Boolean)) {
+    for (const raw of text.split("\n").map((l) => l.trim()).filter(Boolean)) {
+      const line = canonicalLine(raw);
       const isAboutContinuation = aboutOpen;
       aboutOpen = false;
       let m;
-      if ((m = line.match(/^소개\s*글\s*[:은는을를]?\s*(.+)$/))) {
+      if (/^(?:되돌려|되돌리|취소|원래대로|이전으로)/.test(line)) {
+        wantsUndo = true;
+      } else if ((m = line.match(/^(연락처|소식|버튼|SNS|인스타그램|인스타|유튜브|깃허브|이메일)\s*(?:은|는|을|를|이|가)?\s*(?:빼|지워|삭제|없애)\s*(?:줘|주세요)?\s*$/))) {
+        const word = m[1];
+        if (word === "연락처") {
+          state.contact = "";
+          applied.push("연락처 삭제");
+        } else if (word === "버튼") {
+          setSection("cta", false);
+          applied.push("버튼 숨김");
+        } else if (word === "소식") {
+          state.projects = [];
+          applied.push("소식 전체 삭제");
+        } else {
+          const key = SOCIAL_BY_WORD[word] || SOCIAL_BY_WORD[word.toLowerCase()];
+          if (key && state.social[key]) {
+            delete state.social[key];
+            applied.push(`${word} 삭제`);
+          } else {
+            notUnderstood.push(`${raw} (지울 ${word} 주소가 없습니다)`);
+          }
+        }
+      } else if ((m = line.match(/^소개\s*글\s*[:은는을를]?\s*(.+)$/))) {
         state.about = m[1].trim();
         aboutOpen = true;
         applied.push(`소개 글 → ${state.about}`);
@@ -741,8 +786,9 @@ ${navHtml}
         const radius = m[1] === "둥글게" ? 12 : m[1] === "각지게" ? 0 : Math.min(32, Number(m[1]));
         state.design.radius = radius;
         applied.push(`모서리 → ${radius}px`);
-      } else if ((m = line.match(/^여백\s*[:은는을를]?\s*(촘촘|보통|넉넉)/))) {
-        state.design.spacing = { 촘촘: "compact", 보통: "normal", 넉넉: "airy" }[m[1]];
+      } else if ((m = line.match(/^여백\s*[:은는을를]?\s*(?:을|를)?\s*(촘촘|좁게|빽빽|보통|기본|넉넉|넓게|시원하게)/))) {
+        const level = { 촘촘: "compact", 좁게: "compact", 빽빽: "compact", 보통: "normal", 기본: "normal", 넉넉: "airy", 넓게: "airy", 시원하게: "airy" }[m[1]];
+        state.design.spacing = level;
         applied.push(`여백 → ${m[1]}`);
       } else if (/색|강조|배경|글자|글씨/.test(line) && findColorName(line)) {
         const target = /배경/.test(line) ? "bg" : /글자|글씨|텍스트/.test(line) ? "text" : "accent";
@@ -772,7 +818,7 @@ ${navHtml}
         notUnderstood.push(line);
       }
     }
-    return { applied, notUnderstood };
+    return { applied, notUnderstood, wantsUndo };
   }
 
   function setSection(id, visible) {
@@ -792,8 +838,17 @@ ${navHtml}
   $("nlApply").addEventListener("click", () => {
     const text = $("nlInput").value;
     if (!text.trim()) return;
-    undoSnapshot = clone(state);
-    const { applied, notUnderstood } = parseNaturalText(text);
+    const before = clone(state);
+    const { applied, notUnderstood, wantsUndo } = parseNaturalText(text);
+    if (wantsUndo) {
+      // "되돌려 줘" 한 줄만 있으면 직전 적용을 되돌립니다.
+      if (undoSnapshot) state = undoSnapshot;
+      undoSnapshot = null;
+      fullRender();
+      $("nlResult").innerHTML = "<strong>직전 적용을 되돌렸습니다.</strong>";
+      return;
+    }
+    undoSnapshot = before;
     fullRender();
     const lines = [];
     if (applied.length) lines.push("<strong>적용됨</strong>", ...applied.map((x) => `✓ ${esc(x)}`));

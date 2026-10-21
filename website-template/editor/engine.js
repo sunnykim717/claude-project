@@ -9,7 +9,7 @@
 
   // 설정 항목 목록은 schema.json 에서만 옵니다. useSchema() 로 한 번 넣어 주세요.
   var loaded = false;
-  var BASE_ROUTES, ROUTES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS, CONTENT_WIDTHS, HERO_VARIANTS, HOMEPAGE_SECTIONS, BUTTON_SHAPES, MENU_MARKS, FONT_ROLES, FONT_FALLBACKS;
+  var BASE_ROUTES, ROUTES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS, CONTENT_WIDTHS, HERO_VARIANTS, HOMEPAGE_SECTIONS, BUTTON_SHAPES, MENU_MARKS, FONT_ROLES, FONT_FALLBACKS, BUTTON_SIZES;
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -35,6 +35,7 @@
     HOMEPAGE_SECTIONS = schema.homepage_sections;
     BUTTON_SHAPES = schema.button_shapes;
     MENU_MARKS = schema.menu_marks;
+    BUTTON_SIZES = schema.button_sizes;
     FONT_ROLES = schema.font_roles;
     FONT_FALLBACKS = schema.font_fallbacks;
     loaded = true;
@@ -261,6 +262,9 @@
       if (!hasKey(BUTTON_SHAPES, shape)) errors.push("config/theme.json: buttonShape 는 " + Object.keys(BUTTON_SHAPES).join(", ") + " 중 하나여야 합니다.");
       var mark = theme.menuMark === undefined ? "underline" : theme.menuMark;
       if (MENU_MARKS.indexOf(mark) === -1) errors.push("config/theme.json: menuMark 는 " + MENU_MARKS.join(", ") + " 중 하나여야 합니다.");
+      if (hasKey(theme, "menuSticky") && typeof theme.menuSticky !== "boolean") errors.push("config/theme.json: menuSticky 는 true 또는 false 여야 합니다.");
+      var size = theme.buttonSize === undefined ? "normal" : theme.buttonSize;
+      if (BUTTON_SIZES.indexOf(size) === -1) errors.push("config/theme.json: buttonSize 는 " + BUTTON_SIZES.join(", ") + " 중 하나여야 합니다.");
     }
 
     if (isObject(site)) checkImage(files, errors, "config/site.json", site.logo, "logo");
@@ -485,6 +489,14 @@
       hero: design.hero || preset.defaultHero,
       width: CONTENT_WIDTHS[design.contentWidth || "comfortable"]
     };
+  }
+
+  // generate.py 의 body_extra_classes 와 같은 규칙입니다.
+  function bodyExtraClasses(theme) {
+    var classes = "";
+    if (theme.menuSticky === true) classes += " menu-sticky";
+    if ((theme.buttonSize === undefined ? "normal" : theme.buttonSize) === "large") classes += " button-large";
+    return classes;
   }
 
   function themeCss(theme, choice) {
@@ -831,7 +843,8 @@
         footer: footerHtml(files, site, data.contact),
         layout: esc(theme.layout),
         menu: esc(theme.menu),
-        mark: esc(theme.menuMark === undefined ? "underline" : theme.menuMark)
+        mark: esc(theme.menuMark === undefined ? "underline" : theme.menuMark),
+        extra: bodyExtraClasses(theme)
       });
     }
 

@@ -242,5 +242,9 @@
     "명조": "Batang, 'Apple SD Myungjo', serif",
     "손글씨": "'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
     "시스템": "system-ui, sans-serif"
-  }
+  },
+  "button_sizes": [
+    "normal",
+    "large"
+  ]
 }

@@ -350,6 +350,10 @@ def validate(root):
             errors.append(f"config/theme.json: buttonShape 는 {', '.join(SCHEMA['button_shapes'])} 중 하나여야 합니다.")
         if theme.get("menuMark", "underline") not in SCHEMA["menu_marks"]:
             errors.append(f"config/theme.json: menuMark 는 {', '.join(SCHEMA['menu_marks'])} 중 하나여야 합니다.")
+        if "menuSticky" in theme and not isinstance(theme["menuSticky"], bool):
+            errors.append("config/theme.json: menuSticky 는 true 또는 false 여야 합니다.")
+        if theme.get("buttonSize", "normal") not in SCHEMA["button_sizes"]:
+            errors.append(f"config/theme.json: buttonSize 는 {', '.join(SCHEMA['button_sizes'])} 중 하나여야 합니다.")
 
     if isinstance(site, dict):
         check_image(errors, root, "config/site.json", site.get("logo"), "logo")

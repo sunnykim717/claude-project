@@ -82,6 +82,8 @@ python scripts/site_tool.py build --out dist
 | 직접 쓰는 CSS | 모든 페이지 맨 뒤에 붙음 | `config/custom.css` |
 | 버튼 모양 | square, soft, round, pill | `theme.buttonShape` |
 | 현재 메뉴 표시 | underline, background, border, side | `theme.menuMark` |
+| 메뉴를 화면 위에 고정 | true, false (기본 false) | `theme.menuSticky` |
+| 버튼 크기 | normal, large (기본 normal) | `theme.buttonSize` |
 | 알림 띠 | 기본은 꺼짐. 켜면 홈 맨 위에 한 줄 | `content/banner.json` (active, text, link) |
 | 브랜드 색 추천 | 대표색 하나로 버튼·링크·배경·글자 색을 규칙으로 계산 | `python scripts/palette.py #RRGGBB` |
 | 예시 기관 | 가상의 지역복지관, 가상의 청소년 센터, 빈 설정 | `python scripts/build_example.py community-welfare` |

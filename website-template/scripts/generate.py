@@ -126,6 +126,16 @@ def design_choice(data):
     }
 
 
+def body_extra_classes(theme):
+    """theme.json 의 추가 옵션을 <body> 의 class 로 바꿉니다. 편집기 엔진(engine.js)과 같은 규칙입니다."""
+    classes = []
+    if theme.get("menuSticky") is True:
+        classes.append("menu-sticky")
+    if theme.get("buttonSize", "normal") == "large":
+        classes.append("button-large")
+    return "".join(" " + name for name in classes)
+
+
 def theme_css(theme, choice=None):
     """theme.json 의 값을 CSS 변수로 바꿉니다. 디자인 프리셋을 고르면 색, 글꼴, 모서리, 여백은 프리셋을 따릅니다."""
     t = choice["tokens"] if choice else {}
@@ -496,6 +506,7 @@ def build_pages(root, data, today=None):
             "layout": esc(theme["layout"]),
             "menu": esc(theme["menu"]),
             "mark": esc(theme.get("menuMark", "underline")),
+            "extra": body_extra_classes(theme),
         })
 
     page("index.html", site["name"], home_main(root, data, choice), site.get("description", ""))

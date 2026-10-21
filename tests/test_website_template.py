@@ -1,4 +1,5 @@
 import json
+import re
 import shutil
 import sys
 import tempfile
@@ -413,6 +414,28 @@ class ExamplesAndOptionsTest(unittest.TestCase):
             _, errors = validate.validate(root)
             self.assertTrue(any("buttonShape" in e for e in errors))
             self.assertTrue(any("menuMark" in e for e in errors))
+
+    def test_sticky_menu_and_large_button_options(self):
+        with _Copy() as root:
+            _edit(root, "config/theme.json", lambda d: d.update(menuSticky=True, buttonSize="large"))
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            index = (out / "index.html").read_text(encoding="utf-8")
+            self.assertIn("menu-sticky", index)
+            self.assertIn("button-large", index)
+            self.assertIn("body.menu-sticky .site-header", index)
+        with _Copy() as root:
+            _edit(root, "config/theme.json", lambda d: d.update(menuSticky="yes", buttonSize="huge"))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("menuSticky" in e for e in errors))
+            self.assertTrue(any("buttonSize" in e for e in errors))
+        with _Copy() as root:
+            out = root / "dist"
+            generate.main(["--root", str(root), "--out", str(out)])
+            index = (out / "index.html").read_text(encoding="utf-8")
+            body_tag = re.search(r"<body[^>]*>", index).group(0)
+            self.assertNotIn("menu-sticky", body_tag)
+            self.assertNotIn("button-large", body_tag)
 
     def test_brand_colour_suggestions_pass_contrast_and_repeat(self):
         import palette
