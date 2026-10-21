@@ -98,6 +98,7 @@
 <header>
   <h1>바이브 홈페이지 빌더</h1>
   <div class="toolbar">
+    <button id="headUndo" title="방금 한 작업을 되돌립니다.">↩ 되돌리기</button>
     <button id="download" class="primary" title="완성된 홈페이지 파일(index.html)을 내 컴퓨터에 저장합니다. 더블클릭하면 바로 열립니다.">📄 홈페이지 파일 받기</button>
     <button id="exportSpec" title="지금까지 적은 내용을 파일 하나(명세)로 저장합니다. 나중에 다시 불러와 이어서 고칠 수 있습니다.">💾 작업 저장</button>
     <button type="button" id="importBtn" title="예전에 저장한 작업 파일을 열어 이어서 고칩니다.">📂 작업 불러오기</button>
@@ -312,7 +313,7 @@
       <button type="button" id="openPreview" title="완성된 모습을 새 탭에서 크게 봅니다.">새 창에서 크게 보기</button>
     </div>
     <div class="frame-wrap">
-      <iframe class="preview-frame" id="frame" title="미리보기"></iframe>
+      <iframe class="preview-frame" id="frame" title="미리보기" sandbox="allow-scripts"></iframe>
     </div>
 
     <details>
@@ -513,9 +514,7 @@
     news: [],
     faq: [],
     gallery: [],
-    projects: [
-      { title: "첫 번째 프로젝트", summary: "", url: "", date: "", tag: "", body: "", photo: "" },
-    ],
+    projects: [],
     cta: { label: "문의하기", url: "" },
     social: { github: "", instagram: "", youtube: "", email: "" },
   };
@@ -569,6 +568,7 @@
     if (!SPACING[d.spacing]) d.spacing = "normal";
     if (!LOOKS[d.look]) d.look = "classic";
     d.overlay = clamp(Number(d.overlay), 0, 85, 60);
+    if (!SAFE_FONT.test(String(d.font ?? "")) || !Object.values(FONTS).some((f) => f.css === d.font)) d.font = FONTS.basic.css;
     if (!PATTERNS[d.pattern]) d.pattern = "none";
     s.site.heroBg = safeImageData(s.site.heroBg);
     d.radius = clamp(Number(d.radius), 0, 32, DEFAULT_STATE.design.radius);
@@ -682,7 +682,9 @@
     if (s.social.email && !emailHref(s.social.email)) out.push(["err", "이메일 형식이 올바르지 않습니다."]);
 
     if (!s.sections.some((x) => x.enabled)) out.push(["warn", "켜진 섹션이 하나도 없습니다."]);
-    if (/\[[^\]]+\]/.test(JSON.stringify([s.about, s.support, s.volunteer, s.location, s.contact, s.projects, s.news, s.faq]))) out.push(["warn", "[ ] 안내 문구가 남아 있습니다. 실제 내용으로 바꿔 주세요."]);
+    const typed = [s.about, s.support, s.volunteer, s.location, s.contact, ...s.projects.flatMap((p) => [p.title, p.summary, p.body]), ...s.news.flatMap((n) => [n.title, n.summary, n.body]), ...s.faq.flatMap((f) => [f.q, f.a])].join("\n");
+    if (JSON.stringify(s).length > 4000000) out.push(["warn", "저장 공간이 거의 찼습니다. 사진을 몇 장 빼 주세요. 작업 저장 파일을 받아 두면 안전합니다."]);
+    if (/\[[^\]\n]+\]/.test(typed)) out.push(["warn", "[ ] 안내 문구가 남아 있습니다. 실제 내용으로 바꿔 주세요."]);
     if (out.every((x) => x[0] === "ok")) out.unshift(["ok", "모든 검수 항목을 통과했습니다."]);
     return out;
   }
@@ -1077,7 +1079,7 @@ ${navHtml}
           setSection("cta", false);
           applied.push("버튼 숨김");
         } else if (word === "소식") {
-          state.projects = [];
+          state.news = [];
           applied.push("소식 전체 삭제");
         } else {
           const key = SOCIAL_BY_WORD[word] || SOCIAL_BY_WORD[word.toLowerCase()];
@@ -1534,6 +1536,7 @@ ${navHtml}
 
   // 구조가 바뀌는 조작 뒤에는 목록까지 다시 그립니다.
   function fullRender() {
+    updateImageStatus();
     syncBindings();
     renderTemplates();
     renderSections();
@@ -1727,6 +1730,7 @@ ${navHtml}
 
   $("importBtn").addEventListener("click", () => $("importFile").click());
   $("importFile").addEventListener("change", async (e) => {
+    if (!confirm("지금 작업 내용을 불러온 파일로 바꿉니다. 계속할까요?")) { e.target.value = ""; return; }
     const file = e.target.files[0];
     if (!file) return;
     try {
@@ -1889,6 +1893,8 @@ ${navHtml}
   $("ghUser").addEventListener("input", renderGithubHelper);
   $("ghRepo").addEventListener("input", renderGithubHelper);
   renderGithubHelper();
+
+  $("headUndo").addEventListener("click", () => $("nlUndo").click());
 
   $("fillStarter").addEventListener("click", () => {
     if (!confirm("지금 적은 내용을 기본 구성으로 바꿉니다. 계속할까요? (되돌리기로 되돌릴 수 있습니다)")) return;
