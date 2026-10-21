@@ -113,6 +113,8 @@ python scripts/site_tool.py build --out dist
 
 Cloudflare 로 배포하거나 Supabase 로 게시판 글 저장과 관리자 로그인을 붙이려면 [연결 가이드](docs/연결-가이드.md) 를 보세요. 두 서비스는 각각 가입이 필요합니다.
 
+Supabase 에 가입했다면 편집기의 **Supabase 연결** 칸에 프로젝트 주소와 anon 키를 넣으세요. 연결하면 게시판에 방문자 글 칸이 생기고, 공개 주소 뒤에 `/admin.html` 을 붙인 관리자 화면에서 글을 승인하거나 지울 수 있습니다. 비밀 키(service_role)는 넣으면 검사가 막습니다.
+
 ### 이미 올린 홈페이지를 이어서 고치기
 
 1. GitHub 저장소를 **Code → Download ZIP** 으로 받아 압축을 풉니다.

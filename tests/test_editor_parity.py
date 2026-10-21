@@ -85,6 +85,39 @@ class EngineParityTest(unittest.TestCase):
         finally:
             shutil.rmtree(tmp)
 
+    def test_connected_supabase_pages_match_python(self):
+        import base64
+        def token(role):
+            body = base64.urlsafe_b64encode(json.dumps({"role": role}).encode()).decode().rstrip("=")
+            return f"eyJhbGciOiJIUzI1NiJ9.{body}.signature"
+        tmp = Path(tempfile.mkdtemp())
+        try:
+            copy = tmp / "site"
+            shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns("dist", "__pycache__", "editor"))
+            (copy / "config" / "supabase.json").write_text(
+                json.dumps({"url": "https://abcd1234.supabase.co", "anonKey": token("anon")}), encoding="utf-8")
+            self._compare(copy)
+            js = _node(_read_files(copy))
+            self.assertIn('<section class="block live"', js["pages"]["board.html"])
+            self.assertIn('<section class="block admin"', js["pages"]["admin.html"])
+        finally:
+            shutil.rmtree(tmp)
+
+    def test_service_key_is_refused_by_both_builders(self):
+        import base64
+        body = base64.urlsafe_b64encode(json.dumps({"role": "service_role"}).encode()).decode().rstrip("=")
+        files = _read_files(ROOT)
+        files["config/supabase.json"] = json.dumps({"url": "https://abcd1234.supabase.co", "anonKey": f"x.{body}.y"})
+        js = _node(files)
+        self.assertFalse(js["ok"])
+        self.assertTrue(any("service_role" in e for e in js["errors"]))
+        with tempfile.TemporaryDirectory() as d:
+            copy = Path(d) / "site"
+            shutil.copytree(ROOT, copy, ignore=shutil.ignore_patterns("dist", "__pycache__", "editor"))
+            (copy / "config" / "supabase.json").write_text(files["config/supabase.json"], encoding="utf-8")
+            _, errors = validate.validate(copy)
+            self.assertEqual(sorted(errors), sorted(js["errors"]))
+
     def test_bad_input_gives_same_errors_and_no_pages(self):
         files = _read_files(ROOT)
         files["config/theme.json"] = json.dumps({**json.loads(files["config/theme.json"]), "radius": 99})

@@ -196,6 +196,31 @@ def drop_unpublished(value, today):
     return value
 
 
+ADMIN_INTRO = "방문자가 올린 글을 확인해서 승인하거나 지우는 화면입니다. 로그인한 관리자만 글을 바꿀 수 있습니다."
+
+
+def supabase_settings(data):
+    cfg = data.get("supabase") or {}
+    return str(cfg.get("url") or ""), str(cfg.get("anonKey") or "")
+
+
+def read_script(root, rel):
+    return read_part(root, rel).strip()
+
+
+def admin_main(root, url, key):
+    return fill(read_part(root, "src/components/Admin.html"), {
+        "url": esc(url), "key": esc(key), "intro": esc(ADMIN_INTRO),
+        "script": read_script(root, "src/admin/admin.js"),
+    })
+
+
+def board_live_html(root, url, key):
+    return fill(read_part(root, "src/components/BoardLive.html"), {
+        "url": esc(url), "key": esc(key), "script": read_script(root, "src/admin/board.js"),
+    })
+
+
 def generic_body(content):
     """제목, 본문, 목록으로 된 간단한 페이지의 내용입니다."""
     items = content.get("items") or []
@@ -279,11 +304,17 @@ def build_pages(root, data, today=None):
     page("contact.html", contact["title"],
          block(contact["title"], f'<p class="pre">{esc(contact["body"])}</p>'),
          contact["body"], contact)
+    url, key = supabase_settings(data)
+    connected = bool(url and key)
     for name in SCHEMA["generic_pages"]:
         content = data[name]
-        page(f"{name}.html", content["title"], generic_body(content), content["body"], content)
+        body = generic_body(content)
+        if name == "board" and connected:
+            body += board_live_html(root, url, key)
+        page(f"{name}.html", content["title"], body, content["body"], content)
     for content in data["custom_pages"]:
         page(f"{content['slug']}.html", content["title"], generic_body(content), content.get("body"), content)
+    page("admin.html", "관리자", admin_main(root, url, key), ADMIN_INTRO)
     return pages
 
 

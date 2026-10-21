@@ -100,6 +100,14 @@
       <div id="gallery-list"></div>
     </section>
     <section class="panel">
+      <h2>Supabase 연결 (관리자 페이지, 방문자 글)</h2>
+      <p class="hint">Supabase 에 가입한 뒤 Settings → API 에서 복사해 넣으세요. 비밀 키(service_role, sb_secret_)는 넣으면 안 됩니다. <a href="https://github.com/sunnykim717/claude-project/blob/claude/funny-franklin-mknfpi/website-template/docs/연결-가이드.md" target="_blank" rel="noopener">연결 가이드 보기</a></p>
+      <label class="sub"><span>프로젝트 주소 (https://프로젝트.supabase.co)</span><input id="sb-url" autocomplete="off"></label>
+      <label class="sub"><span>anon 키 (또는 sb_publishable_ 키)</span><input id="sb-key" autocomplete="off"></label>
+      <div class="row"><button type="button" id="btn-supabase">연결 정보 저장</button><button type="button" class="secondary" id="btn-supabase-clear">연결 지우기</button></div>
+      <p class="hint" id="sb-status"></p>
+    </section>
+    <section class="panel">
       <h2>직접 쓰는 CSS</h2>
       <p class="hint">모든 페이지 맨 뒤에 붙습니다. url( , @import , &lt; 는 쓸 수 없습니다.</p>
       <textarea id="custom-css" rows="8" aria-label="직접 쓰는 CSS"></textarea>

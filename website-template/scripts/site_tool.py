@@ -29,7 +29,7 @@ FILE_FOR = {
     "site": "config/site.json", "nav": "config/navigation.json", "theme": "config/theme.json",
     "home": "content/home.json", "about": "content/about.json",
     "projects": "content/projects.json", "support": "content/support.json",
-    "custom_pages": "content/custom-pages.json",
+    "custom_pages": "content/custom-pages.json", "supabase": "config/supabase.json",
     "transparency": "content/transparency.json", "volunteer": "content/volunteer.json",
     "privacy": "content/privacy.json", "news": "content/news.json", "contact": "content/contact.json",
 }
@@ -201,6 +201,16 @@ def cmd_remove_menu(args):
     return _save_or_revert(root, path, original, f"메뉴 '{removed['label']}' 을 뺐습니다.")
 
 
+def cmd_supabase(args):
+    """Supabase 연결 정보를 저장합니다. 편집기의 연결 칸과 같은 검사를 씁니다."""
+    root = Path(args.root)
+    path = root / FILE_FOR["supabase"]
+    original = path.read_text(encoding="utf-8")
+    url, key = ("", "") if args.clear else (args.url or "", args.key or "")
+    path.write_text(json.dumps({"url": url, "anonKey": key}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return _save_or_revert(root, path, original, "Supabase 연결 정보를 저장했습니다." if (url or key) else "Supabase 연결을 지웠습니다.")
+
+
 def cmd_check(args):
     return _finish(args.root, "설정과 콘텐츠가 맞습니다.")
 
@@ -237,6 +247,11 @@ def build_parser():
     p = sub.add_parser("remove-menu", help="메뉴 삭제. 번호는 메뉴 순서대로 1부터")
     p.add_argument("number", type=int)
     p.set_defaults(func=cmd_remove_menu)
+    p = sub.add_parser("supabase", help="Supabase 연결. 예: supabase https://abcd.supabase.co eyJ...(anon 키)")
+    p.add_argument("url", nargs="?", default="")
+    p.add_argument("key", nargs="?", default="")
+    p.add_argument("--clear", action="store_true", help="연결 지우기")
+    p.set_defaults(func=cmd_supabase)
     sub.add_parser("check", help="설정 검사").set_defaults(func=cmd_check)
     p = sub.add_parser("build", help="dist/ 에 페이지 만들기")
     p.add_argument("--out", default=None)

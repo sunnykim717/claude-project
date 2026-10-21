@@ -5,6 +5,7 @@
     python scripts/validate.py
 """
 
+import base64
 import json
 import re
 import sys
@@ -122,6 +123,42 @@ def check_items(errors, rel, label, items):
             errors.append(f"{rel} {i}번 {label}: url 은 https:// 로 시작해야 합니다.")
 
 
+SUPABASE_URL = re.compile(r"^https://[a-z0-9-]+\.supabase\.co/?$")
+
+
+def jwt_role(token):
+    """키가 JWT 형식이면 role (anon 또는 service_role) 을 돌려줍니다. 아니면 None."""
+    parts = token.split(".")
+    if len(parts) != 3:
+        return None
+    padded = parts[1].replace("-", "+").replace("_", "/")
+    padded += "=" * (-len(padded) % 4)
+    try:
+        payload = json.loads(base64.b64decode(padded).decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return None
+    return payload.get("role") if isinstance(payload, dict) else None
+
+
+def check_supabase(errors, cfg):
+    """Supabase 연결 정보. 둘 다 비워 두면 연결하지 않은 것입니다. 비밀 키는 공개 페이지에 넣을 수 없습니다."""
+    if not isinstance(cfg, dict):
+        errors.append("config/supabase.json: 최상위 값은 { } 묶음이어야 합니다.")
+        return
+    url, key = str(cfg.get("url") or ""), str(cfg.get("anonKey") or "")
+    if not url and not key:
+        return
+    if not url or not key:
+        errors.append("config/supabase.json: url 과 anonKey 를 둘 다 넣거나 둘 다 비워 두세요.")
+        return
+    if not SUPABASE_URL.match(url):
+        errors.append("config/supabase.json: url 은 https://프로젝트.supabase.co 형식이어야 합니다.")
+    if key.startswith("sb_secret_") or jwt_role(key) == "service_role":
+        errors.append("config/supabase.json: service_role (secret) 키는 공개 페이지에 넣을 수 없습니다. anon 또는 publishable 키를 쓰세요.")
+    elif not (key.startswith("sb_publishable_") or jwt_role(key) == "anon"):
+        errors.append("config/supabase.json: anon 또는 publishable 키를 넣어 주세요 (Settings → API).")
+
+
 def check_custom_pages(errors, root, custom):
     """직접 추가한 페이지: 주소(slug)는 영문 소문자로 시작하고 기본 페이지와 겹치지 않아야 합니다."""
     if not isinstance(custom, list):
@@ -223,6 +260,7 @@ def validate(root):
                 errors.append(f"content/{name}.json: title 을 적어 주세요.")
             check_items(errors, f"content/{name}.json", "항목", data[name].get("items", []))
     check_custom_pages(errors, root, data["custom_pages"])
+    check_supabase(errors, data["supabase"])
 
     projects = data["projects"]
     if isinstance(projects, dict):

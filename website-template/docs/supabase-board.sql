@@ -21,6 +21,10 @@ create policy "승인된 글 읽기" on public.board_posts
 create policy "글 올리기 (승인 전)" on public.board_posts
   for insert with check (approved = false);
 
+-- 로그인한 관리자는 승인 대기 글도 볼 수 있습니다 (관리자 화면이 이 규칙을 씁니다).
+create policy "관리자는 모든 글 읽기" on public.board_posts
+  for select using (auth.role() = 'authenticated');
+
 -- 로그인한 관리자만 승인하거나 고칠 수 있습니다.
 create policy "관리자만 승인과 수정" on public.board_posts
   for update using (auth.role() = 'authenticated')

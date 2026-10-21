@@ -20,6 +20,7 @@ TEXT_FILES = [
     "content/news.json", "content/contact.json",
     "src/components/Header.html", "src/components/Hero.html", "src/components/Footer.html",
     "src/pages/page.html", "src/styles/site.css", "config/custom.css",
+    "src/components/Admin.html", "src/components/BoardLive.html", "src/admin/admin.js", "src/admin/board.js",
 ]
 # 설정과 콘텐츠 파일은 schema.json 에서 가져옵니다 (목록을 두 곳에 적지 않도록)
 TEXT_FILES += [rel for rel in json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))["files"].values()

@@ -101,6 +101,37 @@
   }
 
   var SLUG = /^[a-z][a-z0-9-]{1,30}$/;
+  var SUPABASE_URL = /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/;
+
+  // 키가 JWT 형식이면 role (anon 또는 service_role) 을 돌려줍니다. 아니면 null.
+  function jwtRole(token) {
+    var parts = str(token).split(".");
+    if (parts.length !== 3) return null;
+    var b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    var payload;
+    try { payload = JSON.parse(atob(b64)); } catch (e) { return null; }
+    return isObject(payload) ? payload.role : null;
+  }
+
+  function checkSupabase(errors, cfg) {
+    if (!isObject(cfg)) {
+      errors.push("config/supabase.json: 최상위 값은 { } 묶음이어야 합니다.");
+      return;
+    }
+    var url = str(cfg.url), key = str(cfg.anonKey);
+    if (!url && !key) return;
+    if (!url || !key) {
+      errors.push("config/supabase.json: url 과 anonKey 를 둘 다 넣거나 둘 다 비워 두세요.");
+      return;
+    }
+    if (!SUPABASE_URL.test(url)) errors.push("config/supabase.json: url 은 https://프로젝트.supabase.co 형식이어야 합니다.");
+    if (startsWith(key, "sb_secret_") || jwtRole(key) === "service_role") {
+      errors.push("config/supabase.json: service_role (secret) 키는 공개 페이지에 넣을 수 없습니다. anon 또는 publishable 키를 쓰세요.");
+    } else if (!(startsWith(key, "sb_publishable_") || jwtRole(key) === "anon")) {
+      errors.push("config/supabase.json: anon 또는 publishable 키를 넣어 주세요 (Settings → API).");
+    }
+  }
 
   function checkCustomPages(files, errors, custom) {
     if (!Array.isArray(custom)) {
@@ -253,6 +284,7 @@
     });
 
     checkCustomPages(files, errors, data.custom_pages);
+    checkSupabase(errors, data.supabase);
 
     var projects = data.projects;
     if (isObject(projects)) checkItems(errors, "content/projects.json", "사업", projects.items);
@@ -408,6 +440,29 @@
     return body;
   }
 
+  var ADMIN_INTRO = "방문자가 올린 글을 확인해서 승인하거나 지우는 화면입니다. 로그인한 관리자만 글을 바꿀 수 있습니다.";
+
+  function supabaseSettings(data) {
+    var cfg = isObject(data.supabase) ? data.supabase : {};
+    return { url: str(cfg.url), key: str(cfg.anonKey) };
+  }
+
+  function readScript(files, rel) {
+    return strip(files[rel]);
+  }
+
+  function adminMain(files, url, key) {
+    return fill(files["src/components/Admin.html"], {
+      url: esc(url), key: esc(key), intro: esc(ADMIN_INTRO), script: readScript(files, "src/admin/admin.js")
+    });
+  }
+
+  function boardLiveHtml(files, url, key) {
+    return fill(files["src/components/BoardLive.html"], {
+      url: esc(url), key: esc(key), script: readScript(files, "src/admin/board.js")
+    });
+  }
+
   function buildPages(files, data) {
     var site = data.site, nav = data.nav, theme = data.theme;
     var style = [themeCss(theme), backgroundCss(theme), files["src/styles/site.css"], files["config/custom.css"] || ""].join("\n");
@@ -475,13 +530,18 @@
       privacy.body, privacy);
     page("contact.html", data.contact.title,
       block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body, data.contact);
+    var connection = supabaseSettings(data);
+    var connected = !!(connection.url && connection.key);
     GENERIC_PAGES.forEach(function (name) {
       var content = data[name];
-      page(name + ".html", content.title, genericBody(content), content.body, content);
+      var body = genericBody(content);
+      if (name === "board" && connected) body += boardLiveHtml(files, connection.url, connection.key);
+      page(name + ".html", content.title, body, content.body, content);
     });
     (data.custom_pages || []).forEach(function (content) {
       page(content.slug + ".html", content.title, genericBody(content), content.body, content);
     });
+    page("admin.html", "관리자", adminMain(files, connection.url, connection.key), ADMIN_INTRO);
     return pages;
   }
 

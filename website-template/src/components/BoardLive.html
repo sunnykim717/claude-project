@@ -1,0 +1,17 @@
+<section class="block live" data-url="{{url}}" data-key="{{key}}">
+  <h2>방문자 글</h2>
+  <div id="live-posts"></div>
+  <h3>글 올리기</h3>
+  <p class="pre">글은 관리자가 확인한 뒤에 올라갑니다. 개인정보(주민등록번호, 카드번호, 계좌번호, 전화번호)는 쓰지 마세요.</p>
+  <form id="post-form">
+    <label>제목 <input name="title" maxlength="100" required></label>
+    <label>내용 <textarea name="body" maxlength="2000" required></textarea></label>
+    <label>이름 (선택) <input name="author" maxlength="30"></label>
+    <button type="submit">올리기</button>
+  </form>
+  <p id="post-message" role="status"></p>
+</section>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+{{script}}
+</script>

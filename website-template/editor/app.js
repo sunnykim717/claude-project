@@ -224,6 +224,7 @@
   function render() {
     refreshPhotoStatus();
     refreshCustomCss();
+    refreshSupabase();
     var result = SiteEngine.build(files);
     var frame = document.getElementById("frame");
     if (result.ok) {
@@ -427,6 +428,25 @@
   function refreshCustomCss() {
     var box = document.getElementById("custom-css");
     if (document.activeElement !== box) box.value = files["config/custom.css"] || "";
+  }
+
+  // Supabase 연결 칸: 값은 config/supabase.json 에 저장되고, 검사에서 비밀 키를 막습니다.
+  function refreshSupabase() {
+    var cfg = JSON.parse(files[KEY_FILES.supabase] || "{}");
+    var url = document.getElementById("sb-url");
+    var key = document.getElementById("sb-key");
+    if (document.activeElement !== url) url.value = cfg.url || "";
+    if (document.activeElement !== key) key.value = cfg.anonKey || "";
+    document.getElementById("sb-status").textContent = cfg.url && cfg.anonKey
+      ? "연결되어 있습니다. 게시판에 방문자 글 칸이 생기고, admin.html 에 관리자 화면이 나옵니다."
+      : "아직 연결하지 않았습니다. 연결하지 않아도 홈페이지는 그대로 만들어집니다.";
+  }
+
+  function saveSupabase(url, key) {
+    commit(function (f) {
+      f[KEY_FILES.supabase] = JSON.stringify({ url: url, anonKey: key }, null, 2) + "\n";
+    }, url || key ? "Supabase 연결 정보를 저장했습니다." : "Supabase 연결을 지웠습니다.");
+    refreshSupabase();
   }
 
   function setCustomCss() {
@@ -765,6 +785,10 @@
       if (file) setPhoto(pageSelect.value, file);
     });
     document.getElementById("btn-css").addEventListener("click", setCustomCss);
+    document.getElementById("btn-supabase").addEventListener("click", function () {
+      saveSupabase(document.getElementById("sb-url").value.trim(), document.getElementById("sb-key").value.trim());
+    });
+    document.getElementById("btn-supabase-clear").addEventListener("click", function () { saveSupabase("", ""); });
     document.getElementById("btn-gallery").addEventListener("click", function () { document.getElementById("file-gallery").click(); });
     document.getElementById("file-gallery").addEventListener("change", function (event) {
       var picked = Array.prototype.slice.call(event.target.files);
