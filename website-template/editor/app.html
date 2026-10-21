@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>홈페이지 편집기</title>
+  <style>
+    :root { --accent: #2563eb; --bg: #f8fafc; --panel: #ffffff; --text: #0f172a; --muted: #64748b; --line: #e2e8f0; --ok: #15803d; --err: #b91c1c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    header { padding: 12px 16px; background: var(--panel); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; }
+    h1 { font-size: 1.1rem; margin: 0; }
+    .layout { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; min-height: calc(100vh - 56px); }
+    aside { background: var(--panel); border-right: 1px solid var(--line); padding: 12px; overflow-y: auto; max-height: calc(100vh - 56px); }
+    section.panel { margin-bottom: 16px; }
+    h2 { font-size: 0.95rem; margin: 0 0 8px; }
+    textarea, input, select { width: 100%; font: inherit; padding: 8px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; color: var(--text); }
+    textarea { min-height: 64px; font-family: ui-monospace, monospace; font-size: 0.9rem; }
+    button { font: inherit; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; font-weight: 600; }
+    button.secondary { background: #fff; color: var(--accent); }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+    .examples button { font-weight: 500; font-size: 0.85rem; padding: 6px 8px; }
+    .log { font-size: 0.9rem; white-space: pre-line; padding: 8px; border-radius: 6px; background: #f1f5f9; min-height: 3em; }
+    .log.ok { color: var(--ok); }
+    .log.err { color: var(--err); }
+    .hint { color: var(--muted); font-size: 0.85rem; }
+    .preview { padding: 12px; min-width: 0; }
+    .preview iframe { width: 100%; height: calc(100vh - 150px); min-height: 420px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } aside { max-height: none; border-right: 0; } .preview iframe { height: 70vh; } }
+  </style>
+</head>
+<body>
+<header>
+  <h1>홈페이지 편집기 (설치 없이, 명령어 입력 없이)</h1>
+  <div class="row">
+    <button type="button" class="secondary" id="btn-import">설정 불러오기</button>
+    <input type="file" id="file-import" accept="application/json,.json" hidden>
+    <button type="button" class="secondary" id="btn-export">설정 저장 (파일)</button>
+    <button type="button" class="secondary" id="btn-reset">처음 상태로</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <section class="panel">
+      <h2>명령 입력</h2>
+      <p class="hint">명령을 적고 Enter 를 누르거나 <b>실행</b> 을 누르세요. 아래 버튼을 누르면 명령이 채워집니다.</p>
+      <textarea id="command" placeholder="예: set site.name 민수의 작업실"></textarea>
+      <div class="row"><button type="button" id="btn-run">실행</button><button type="button" class="secondary" id="btn-help">도움말</button></div>
+      <div class="log" id="log" role="status" aria-live="polite">준비되었습니다. 도움말을 누르면 명령 목록을 볼 수 있습니다.</div>
+    </section>
+
+    <section class="panel examples">
+      <h2>자주 쓰는 명령</h2>
+      <div class="row" id="examples"></div>
+    </section>
+
+    <section class="panel">
+      <h2>디자인 고르기</h2>
+      <div class="row">
+        <select id="design-select" aria-label="디자인 선택"></select>
+        <button type="button" id="btn-design">적용</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>페이지 파일 받기</h2>
+      <p class="hint">받은 파일을 GitHub 저장소의 같은 폴더에 올리면 자동으로 배포됩니다.</p>
+      <div class="row" id="downloads"></div>
+    </section>
+  </aside>
+
+  <section class="preview">
+    <div class="row">
+      <select id="page-select" aria-label="보기 페이지"></select>
+    </div>
+    <iframe id="frame" title="미리보기"></iframe>
+  </section>
+</div>
+
+<script>
+__ENGINE__
+</script>
+<script>
+const DEFAULT_FILES = __DEFAULT_FILES__;
+const DESIGNS = __DESIGNS__;
+__APP__
+</script>
+</body>
+</html>

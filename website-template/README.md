@@ -21,7 +21,18 @@
 | `scripts/generate.py` | 검사 후 `dist/` 에 페이지 만들기 |
 | `.github/workflows/deploy.yml` | GitHub Pages 에 배포 (새 저장소의 루트로 복사해서 씁니다) |
 
-## 사용법
+## 설치 없이 쓰기 (편집기)
+
+`editor/index.html` 파일을 브라우저로 열면 됩니다. 터미널이 필요 없습니다.
+
+- 위쪽 **명령 입력** 칸에 명령을 적고 Enter 를 누릅니다. 아래 버튼을 누르면 명령이 채워집니다.
+- 명령 예: `set site.name 민수의 작업실`, `design warm-orange`, `add-project 이름 | 2026-11-03 | 요약 | https://...`, `check`
+- 오른쪽 미리보기가 바로 바뀝니다. 페이지별 파일은 **받기** 버튼으로 내려받습니다.
+- **설정 저장 (파일)** 로 전체 내용을 파일로 보관하고, **설정 불러오기** 로 다시 엽니다.
+
+편집기 파일은 `scripts/bundle_editor.py` 로 만듭니다. 엔진(`editor/engine.js`)은 Python 생성기와 같은 결과를 내는지 테스트로 확인합니다.
+
+## 사용법 (터미널)
 
 ```bash
 python scripts/validate.py     # 설정 검사

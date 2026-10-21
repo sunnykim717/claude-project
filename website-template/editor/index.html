@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>홈페이지 편집기</title>
+  <style>
+    :root { --accent: #2563eb; --bg: #f8fafc; --panel: #ffffff; --text: #0f172a; --muted: #64748b; --line: #e2e8f0; --ok: #15803d; --err: #b91c1c; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    header { padding: 12px 16px; background: var(--panel); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: center; }
+    h1 { font-size: 1.1rem; margin: 0; }
+    .layout { display: grid; grid-template-columns: minmax(300px, 420px) 1fr; min-height: calc(100vh - 56px); }
+    aside { background: var(--panel); border-right: 1px solid var(--line); padding: 12px; overflow-y: auto; max-height: calc(100vh - 56px); }
+    section.panel { margin-bottom: 16px; }
+    h2 { font-size: 0.95rem; margin: 0 0 8px; }
+    textarea, input, select { width: 100%; font: inherit; padding: 8px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; color: var(--text); }
+    textarea { min-height: 64px; font-family: ui-monospace, monospace; font-size: 0.9rem; }
+    button { font: inherit; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: #fff; cursor: pointer; font-weight: 600; }
+    button.secondary { background: #fff; color: var(--accent); }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+    .examples button { font-weight: 500; font-size: 0.85rem; padding: 6px 8px; }
+    .log { font-size: 0.9rem; white-space: pre-line; padding: 8px; border-radius: 6px; background: #f1f5f9; min-height: 3em; }
+    .log.ok { color: var(--ok); }
+    .log.err { color: var(--err); }
+    .hint { color: var(--muted); font-size: 0.85rem; }
+    .preview { padding: 12px; min-width: 0; }
+    .preview iframe { width: 100%; height: calc(100vh - 150px); min-height: 420px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    @media (max-width: 860px) { .layout { grid-template-columns: 1fr; } aside { max-height: none; border-right: 0; } .preview iframe { height: 70vh; } }
+  </style>
+</head>
+<body>
+<header>
+  <h1>홈페이지 편집기 (설치 없이, 명령어 입력 없이)</h1>
+  <div class="row">
+    <button type="button" class="secondary" id="btn-import">설정 불러오기</button>
+    <input type="file" id="file-import" accept="application/json,.json" hidden>
+    <button type="button" class="secondary" id="btn-export">설정 저장 (파일)</button>
+    <button type="button" class="secondary" id="btn-reset">처음 상태로</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <section class="panel">
+      <h2>명령 입력</h2>
+      <p class="hint">명령을 적고 Enter 를 누르거나 <b>실행</b> 을 누르세요. 아래 버튼을 누르면 명령이 채워집니다.</p>
+      <textarea id="command" placeholder="예: set site.name 민수의 작업실"></textarea>
+      <div class="row"><button type="button" id="btn-run">실행</button><button type="button" class="secondary" id="btn-help">도움말</button></div>
+      <div class="log" id="log" role="status" aria-live="polite">준비되었습니다. 도움말을 누르면 명령 목록을 볼 수 있습니다.</div>
+    </section>
+
+    <section class="panel examples">
+      <h2>자주 쓰는 명령</h2>
+      <div class="row" id="examples"></div>
+    </section>
+
+    <section class="panel">
+      <h2>디자인 고르기</h2>
+      <div class="row">
+        <select id="design-select" aria-label="디자인 선택"></select>
+        <button type="button" id="btn-design">적용</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>페이지 파일 받기</h2>
+      <p class="hint">받은 파일을 GitHub 저장소의 같은 폴더에 올리면 자동으로 배포됩니다.</p>
+      <div class="row" id="downloads"></div>
+    </section>
+  </aside>
+
+  <section class="preview">
+    <div class="row">
+      <select id="page-select" aria-label="보기 페이지"></select>
+    </div>
+    <iframe id="frame" title="미리보기"></iframe>
+  </section>
+</div>
+
+<script>
+/*
+ * 홈페이지 엔진 (브라우저와 Node 에서 같이 씁니다). scripts/validate.py 와 scripts/generate.py 를 옮긴 것입니다.
+ * 같은 입력에 대해 Python 결과와 글자 단위로 같아야 합니다 (tests/test_editor_parity.py 가 확인합니다).
+ *
+ * 입력: files = { "config/site.json": "<파일 글자>", ... }  (파일 이름은 템플릿과 같습니다)
+ */
+(function (root) {
+  "use strict";
+
+  var PAGE_FILES = { "/": "index.html", "/about": "about.html", "/projects": "projects.html", "/contact": "contact.html" };
+  var ALLOWED_FONTS = ["system-ui", "serif", "mono"];
+  var SPACINGS = ["compact", "normal", "airy"];
+  var FONT_STACK = { "system-ui": "system-ui, sans-serif", "serif": "Georgia, serif", "mono": "ui-monospace, monospace" };
+  var SPACING_PX = { "compact": 12, "normal": 24, "airy": 40 };
+  var FILES = {
+    site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
+    home: "content/home.json", about: "content/about.json",
+    projects: "content/projects.json", contact: "content/contact.json"
+  };
+  var HEX = /^#[0-9a-fA-F]{6}$/;
+  var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  var DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+  // Python html.escape(value, quote=True) 와 같은 규칙
+  function esc(value) {
+    var s = value === null || value === undefined ? "" : String(value);
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
+  }
+
+  function isObject(v) { return v !== null && typeof v === "object" && !Array.isArray(v); }
+  function isInt(v) { return typeof v === "number" && Number.isInteger(v); }
+  function str(v) { return v === null || v === undefined ? "" : String(v); }
+  function strip(v) { return str(v).trim(); }
+  function startsWith(s, prefix) { return s.slice(0, prefix.length) === prefix; }
+
+  // 파이썬 str.strip() 과 같은 규칙 (공백 문자)
+  function pyStrip(v) { return str(v).replace(/^\s+|\s+$/g, ""); }
+
+  function isLinkOk(value) {
+    return startsWith(value, "https://") || startsWith(value, "http://") || Object.prototype.hasOwnProperty.call(PAGE_FILES, value);
+  }
+
+  function validate(files) {
+    var errors = [];
+    var data = {};
+    Object.keys(FILES).forEach(function (key) {
+      var rel = FILES[key];
+      var text = files[rel];
+      if (text === undefined || text === null) {
+        errors.push(rel + " 파일이 없습니다.");
+        data[key] = null;
+        return;
+      }
+      try {
+        data[key] = JSON.parse(text);
+      } catch (e) {
+        errors.push(rel + " 의 JSON 형식이 올바르지 않습니다.");
+        data[key] = null;
+      }
+    });
+
+    var site = data.site, nav = data.nav, theme = data.theme;
+    if (isObject(site)) {
+      ["name", "language"].forEach(function (key) {
+        if (!pyStrip(site[key])) errors.push("config/site.json: '" + key + "' 을 적어 주세요.");
+      });
+      if (["ko", "en", "ja"].indexOf(site.language) === -1) {
+        errors.push("config/site.json: language 은 ko, en, ja 중 하나여야 합니다.");
+      }
+    } else if (site !== null) {
+      errors.push("config/site.json: 최상위 값은 { } 묶음이어야 합니다.");
+    }
+
+    if (Array.isArray(nav)) {
+      nav.forEach(function (entry, i) {
+        var n = i + 1;
+        if (!isObject(entry) || !entry.label) {
+          errors.push("config/navigation.json " + n + "번: label 이 필요합니다.");
+        } else if (!Object.prototype.hasOwnProperty.call(PAGE_FILES, entry.path)) {
+          errors.push("config/navigation.json " + n + "번: 알 수 없는 페이지 주소입니다 (" + str(entry.path) + ").");
+        }
+      });
+    } else if (nav !== null) {
+      errors.push("config/navigation.json: 목록이어야 합니다.");
+    }
+
+    if (isObject(theme)) {
+      ["primaryColor", "backgroundColor", "textColor"].forEach(function (key) {
+        if (!HEX.test(str(theme[key]))) errors.push("config/theme.json: " + key + " 는 #RRGGBB 형식이어야 합니다.");
+      });
+      if (ALLOWED_FONTS.indexOf(theme.font) === -1) {
+        errors.push("config/theme.json: font 은 " + ALLOWED_FONTS.slice().sort().join(", ") + " 중 하나여야 합니다.");
+      }
+      var radius = theme.radius;
+      if (!isInt(radius) || radius < 0 || radius > 32) errors.push("config/theme.json: radius 는 0~32 사이의 정수여야 합니다.");
+      if (SPACINGS.indexOf(theme.spacing) === -1) errors.push("config/theme.json: spacing 은 compact, normal, airy 중 하나여야 합니다.");
+    }
+
+    var home = data.home;
+    if (isObject(home)) {
+      var hero = isObject(home.hero) ? home.hero : {};
+      if (!hero.title) errors.push("content/home.json: hero.title 을 적어 주세요.");
+      if (hero.buttonLink && !isLinkOk(str(hero.buttonLink))) {
+        errors.push("content/home.json: buttonLink 은 https:// 주소 또는 페이지 주소여야 합니다 (" + hero.buttonLink + ").");
+      }
+    }
+
+    var projects = data.projects;
+    if (isObject(projects)) {
+      var items = Array.isArray(projects.items) ? projects.items : [];
+      items.forEach(function (item, i) {
+        var n = i + 1;
+        if (!isObject(item) || !item.title) {
+          errors.push("content/projects.json " + n + "번 사업: title 이 필요합니다.");
+          return;
+        }
+        if (item.date && !DATE.test(str(item.date))) errors.push("content/projects.json " + n + "번 사업: date 는 YYYY-MM-DD 형식이어야 합니다.");
+        if (item.url && !(startsWith(str(item.url), "https://") || startsWith(str(item.url), "http://"))) {
+          errors.push("content/projects.json " + n + "번 사업: url 은 https:// 로 시작해야 합니다.");
+        }
+      });
+    }
+
+    var contact = data.contact;
+    if (isObject(contact)) {
+      if (contact.email && !EMAIL.test(str(contact.email))) errors.push("content/contact.json: 이메일 형식이 올바르지 않습니다.");
+      var social = isObject(contact.social) ? contact.social : {};
+      Object.keys(social).forEach(function (key) {
+        var value = str(social[key]);
+        if (value && !(startsWith(value, "https://") || startsWith(value, "http://"))) {
+          errors.push("content/contact.json: social." + key + " 는 https:// 로 시작해야 합니다.");
+        }
+      });
+    }
+    return { data: data, errors: errors };
+  }
+
+  // {{이름}} 자리에 값을 넣습니다. 빠진 값이 있으면 오류입니다.
+  function fill(template, values) {
+    return template.replace(/\{\{(\w+)\}\}/g, function (match, key) {
+      if (!Object.prototype.hasOwnProperty.call(values, key)) throw new Error("템플릿에 없는 자리표시자입니다: " + key);
+      return values[key];
+    });
+  }
+
+  function themeCss(theme) {
+    return ":root {" +
+      " --primary: " + theme.primaryColor + ";" +
+      " --bg: " + theme.backgroundColor + ";" +
+      " --text: " + theme.textColor + ";" +
+      " --font: " + FONT_STACK[theme.font] + ";" +
+      " --radius: " + theme.radius + "px;" +
+      " --gap: " + SPACING_PX[theme.spacing] + "px;" +
+      " --max: 760px;" +
+      " }";
+  }
+
+  function linkFor(value) {
+    if (startsWith(value, "https://") || startsWith(value, "http://")) return value;
+    return PAGE_FILES[value];
+  }
+
+  function headerHtml(files, site, nav, currentFile) {
+    var links = nav.map(function (entry) {
+      var target = PAGE_FILES[entry.path];
+      var current = target === currentFile ? ' aria-current="page"' : "";
+      return '<li><a href="' + esc(target) + '"' + current + ">" + esc(entry.label) + "</a></li>";
+    });
+    return fill(files["src/components/Header.html"], { brand: esc(site.name), links: links.join("") });
+  }
+
+  function heroHtml(files, home) {
+    var hero = home.hero;
+    var button = "";
+    if (hero.buttonText && hero.buttonLink) {
+      button = '<a class="button" href="' + esc(linkFor(hero.buttonLink)) + '">' + esc(hero.buttonText) + "</a>";
+    }
+    return fill(files["src/components/Hero.html"], {
+      title: esc(hero.title), subtitle: esc(hero.subtitle), button: button
+    });
+  }
+
+  function footerHtml(files, site, contact) {
+    var lines = [];
+    if (contact.email) {
+      lines.push('<p><a href="' + esc("mailto:" + contact.email) + '">' + esc(contact.email) + "</a></p>");
+    }
+    var social = isObject(contact.social) ? contact.social : {};
+    var names = [["github", "GitHub"], ["instagram", "Instagram"], ["youtube", "YouTube"]];
+    var links = names.filter(function (pair) { return social[pair[0]]; }).map(function (pair) {
+      return '<li><a href="' + esc(social[pair[0]]) + '">' + pair[1] + "</a></li>";
+    });
+    if (links.length) lines.push('<ul class="links">' + links.join("") + "</ul>");
+    return fill(files["src/components/Footer.html"], { name: esc(site.name), contact: lines.join("") });
+  }
+
+  function block(title, bodyHtml) {
+    return '<section class="block"><h2>' + esc(title) + "</h2>" + bodyHtml + "</section>";
+  }
+
+  // 날짜가 최신인 것이 위로 옵니다. 날짜가 같으면 원래 순서를 지킵니다.
+  function projectArticles(items) {
+    var ordered = items.map(function (item, index) { return { item: item, index: index }; });
+    ordered.sort(function (a, b) {
+      var da = str(a.item.date), db = str(b.item.date);
+      if (da !== db) return da < db ? 1 : -1;
+      return a.index - b.index;
+    });
+    return ordered.map(function (pair) {
+      var item = pair.item;
+      var title = esc(item.title);
+      if (item.url) title = '<a href="' + esc(item.url) + '">' + title + "</a>";
+      var date = item.date ? '<time datetime="' + esc(item.date) + '">' + esc(item.date) + "</time>" : "";
+      var summary = item.summary ? "<p>" + esc(item.summary) + "</p>" : "";
+      return "<article><h3>" + title + "</h3>" + date + summary + "</article>";
+    }).join("");
+  }
+
+  function buildPages(files, data) {
+    var site = data.site, nav = data.nav, theme = data.theme;
+    var style = themeCss(theme) + "\n" + files["src/styles/site.css"];
+    var pages = {};
+
+    function page(fileName, title, mainHtml, description) {
+      var fullTitle = fileName === "index.html" ? site.name : title + " | " + site.name;
+      pages[fileName] = fill(files["src/pages/page.html"], {
+        lang: esc(site.language || "ko"),
+        title: esc(fullTitle),
+        description: esc(site.description),
+        style: style,
+        header: headerHtml(files, site, nav, fileName),
+        main: mainHtml,
+        footer: footerHtml(files, site, data.contact)
+      });
+    }
+
+    var home = data.home;
+    var previewItems = (data.projects.items || []).slice(0, 3);
+    var preview = projectArticles(previewItems);
+    var homeMain = heroHtml(files, home) +
+      block("소개", '<p class="pre">' + esc(home.intro) + "</p>") +
+      (preview ? block(data.projects.title, preview) : "");
+    page("index.html", site.name, homeMain, site.description || "");
+
+    page("about.html", data.about.title,
+      block(data.about.title, '<p class="pre">' + esc(data.about.body) + "</p>"), data.about.body);
+    page("projects.html", data.projects.title,
+      block(data.projects.title, projectArticles(data.projects.items || [])), data.projects.title);
+    page("contact.html", data.contact.title,
+      block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body);
+    return pages;
+  }
+
+  // 검사를 통과하면 페이지 파일 이름과 내용을 돌려줍니다. 틀리면 오류 목록만 돌려줍니다.
+  function build(files) {
+    var checked = validate(files);
+    if (checked.errors.length) return { ok: false, errors: checked.errors, pages: {} };
+    return { ok: true, errors: [], pages: buildPages(files, checked.data) };
+  }
+
+  var api = { PAGE_FILES: PAGE_FILES, FILES: FILES, validate: validate, build: build, esc: esc, fill: fill };
+  if (typeof module !== "undefined" && module.exports) {
+    module.exports = api;
+  } else {
+    root.SiteEngine = api;
+  }
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+</script>
+<script>
+const DEFAULT_FILES = {
+  "config/site.json": "{\n  \"name\": \"새로운 기관\",\n  \"description\": \"기관 소개 홈페이지\",\n  \"language\": \"ko\",\n  \"domain\": \"\"\n}\n",
+  "config/navigation.json": "[\n  {\"label\": \"홈\", \"path\": \"/\"},\n  {\"label\": \"기관소개\", \"path\": \"/about\"},\n  {\"label\": \"주요사업\", \"path\": \"/projects\"},\n  {\"label\": \"문의\", \"path\": \"/contact\"}\n]\n",
+  "config/theme.json": "{\n  \"primaryColor\": \"#2563EB\",\n  \"backgroundColor\": \"#FFFFFF\",\n  \"textColor\": \"#0F172A\",\n  \"font\": \"system-ui\",\n  \"radius\": 8,\n  \"spacing\": \"normal\"\n}\n",
+  "content/home.json": "{\n  \"hero\": {\n    \"title\": \"더 나은 내일을 만듭니다\",\n    \"subtitle\": \"사람과 지역사회를 연결합니다\",\n    \"buttonText\": \"자세히 보기\",\n    \"buttonLink\": \"/about\"\n  },\n  \"intro\": \"홈페이지 첫 화면에 들어갈 소개 문장을 여기에 적어 주세요.\"\n}\n",
+  "content/about.json": "{\n  \"title\": \"기관 소개\",\n  \"body\": \"기관의 목적과 활동을 여기에 적어 주세요.\"\n}\n",
+  "content/projects.json": "{\n  \"title\": \"주요 사업\",\n  \"items\": [\n    {\"title\": \"사업 이름\", \"date\": \"2026-01-15\", \"summary\": \"사업 내용을 한두 문장으로 적어 주세요.\", \"url\": \"\"}\n  ]\n}\n",
+  "content/contact.json": "{\n  \"title\": \"문의\",\n  \"body\": \"문의 방법과 후원 안내를 여기에 적어 주세요.\",\n  \"email\": \"hello@example.com\",\n  \"social\": {\"github\": \"\", \"instagram\": \"\", \"youtube\": \"\"}\n}\n",
+  "src/components/Header.html": "<header class=\"site-header\">\n  <a class=\"brand\" href=\"index.html\">{{brand}}<\/a>\n  <nav aria-label=\"페이지 메뉴\">\n    <ul>{{links}}<\/ul>\n  <\/nav>\n<\/header>\n",
+  "src/components/Hero.html": "<section class=\"hero\" id=\"top\">\n  <h1>{{title}}<\/h1>\n  <p class=\"subtitle\">{{subtitle}}<\/p>\n  {{button}}\n<\/section>\n",
+  "src/components/Footer.html": "<footer class=\"site-footer\">\n  <p>© {{name}}<\/p>\n  {{contact}}\n<\/footer>\n",
+  "src/pages/page.html": "<!doctype html>\n<html lang=\"{{lang}}\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>{{title}}<\/title>\n  <meta name=\"description\" content=\"{{description}}\">\n  <style>\n{{style}}\n  <\/style>\n<\/head>\n<body>\n<a class=\"skip\" href=\"#main\">본문으로 건너뛰기<\/a>\n{{header}}\n<main id=\"main\">\n{{main}}\n<\/main>\n{{footer}}\n<\/body>\n<\/html>\n",
+  "src/styles/site.css": ":root { color-scheme: light dark; }\n* { box-sizing: border-box; }\nbody { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; }\na { color: var(--primary); }\na:focus-visible, button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }\n.skip { position: absolute; left: -999px; }\n.skip:focus { left: 8px; top: 8px; background: var(--bg); padding: 4px 8px; }\n.site-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; max-width: var(--max); margin: 0 auto; padding: var(--gap) var(--gap) 8px; }\n.site-header .brand { font-weight: 700; color: var(--text); text-decoration: none; }\n.site-header ul { list-style: none; display: flex; gap: 16px; flex-wrap: wrap; margin: 0; padding: 0; }\n.site-header a { text-decoration: none; font-weight: 600; }\n.site-header a[aria-current=\"page\"] { text-decoration: underline; }\nmain { max-width: var(--max); margin: 0 auto; padding: var(--gap); }\n.hero { padding: calc(var(--gap) * 2) 0; border-bottom: 4px solid var(--primary); margin-bottom: var(--gap); }\n.hero h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.4rem); }\n.subtitle { margin: 8px 0 16px; opacity: 0.8; }\n.button { display: inline-block; padding: 10px 18px; border-radius: var(--radius); background: var(--primary); color: var(--bg); text-decoration: none; font-weight: 700; }\nsection.block { margin-top: calc(var(--gap) * 1.5); }\nh2 { color: var(--primary); font-size: 1.3rem; margin: 0 0 8px; }\n.pre { white-space: pre-line; }\narticle { border-left: 4px solid var(--primary); padding: 4px 14px; margin: 14px 0; border-radius: 0 var(--radius) var(--radius) 0; }\narticle h3 { margin: 0; font-size: 1.05rem; }\narticle time { font-size: 0.85rem; opacity: 0.7; }\n.links { list-style: none; display: flex; gap: 14px; flex-wrap: wrap; padding: 0; margin: 0; }\n.site-footer { max-width: var(--max); margin: calc(var(--gap) * 2) auto 0; padding: var(--gap); border-top: 1px solid var(--primary); font-size: 0.9rem; opacity: 0.85; }\n"
+};
+const DESIGNS = {
+  "modern-blue": {
+    "label": "모던 블루 (기본)",
+    "primaryColor": "#2563EB",
+    "backgroundColor": "#FFFFFF",
+    "textColor": "#0F172A",
+    "font": "system-ui",
+    "radius": 8,
+    "spacing": "normal"
+  },
+  "warm-orange": {
+    "label": "따뜻한 오렌지",
+    "primaryColor": "#C2410C",
+    "backgroundColor": "#FFFBEB",
+    "textColor": "#431407",
+    "font": "serif",
+    "radius": 4,
+    "spacing": "airy"
+  },
+  "ocean-teal": {
+    "label": "시원한 바다",
+    "primaryColor": "#0F766E",
+    "backgroundColor": "#F0FDFA",
+    "textColor": "#134E4A",
+    "font": "system-ui",
+    "radius": 14,
+    "spacing": "normal"
+  },
+  "minimal-mono": {
+    "label": "미니멀 흑백",
+    "primaryColor": "#111827",
+    "backgroundColor": "#FFFFFF",
+    "textColor": "#111827",
+    "font": "system-ui",
+    "radius": 0,
+    "spacing": "compact"
+  },
+  "night-dark": {
+    "label": "차분한 야간",
+    "primaryColor": "#A78BFA",
+    "backgroundColor": "#0F172A",
+    "textColor": "#E2E8F0",
+    "font": "system-ui",
+    "radius": 12,
+    "spacing": "normal"
+  }
+};
+(function () {
+  "use strict";
+  var STORAGE_KEY = "website-editor:v1";
+  var KEY_FILES = {
+    site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
+    home: "content/home.json", about: "content/about.json", projects: "content/projects.json", contact: "content/contact.json"
+  };
+  var THEME_KEYS = ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing"];
+  var PATH_HELP = [
+    "site.name / site.description / site.language (ko, en, ja)",
+    "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy)",
+    "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
+    "about.title / about.body",
+    "projects.title, projects.items.번호.title / .date / .summary / .url",
+    "contact.title / contact.body / contact.email, contact.social.github / .instagram / .youtube",
+    "nav.번호.label / nav.번호.path (/, /about, /projects, /contact)"
+  ];
+  var EXAMPLES = [
+    "set site.name 민수의 작업실",
+    "set home.hero.title 더 나은 내일을 만듭니다",
+    "set about.body 기관의 목적과 활동을 적어 주세요.",
+    "set contact.email hello@example.com",
+    "design warm-orange",
+    "add-project 빌더 공개 | 2026-11-03 | 주민 여러분을 초대합니다 | https://example.com",
+    "remove-project 1",
+    "check"
+  ];
+
+  var files = loadFiles();
+  var currentPage = "index.html";
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function loadFiles() {
+    try {
+      var saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved && typeof saved === "object") return Object.assign(clone(DEFAULT_FILES), saved);
+    } catch (e) { /* 저장된 값을 쓸 수 없으면 처음 상태를 씁니다 */ }
+    return clone(DEFAULT_FILES);
+  }
+
+  function persist() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(files)); } catch (e) { /* 저장을 못 해도 화면은 동작합니다 */ }
+  }
+
+  function say(text, ok) {
+    var log = document.getElementById("log");
+    log.textContent = text;
+    log.className = "log " + (ok === undefined ? "" : ok ? "ok" : "err");
+  }
+
+  // 'site.name' 같은 경로를 파일과 항목으로 나눕니다.
+  function locate(path) {
+    var parts = String(path).split(".");
+    var key = parts[0];
+    if (!KEY_FILES[key] || parts.length < 2) return null;
+    return { file: KEY_FILES[key], keys: parts.slice(1) };
+  }
+
+  function parseValue(text) {
+    var t = text.trim();
+    if (/^(\{|\[|"|-?\d|true$|false$|null$)/.test(t)) {
+      try { return JSON.parse(t); } catch (e) { /* 글자로 취급합니다 */ }
+    }
+    return t;
+  }
+
+  function setValue(target, path, value) {
+    var parts = path.slice();
+    var node = target;
+    for (var i = 0; i < parts.length - 1; i++) {
+      var step = Array.isArray(node) ? Number(parts[i]) : parts[i];
+      if (node[step] === undefined) throw new Error("항목을 찾지 못했습니다: " + parts.slice(0, i + 1).join("."));
+      node = node[step];
+    }
+    var last = parts[parts.length - 1];
+    if (Array.isArray(node)) {
+      var index = Number(last);
+      if (!Number.isInteger(index) || index < 0 || index >= node.length) throw new Error("번호가 맞지 않습니다: " + last);
+      node[index] = value;
+    } else {
+      if (node === null || typeof node !== "object") throw new Error("이 항목에는 값을 넣을 수 없습니다.");
+      node[last] = value;
+    }
+  }
+
+  function validateCurrent() {
+    return SiteEngine.validate(files).errors;
+  }
+
+  // 바꾼 뒤 검사합니다. 틀리면 바꾸기 전 상태로 되돌립니다.
+  function commit(mutator, successText) {
+    var before = clone(files);
+    try {
+      mutator(files);
+    } catch (e) {
+      files = before;
+      return say(e.message, false);
+    }
+    var errors = validateCurrent();
+    if (errors.length) {
+      files = before;
+      return say("저장하지 않았습니다. 다음을 고쳐 주세요:\n- " + errors.join("\n- "), false);
+    }
+    persist();
+    render();
+    if (successText) say(successText, true);
+  }
+
+  function setCommand(path, rawValue) {
+    var loc = locate(path);
+    if (!loc) return say("경로는 site, theme, nav, home, about, projects, contact 로 시작해야 합니다.", false);
+    commit(function (f) {
+      var data = JSON.parse(f[loc.file]);
+      setValue(data, loc.keys, parseValue(rawValue));
+      f[loc.file] = JSON.stringify(data, null, 2) + "\n";
+    }, path + " 을(를) 바꾸고 저장했습니다.");
+  }
+
+  function applyDesign(name) {
+    if (!DESIGNS[name]) return say("디자인은 " + Object.keys(DESIGNS).join(", ") + " 중 하나여야 합니다.", false);
+    commit(function (f) {
+      var theme = JSON.parse(f[KEY_FILES.theme]);
+      THEME_KEYS.forEach(function (k) { theme[k] = DESIGNS[name][k]; });
+      f[KEY_FILES.theme] = JSON.stringify(theme, null, 2) + "\n";
+    }, "디자인 '" + DESIGNS[name].label + "' 을 적용했습니다.");
+  }
+
+  function addProject(text) {
+    var parts = text.split("|").map(function (p) { return p.trim(); }).filter(Boolean);
+    var item = { title: "", date: "", summary: "", url: "" };
+    var extra = [];
+    parts.forEach(function (part) {
+      if (/^https?:\/\//.test(part)) item.url = part;
+      else if (/^\d{4}-\d{2}-\d{2}$/.test(part)) item.date = part;
+      else if (!item.title) item.title = part;
+      else extra.push(part);
+    });
+    item.summary = extra.join(" ");
+    if (!item.title) return say("사업 이름을 적어 주세요. 예: add-project 빌더 공개 | 2026-11-03 | 요약 | https://...", false);
+    commit(function (f) {
+      var data = JSON.parse(f[KEY_FILES.projects]);
+      data.items.push(item);
+      f[KEY_FILES.projects] = JSON.stringify(data, null, 2) + "\n";
+    }, "사업 '" + item.title + "' 을 추가했습니다.");
+  }
+
+  function removeProject(text) {
+    var index = Number(text.trim()) - 1;
+    commit(function (f) {
+      var data = JSON.parse(f[KEY_FILES.projects]);
+      if (!Number.isInteger(index) || index < 0 || index >= data.items.length) throw new Error("번호가 맞지 않습니다. 1부터 " + data.items.length + " 사이여야 합니다.");
+      var removed = data.items.splice(index, 1)[0];
+      f[KEY_FILES.projects] = JSON.stringify(data, null, 2) + "\n";
+      say("사업 '" + removed.title + "' 을 지웠습니다.", true);
+    }, "");
+  }
+
+  function runCommand(line) {
+    var text = line.trim();
+    if (!text) return say("명령을 적어 주세요. 도움말을 누르면 명령 목록을 볼 수 있습니다.", false);
+    var space = text.indexOf(" ");
+    var word = space === -1 ? text : text.slice(0, space);
+    var rest = space === -1 ? "" : text.slice(space + 1).trim();
+    if (word === "set") {
+      var sp = rest.indexOf(" ");
+      if (sp === -1) return say("사용법: set 경로 값   예: set site.name 민수의 작업실", false);
+      return setCommand(rest.slice(0, sp), rest.slice(sp + 1));
+    }
+    if (word === "design") return applyDesign(rest);
+    if (word === "designs") return say(Object.keys(DESIGNS).map(function (k) { return k + " : " + DESIGNS[k].label; }).join("\n"), true);
+    if (word === "add-project") return addProject(rest);
+    if (word === "remove-project") return removeProject(rest);
+    if (word === "check") {
+      var errors = validateCurrent();
+      return errors.length ? say("다음을 고쳐 주세요:\n- " + errors.join("\n- "), false) : say("검사 통과: 설정과 콘텐츠가 맞습니다.", true);
+    }
+    if (word === "help" || word === "도움말") return say("명령 목록:\n" + [
+      "set 경로 값  - 값 바꾸기 (검사 후 저장)",
+      "design 이름  - 디자인 적용 (" + Object.keys(DESIGNS).join(", ") + ")",
+      "designs      - 디자인 목록",
+      "add-project 이름 | 날짜 | 요약 | 링크  - 사업 추가",
+      "remove-project 번호  - 사업 삭제",
+      "check        - 검사",
+      "",
+      "바꿀 수 있는 경로:",
+      PATH_HELP.join("\n")
+    ].join("\n"), true);
+    return say("알 수 없는 명령입니다: " + word + "\n도움말을 누르면 명령 목록을 볼 수 있습니다.", false);
+  }
+
+  function render() {
+    var result = SiteEngine.build(files);
+    var frame = document.getElementById("frame");
+    if (result.ok) {
+      frame.srcdoc = result.pages[currentPage] || result.pages["index.html"];
+    } else {
+      frame.srcdoc = "<p style='font-family:system-ui;padding:16px;color:#b91c1c'>설정에 오류가 있어 미리보기를 만들 수 없습니다. 아래 '검사' 명령으로 확인해 주세요.</p>";
+    }
+    var downloads = document.getElementById("downloads");
+    downloads.replaceChildren();
+    if (result.ok) {
+      Object.keys(result.pages).sort().forEach(function (name) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "secondary";
+        btn.textContent = name + " 받기";
+        btn.addEventListener("click", function () { download(name, result.pages[name], "text/html;charset=utf-8"); });
+        downloads.append(btn);
+      });
+    }
+  }
+
+  function download(name, text, type) {
+    var blob = new Blob([text], { type: type });
+    var link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = name;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  function init() {
+    var examples = document.getElementById("examples");
+    EXAMPLES.forEach(function (cmd) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "secondary";
+      btn.textContent = cmd;
+      btn.addEventListener("click", function () { document.getElementById("command").value = cmd; });
+      examples.append(btn);
+    });
+
+    var select = document.getElementById("design-select");
+    Object.keys(DESIGNS).forEach(function (k) {
+      var opt = document.createElement("option");
+      opt.value = k;
+      opt.textContent = DESIGNS[k].label;
+      select.append(opt);
+    });
+    document.getElementById("btn-design").addEventListener("click", function () { applyDesign(select.value); });
+
+    var pageSelect = document.getElementById("page-select");
+    ["index.html", "about.html", "projects.html", "contact.html"].forEach(function (name) {
+      var opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      pageSelect.append(opt);
+    });
+    pageSelect.addEventListener("change", function () { currentPage = pageSelect.value; render(); });
+
+    var command = document.getElementById("command");
+    document.getElementById("btn-run").addEventListener("click", function () { runCommand(command.value); render(); });
+    command.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        runCommand(command.value);
+        render();
+      }
+    });
+    document.getElementById("btn-help").addEventListener("click", function () { runCommand("help"); });
+
+    document.getElementById("btn-export").addEventListener("click", function () {
+      download("홈페이지-설정.json", JSON.stringify(files, null, 2), "application/json;charset=utf-8");
+    });
+    document.getElementById("btn-import").addEventListener("click", function () { document.getElementById("file-import").click(); });
+    document.getElementById("file-import").addEventListener("change", function (event) {
+      var file = event.target.files[0];
+      event.target.value = "";
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var loaded = JSON.parse(reader.result);
+          var merged = Object.assign(clone(DEFAULT_FILES), loaded);
+          if (!SiteEngine.validate(merged).errors.length) {
+            files = merged;
+            persist();
+            render();
+            say("설정을 불러왔습니다.", true);
+          } else {
+            say("이 파일은 홈페이지 설정이 아니거나 오류가 있습니다.", false);
+          }
+        } catch (e) {
+          say("파일을 읽을 수 없습니다. 이 편집기에서 저장한 설정 파일인지 확인해 주세요.", false);
+        }
+      };
+      reader.readAsText(file);
+    });
+    document.getElementById("btn-reset").addEventListener("click", function () {
+      if (!confirm("지금까지 고친 내용을 모두 지우고 처음 상태로 되돌릴까요?")) return;
+      files = clone(DEFAULT_FILES);
+      persist();
+      render();
+      say("처음 상태로 되돌렸습니다.", true);
+    });
+
+    render();
+  }
+
+  init();
+})();
+
+</script>
+</body>
+</html>
