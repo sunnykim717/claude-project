@@ -48,9 +48,56 @@ def _is_input_page(page):
     return bool(page.get("fields"))
 
 
+def _is_number(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
+def _type_errors(spec):
+    """값의 종류(글자, 숫자, 참거짓, 목록)를 검사합니다. 잘못된 종류는 화면에 넣기 전에 거부합니다."""
+    errors = []
+    for key in ("name", "goal"):
+        if key in spec and not isinstance(spec[key], str):
+            errors.append(f"'{key}' 는 글자로 적어 주세요.")
+    for key in ("users", "rules", "done"):
+        value = spec.get(key, [])
+        if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
+            errors.append(f"'{key}' 는 글자 목록이어야 합니다.")
+    if not isinstance(spec.get("pages", []), list):
+        return errors + ["'pages' 는 목록이어야 합니다."]
+    for page_index, page in enumerate(spec.get("pages", []), start=1):
+        if not isinstance(page, dict):
+            errors.append(f"화면 {page_index}: 화면은 이름과 입력칸으로 적어 주세요.")
+            continue
+        if not isinstance(page.get("name", ""), str):
+            errors.append(f"화면 {page_index}: 화면 이름은 글자로 적어 주세요.")
+        fields = page.get("fields", [])
+        if not isinstance(fields, list):
+            errors.append(f"화면 {page_index}: 'fields' 는 목록이어야 합니다.")
+            continue
+        for field_index, field in enumerate(fields, start=1):
+            if not isinstance(field, dict):
+                errors.append(f"화면 {page_index} 입력칸 {field_index}: 입력칸은 설정 묶음으로 적어 주세요.")
+                continue
+            where = f"화면 {page_index} 입력칸 {field_index}"
+            if not isinstance(field.get("label", ""), str):
+                errors.append(f"{where}: 'label' 은 글자로 적어 주세요.")
+            for key in ("required", "minToday"):
+                if key in field and not isinstance(field[key], bool):
+                    errors.append(f"{where}: '{key}' 는 true 또는 false 여야 합니다.")
+            for key in ("min", "max", "minLength", "maxLength"):
+                if key in field and not _is_number(field[key]):
+                    errors.append(f"{where}: '{key}' 는 숫자여야 합니다.")
+            options = field.get("options", [])
+            if not isinstance(options, list) or not all(isinstance(o, str) for o in options):
+                errors.append(f"{where}: 'options' 는 글자 목록이어야 합니다.")
+    return errors
+
+
 def validate_structure(spec):
     """코드로 만들 수 있는 구조인지 검사합니다. validate_spec 과 함께 씁니다."""
-    errors = []
+    errors = _type_errors(spec)
+    if errors:
+        return errors
     pages = spec.get("pages", [])
 
     if not any(_is_input_page(p) for p in pages):

@@ -88,5 +88,20 @@ class MainTest(unittest.TestCase):
             self.assertEqual(mb.main([str(bad)]), 1)
 
 
+class SensitiveLabelBypassTest(unittest.TestCase):
+    def test_spaced_resident_number_refused(self):
+        spec = _spec()
+        spec["pages"][0]["fields"].append({"label": "주민 등록 번호", "type": "text", "required": True})
+        self.assertTrue(any("민감한 개인정보" in e for e in mb.validate_spec(spec)))
+
+    def test_uppercase_english_sensitive_word_refused(self):
+        spec = _spec()
+        spec["pages"][0]["fields"].append({"label": "SSN", "type": "text", "required": True})
+        self.assertTrue(any("민감한 개인정보" in e for e in mb.validate_spec(spec)))
+
+    def test_non_dict_spec_rejected(self):
+        self.assertEqual(len(mb.validate_spec(["목록"])), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

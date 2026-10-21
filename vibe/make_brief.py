@@ -10,16 +10,28 @@
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 FIELD_TYPES = {"text", "textarea", "email", "phone", "date", "number", "select", "radio", "checkbox", "url", "time"}
 CHOICE_TYPES = {"select", "radio"}
 # 이 도구로는 만들지 않는 정보입니다. 주민등록번호, 계좌번호처럼 민감한 개인정보는 수집하지 않습니다.
-FORBIDDEN_LABEL_WORDS = ("주민등록", "주민번호", "계좌", "카드번호", "비밀번호")
+FORBIDDEN_LABEL_WORDS = (
+    "주민등록", "주민번호", "주민 번호", "계좌", "카드번호", "카드 번호", "비밀번호", "패스워드",
+    "여권", "운전면허", "외국인등록", "건강", "진료", "병력", "ssn", "cvc",
+)
+
+
+def _is_sensitive_label(label):
+    """띄어쓰기와 대소문자를 무시하고 민감한 표현이 들어 있는지 봅니다."""
+    compact = re.sub(r"\s+", "", label).lower()
+    return any(re.sub(r"\s+", "", word).lower() in compact for word in FORBIDDEN_LABEL_WORDS)
 
 
 def validate_spec(spec):
     """명세를 검사합니다. 문제는 모아서 한 번에 돌려줍니다."""
+    if not isinstance(spec, dict):
+        return ["명세는 { } 로 감싼 설정 묶음이어야 합니다."]
     errors = []
 
     for key in ("name", "goal"):
@@ -47,7 +59,7 @@ def validate_spec(spec):
                 errors.append(f"{where}: 'type' 은 {', '.join(sorted(FIELD_TYPES))} 중 하나여야 합니다.")
             if field.get("type") in CHOICE_TYPES and not field.get("options"):
                 errors.append(f"{where}: 선택 목록({field.get('type')})에는 'options' 를 적어 주세요.")
-            if any(word in label for word in FORBIDDEN_LABEL_WORDS):
+            if _is_sensitive_label(label):
                 errors.append(f"{where}: '{label}' 은 민감한 개인정보라서 이 도구로 만들 수 없습니다.")
 
     done = spec.get("done")

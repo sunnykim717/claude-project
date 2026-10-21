@@ -21,6 +21,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 KST = timezone(timedelta(hours=9))
+FORMULA_PREFIXES = ("=", "+", "-", "@")
 
 MEMBER_COLUMNS = ["이름", "생년월일", "연락처", "주소", "가입일", "상태"]
 MEMBER_REQUIRED = ["이름", "가입일"]
@@ -98,6 +99,11 @@ def write_members_xlsx(members, path, generated_at):
     ws.append(headers)
     for number, member in enumerate(members, start=1):
         ws.append([number] + [member[c] for c in MEMBER_COLUMNS])
+    # 엑셀이 수식으로 해석하지 않도록, 수식처럼 보이는 글자는 글자 칸으로 고정합니다.
+    for row in ws.iter_rows(min_row=2):
+        for cell in row:
+            if isinstance(cell.value, str) and cell.value[:1] in FORMULA_PREFIXES:
+                cell.data_type = "s"
 
     header_fill = PatternFill("solid", fgColor="DBEAFE")
     for cell in ws[1]:

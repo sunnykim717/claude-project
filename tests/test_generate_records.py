@@ -112,5 +112,17 @@ class OutputTest(unittest.TestCase):
             gr.main(["--data-dir", str(self.out / "없는폴더"), "--out-dir", str(self.out)])
 
 
+class FormulaInjectionTest(unittest.TestCase):
+    def test_formula_like_cells_are_stored_as_text(self):
+        from openpyxl import load_workbook
+        members = [{"이름": '=HYPERLINK("http://evil.example","x")', "생년월일": "", "연락처": "",
+                    "주소": "", "가입일": "2024-01-01", "상태": "정회원"}]
+        with tempfile.TemporaryDirectory() as d:
+            out = Path(d) / "회원명부.xlsx"
+            gr.write_members_xlsx(members, out, "테스트")
+            cell = load_workbook(out)["회원명부"]["B2"]
+            self.assertEqual(cell.data_type, "s")
+
+
 if __name__ == "__main__":
     unittest.main()

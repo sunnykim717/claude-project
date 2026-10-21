@@ -233,6 +233,30 @@ def mb_validate(spec):
     return validate_spec(spec)
 
 
+class AdversarialInputTest(unittest.TestCase):
+    def test_min_value_cannot_inject_attributes(self):
+        spec = _spec()
+        spec["pages"][0]["fields"] = [{"label": "수", "type": "number", "min": '1" onfocus="alert(1)'}]
+        errors = ba.validate_structure(spec)
+        self.assertTrue(any("숫자" in e for e in errors))
+
+    def test_non_string_name_is_rejected_not_crashed(self):
+        self.assertTrue(any("'name'" in e for e in ba.validate_structure(_spec(name=123))))
+
+    def test_bad_option_type_rejected(self):
+        spec = _spec()
+        spec["pages"][0]["fields"].append({"label": "구분", "type": "select", "options": [1, 2]})
+        self.assertTrue(any("'options'" in e for e in ba.validate_structure(spec)))
+
+    def test_required_must_be_boolean(self):
+        spec = _spec()
+        spec["pages"][0]["fields"][0]["required"] = "false"
+        self.assertTrue(any("'required'" in e for e in ba.validate_structure(spec)))
+
+    def test_pages_not_dicts_rejected(self):
+        self.assertTrue(ba.validate_structure(_spec(pages=["문자열"])))
+
+
 def html_unescape(text):
     import html as _html
     return _html.unescape(text)
