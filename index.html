@@ -20,6 +20,9 @@
   .btn { display: inline-block; padding: 10px 18px; border-radius: var(--radius); background: var(--accent); color: var(--bg, #ffffff); text-decoration: none; font-weight: 700; }
   .links { list-style: none; display: flex; gap: 14px; flex-wrap: wrap; padding: 0; margin: 0; }
   .links a { color: var(--accent); }
+  nav { border-bottom: 1px solid var(--accent); padding-bottom: 8px; }
+  nav ul { list-style: none; display: flex; gap: 16px; flex-wrap: wrap; padding: 0; margin: 0; }
+  nav a { color: var(--accent); text-decoration: none; font-weight: 600; }
   footer { color: #64748b; font-size: 0.85rem; margin: 40px 0 16px; }
 
   main { max-width: 760px; }
@@ -27,21 +30,24 @@
 </head>
 <body>
 <main>
-  <header>
+  
+  <header id="top">
     <h1>나의 홈페이지</h1>
     <p class="subtitle">이 페이지는 data/site.json 을 수정하면 자동으로 갱신됩니다.</p>
   </header>
-  <article>
+  <section id="items">
+    <article>
     <h2>두 번째 소식</h2>
     <p class="date">2026-10-15</p>
     <p>새로운 콘텐츠를 추가할 때는 items 목록에 항목을 넣으세요.</p>
   </article>
-  <article>
+    <article>
     <h2><a href="https://example.com/news/1">첫 번째 소식</a></h2>
     <p class="date">2026-10-01</p>
     <p>홈페이지 자동 업데이트를 시작했습니다.</p>
   </article>
-  <footer>마지막 자동 업데이트: 2026-10-21 10:44 (KST)</footer>
+  </section>
+  <footer>마지막 자동 업데이트: 2026-10-21 15:42 (KST)</footer>
 </main>
 </body>
 </html>
