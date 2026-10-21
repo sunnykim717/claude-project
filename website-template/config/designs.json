@@ -7,7 +7,8 @@
     "font": "system-ui",
     "radius": 8,
     "spacing": "normal",
-    "layout": "modern"
+    "layout": "modern",
+    "menu": "row"
   },
   "warm-orange": {
     "label": "따뜻한 오렌지",
@@ -17,7 +18,8 @@
     "font": "serif",
     "radius": 4,
     "spacing": "airy",
-    "layout": "classic"
+    "layout": "classic",
+    "menu": "center"
   },
   "ocean-teal": {
     "label": "시원한 바다",
@@ -27,27 +29,30 @@
     "font": "system-ui",
     "radius": 14,
     "spacing": "normal",
-    "layout": "card"
+    "layout": "card",
+    "menu": "row"
   },
   "minimal-mono": {
-    "label": "미니멀 흑백",
+    "label": "미니멀 모노",
     "primaryColor": "#111827",
     "backgroundColor": "#FFFFFF",
     "textColor": "#111827",
-    "font": "system-ui",
+    "font": "mono",
     "radius": 0,
-    "spacing": "compact",
-    "layout": "minimal"
+    "spacing": "airy",
+    "layout": "minimal",
+    "menu": "stack"
   },
   "night-dark": {
-    "label": "차분한 야간",
-    "primaryColor": "#A78BFA",
+    "label": "밤하늘",
+    "primaryColor": "#93C5FD",
     "backgroundColor": "#0F172A",
     "textColor": "#E2E8F0",
     "font": "system-ui",
-    "radius": 12,
+    "radius": 10,
     "spacing": "normal",
-    "layout": "modern"
+    "layout": "modern",
+    "menu": "buttons"
   },
   "forest-green": {
     "label": "숲속 초록",
@@ -57,46 +62,216 @@
     "font": "system-ui",
     "radius": 10,
     "spacing": "normal",
-    "layout": "classic"
+    "layout": "classic",
+    "menu": "row"
   },
   "sunset-pink": {
     "label": "노을 분홍",
     "primaryColor": "#BE185D",
-    "backgroundColor": "#FFF1F5",
+    "backgroundColor": "#FDF2F8",
     "textColor": "#500724",
-    "font": "serif",
+    "font": "rounded",
     "radius": 16,
-    "spacing": "airy",
-    "layout": "card"
+    "spacing": "normal",
+    "layout": "card",
+    "menu": "buttons"
   },
   "royal-purple": {
-    "label": "왕실 보라",
+    "label": "로열 퍼플",
     "primaryColor": "#6D28D9",
-    "backgroundColor": "#FFFFFF",
-    "textColor": "#1E1B4B",
-    "font": "system-ui",
+    "backgroundColor": "#FAF5FF",
+    "textColor": "#2E1065",
+    "font": "sans",
     "radius": 12,
     "spacing": "normal",
-    "layout": "modern"
+    "layout": "modern",
+    "menu": "center"
   },
   "sand-beige": {
     "label": "모래 베이지",
     "primaryColor": "#92400E",
-    "backgroundColor": "#FAF5EB",
-    "textColor": "#422006",
-    "font": "serif",
-    "radius": 6,
+    "backgroundColor": "#FEF3C7",
+    "textColor": "#451A03",
+    "font": "myeongjo",
+    "radius": 2,
     "spacing": "airy",
-    "layout": "minimal"
+    "layout": "classic",
+    "menu": "row"
   },
   "ocean-navy": {
-    "label": "깊은 바다 남색",
+    "label": "깊은 바다",
     "primaryColor": "#1E3A8A",
     "backgroundColor": "#EFF6FF",
-    "textColor": "#0F172A",
-    "font": "system-ui",
-    "radius": 4,
+    "textColor": "#172554",
+    "font": "sans",
+    "radius": 6,
     "spacing": "compact",
-    "layout": "classic"
+    "layout": "modern",
+    "menu": "row"
+  },
+  "mint": {
+    "label": "민트",
+    "primaryColor": "#047857",
+    "backgroundColor": "#ECFDF5",
+    "textColor": "#064E3B",
+    "font": "rounded",
+    "radius": 12,
+    "spacing": "normal",
+    "layout": "card",
+    "menu": "stack"
+  },
+  "lavender": {
+    "label": "라벤더",
+    "primaryColor": "#7C3AED",
+    "backgroundColor": "#F5F3FF",
+    "textColor": "#3B0764",
+    "font": "system-ui",
+    "radius": 18,
+    "spacing": "airy",
+    "layout": "card",
+    "menu": "buttons"
+  },
+  "charcoal-gold": {
+    "label": "차콜과 금빛",
+    "primaryColor": "#F59E0B",
+    "backgroundColor": "#1C1917",
+    "textColor": "#FAFAF9",
+    "font": "classic-latin",
+    "radius": 2,
+    "spacing": "normal",
+    "layout": "minimal",
+    "menu": "center"
+  },
+  "rose-wine": {
+    "label": "로즈 와인",
+    "primaryColor": "#9F1239",
+    "backgroundColor": "#FFF1F2",
+    "textColor": "#4C0519",
+    "font": "myeongjo",
+    "radius": 6,
+    "spacing": "airy",
+    "layout": "bold",
+    "menu": "row"
+  },
+  "slate-cyan": {
+    "label": "슬레이트 청록",
+    "primaryColor": "#0E7490",
+    "backgroundColor": "#ECFEFF",
+    "textColor": "#164E63",
+    "font": "sans",
+    "radius": 8,
+    "spacing": "normal",
+    "layout": "modern",
+    "menu": "stack"
+  },
+  "olive": {
+    "label": "올리브",
+    "primaryColor": "#4D7C0F",
+    "backgroundColor": "#F7FEE7",
+    "textColor": "#1A2E05",
+    "font": "myeongjo",
+    "radius": 4,
+    "spacing": "airy",
+    "layout": "classic",
+    "menu": "center"
+  },
+  "cocoa": {
+    "label": "코코아",
+    "primaryColor": "#78350F",
+    "backgroundColor": "#FFF7ED",
+    "textColor": "#431407",
+    "font": "serif",
+    "radius": 6,
+    "spacing": "normal",
+    "layout": "classic",
+    "menu": "row"
+  },
+  "indigo-night": {
+    "label": "남색 밤",
+    "primaryColor": "#A5B4FC",
+    "backgroundColor": "#1E1B4B",
+    "textColor": "#E0E7FF",
+    "font": "system-ui",
+    "radius": 12,
+    "spacing": "normal",
+    "layout": "bold",
+    "menu": "buttons"
+  },
+  "paper-ink": {
+    "label": "종이와 잉크",
+    "primaryColor": "#1F2937",
+    "backgroundColor": "#F9FAFB",
+    "textColor": "#111827",
+    "font": "classic-latin",
+    "radius": 0,
+    "spacing": "airy",
+    "layout": "minimal",
+    "menu": "row"
+  },
+  "sky": {
+    "label": "맑은 하늘",
+    "primaryColor": "#0369A1",
+    "backgroundColor": "#F0F9FF",
+    "textColor": "#0C4A6E",
+    "font": "system-ui",
+    "radius": 10,
+    "spacing": "normal",
+    "layout": "card",
+    "menu": "row"
+  },
+  "teal-dark": {
+    "label": "짙은 청록 밤",
+    "primaryColor": "#5EEAD4",
+    "backgroundColor": "#042F2E",
+    "textColor": "#CCFBF1",
+    "font": "sans",
+    "radius": 10,
+    "spacing": "normal",
+    "layout": "modern",
+    "menu": "center"
+  },
+  "berry": {
+    "label": "베리",
+    "primaryColor": "#A21CAF",
+    "backgroundColor": "#FDF4FF",
+    "textColor": "#4A044E",
+    "font": "rounded",
+    "radius": 14,
+    "spacing": "normal",
+    "layout": "card",
+    "menu": "buttons"
+  },
+  "kraft": {
+    "label": "크라프트 종이",
+    "primaryColor": "#8B4513",
+    "backgroundColor": "#F5EFE6",
+    "textColor": "#3D2B1F",
+    "font": "myeongjo",
+    "radius": 3,
+    "spacing": "airy",
+    "layout": "classic",
+    "menu": "row"
+  },
+  "emerald-dark": {
+    "label": "짙은 에메랄드",
+    "primaryColor": "#34D399",
+    "backgroundColor": "#022C22",
+    "textColor": "#D1FAE5",
+    "font": "sans",
+    "radius": 8,
+    "spacing": "normal",
+    "layout": "bold",
+    "menu": "stack"
+  },
+  "high-contrast": {
+    "label": "선명한 파랑",
+    "primaryColor": "#1D4ED8",
+    "backgroundColor": "#FFFFFF",
+    "textColor": "#000000",
+    "font": "system-ui",
+    "radius": 6,
+    "spacing": "normal",
+    "layout": "modern",
+    "menu": "row"
   }
 }

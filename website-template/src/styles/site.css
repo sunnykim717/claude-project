@@ -41,3 +41,17 @@ body.layout-minimal .site-header { border-bottom: 0; }
 .hero-photo { display: block; width: 100%; height: auto; border-radius: var(--radius); margin-bottom: var(--gap); }
 .page-photo { margin: 0 0 var(--gap); }
 .page-photo img { display: block; width: 100%; max-height: 360px; object-fit: cover; border-radius: var(--radius); }
+
+/* 배치: wide 는 본문을 넓게, bold 는 제목을 색 띠로 */
+body.layout-wide { --max: 1040px; }
+body.layout-bold h1, body.layout-bold h2 { font-weight: 900; }
+body.layout-bold h2 { display: inline-block; background: var(--primary); color: var(--bg); padding: 4px 12px; border-radius: var(--radius); }
+
+/* 메뉴 모양: row(기본 가로), center(가운데), buttons(버튼), stack(세로) */
+body.menu-center .site-header { flex-direction: column; text-align: center; }
+body.menu-center .site-header ul { justify-content: center; }
+body.menu-buttons .site-header ul { gap: 8px; }
+body.menu-buttons .site-header a { display: inline-block; padding: 6px 12px; border: 1px solid var(--primary); border-radius: var(--radius); }
+body.menu-buttons .site-header a[aria-current="page"] { background: var(--primary); color: var(--bg); text-decoration: none; }
+body.menu-stack .site-header { flex-direction: column; align-items: flex-start; }
+body.menu-stack .site-header ul { flex-direction: column; gap: 6px; }

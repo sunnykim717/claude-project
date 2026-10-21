@@ -19,6 +19,7 @@ FILES = SCHEMA["files"]
 ALLOWED_FONTS = set(SCHEMA["fonts"])
 SPACINGS = set(SCHEMA["spacings"])
 LAYOUTS = set(SCHEMA["layouts"])
+MENUS = set(SCHEMA["menus"])
 LANGUAGES = set(SCHEMA["languages"])
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 IMAGE = re.compile(r"^/images/[A-Za-z0-9._-]+\.(" + "|".join(SCHEMA["image_extensions"]) + ")$")
@@ -110,9 +111,11 @@ def validate(root):
         if not isinstance(radius, int) or isinstance(radius, bool) or not 0 <= radius <= 32:
             errors.append("config/theme.json: radius 는 0~32 사이의 정수여야 합니다.")
         if theme.get("spacing") not in SPACINGS:
-            errors.append("config/theme.json: spacing 은 compact, normal, airy 중 하나여야 합니다.")
+            errors.append(f"config/theme.json: spacing 은 {', '.join(SCHEMA['spacings'])} 중 하나여야 합니다.")
         if theme.get("layout") not in LAYOUTS:
-            errors.append("config/theme.json: layout 은 classic, modern, card, minimal 중 하나여야 합니다.")
+            errors.append(f"config/theme.json: layout 은 {', '.join(SCHEMA['layouts'])} 중 하나여야 합니다.")
+        if theme.get("menu") not in MENUS:
+            errors.append(f"config/theme.json: menu 는 {', '.join(SCHEMA['menus'])} 중 하나여야 합니다.")
 
     home = data["home"]
     if isinstance(home, dict):

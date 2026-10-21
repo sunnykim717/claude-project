@@ -217,6 +217,26 @@ class SiteToolTest(unittest.TestCase):
 class DesignAndSchemaTest(unittest.TestCase):
     """디자인 프리셋과 설정 목록(schema.json)이 서로 맞는지 확인합니다."""
 
+    def test_choices_are_wide_enough(self):
+        schema = json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))
+        designs = json.loads((ROOT / "config" / "designs.json").read_text(encoding="utf-8"))
+        self.assertGreaterEqual(len(designs), 24)
+        self.assertGreaterEqual(len(schema["fonts"]), 9)
+        self.assertGreaterEqual(len(schema["spacings"]), 5)
+        self.assertGreaterEqual(len(schema["layouts"]), 6)
+        self.assertEqual(schema["menus"], ["row", "center", "buttons", "stack"])
+        for name, design in designs.items():
+            self.assertIn(design["menu"], schema["menus"], name)
+            self.assertIn(design["font"], schema["fonts"], name)
+            self.assertIn(design["layout"], schema["layouts"], name)
+            self.assertIn(design["spacing"], schema["spacings"], name)
+
+    def test_menu_must_be_a_known_style(self):
+        with _Copy() as root:
+            _edit(root, "config/theme.json", lambda d: d.update(menu="sidebar"))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("menu" in e for e in errors))
+
     @staticmethod
     def _luminance(hex_color):
         n = int(hex_color[1:], 16)

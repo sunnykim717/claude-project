@@ -5,5 +5,6 @@
   "font": "system-ui",
   "radius": 10,
   "spacing": "normal",
-  "layout": "classic"
+  "layout": "classic",
+  "menu": "row"
 }

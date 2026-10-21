@@ -24,17 +24,64 @@
     "/contact": "contact.html",
     "/privacy": "privacy.html"
   },
-  "languages": ["ko", "en", "ja"],
+  "languages": [
+    "ko",
+    "en",
+    "ja"
+  ],
   "fonts": {
     "system-ui": "system-ui, sans-serif",
+    "sans": "'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
+    "myeongjo": "Batang, 'Apple SD Myungjo', serif",
+    "rounded": "'Trebuchet MS', 'Malgun Gothic', sans-serif",
+    "humanist": "Verdana, 'Malgun Gothic', sans-serif",
+    "modern-latin": "'Helvetica Neue', Arial, sans-serif",
     "serif": "Georgia, serif",
+    "classic-latin": "Palatino, 'Palatino Linotype', 'Book Antiqua', serif",
     "mono": "ui-monospace, monospace"
   },
-  "spacings": {"compact": 12, "normal": 24, "airy": 40},
-  "layouts": ["classic", "modern", "card", "minimal"],
-  "theme_keys": ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout"],
-  "image_extensions": ["jpg", "jpeg", "png", "webp", "gif"],
-  "photo_pages": ["about", "projects", "support", "transparency", "volunteer", "news", "contact", "privacy"],
+  "spacings": {
+    "tight": 8,
+    "compact": 12,
+    "normal": 24,
+    "airy": 40,
+    "spacious": 56
+  },
+  "layouts": [
+    "classic",
+    "modern",
+    "card",
+    "minimal",
+    "wide",
+    "bold"
+  ],
+  "theme_keys": [
+    "primaryColor",
+    "backgroundColor",
+    "textColor",
+    "font",
+    "radius",
+    "spacing",
+    "layout",
+    "menu"
+  ],
+  "image_extensions": [
+    "jpg",
+    "jpeg",
+    "png",
+    "webp",
+    "gif"
+  ],
+  "photo_pages": [
+    "about",
+    "projects",
+    "support",
+    "transparency",
+    "volunteer",
+    "news",
+    "contact",
+    "privacy"
+  ],
   "help": [
     "site.name / site.description / site.language (ko, en, ja)",
     "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy), theme.layout (classic, modern, card, minimal)",
@@ -49,5 +96,11 @@
     "news.title, news.items.번호.title / .date / .summary / .url",
     "contact.title / contact.body / contact.email, contact.social.github / .instagram / .youtube",
     "nav.번호.label / nav.번호.path (/, /about, /projects, /support, /transparency, /news, /volunteer, /contact)"
+  ],
+  "menus": [
+    "row",
+    "center",
+    "buttons",
+    "stack"
   ]
 }

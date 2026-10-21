@@ -32,7 +32,7 @@ FILE_FOR = {
     "transparency": "content/transparency.json", "volunteer": "content/volunteer.json",
     "privacy": "content/privacy.json", "news": "content/news.json", "contact": "content/contact.json",
 }
-THEME_KEYS = ("primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout")
+THEME_KEYS = tuple(json.loads((Path(__file__).resolve().parent.parent / "schema.json").read_text(encoding="utf-8"))["theme_keys"])
 IGNORE = shutil.ignore_patterns("dist", "__pycache__", ".git")
 
 

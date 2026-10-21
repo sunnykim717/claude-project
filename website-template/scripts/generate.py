@@ -163,6 +163,7 @@ def build_pages(root, data):
             "main": photo + main_html,
             "footer": footer_html(root, site, data["contact"]),
             "layout": esc(theme["layout"]),
+            "menu": esc(theme["menu"]),
         })
 
     home = data["home"]

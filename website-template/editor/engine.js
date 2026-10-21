@@ -9,7 +9,7 @@
 
   // 설정 항목 목록은 schema.json 에서만 옵니다. useSchema() 로 한 번 넣어 주세요.
   var loaded = false;
-  var PAGE_FILES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, LANGUAGES, IMAGE, PHOTO_PAGES;
+  var PAGE_FILES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES;
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -22,6 +22,7 @@
     SPACING_PX = schema.spacings;
     SPACINGS = Object.keys(schema.spacings);
     LAYOUTS = schema.layouts;
+    MENUS = schema.menus;
     LANGUAGES = schema.languages;
     IMAGE = new RegExp("^/images/[A-Za-z0-9._-]+\\.(" + schema.image_extensions.join("|") + ")$");
     PHOTO_PAGES = schema.photo_pages;
@@ -135,8 +136,9 @@
       }
       var radius = theme.radius;
       if (!isInt(radius) || radius < 0 || radius > 32) errors.push("config/theme.json: radius 는 0~32 사이의 정수여야 합니다.");
-      if (SPACINGS.indexOf(theme.spacing) === -1) errors.push("config/theme.json: spacing 은 compact, normal, airy 중 하나여야 합니다.");
-      if (LAYOUTS.indexOf(theme.layout) === -1) errors.push("config/theme.json: layout 은 classic, modern, card, minimal 중 하나여야 합니다.");
+      if (SPACINGS.indexOf(theme.spacing) === -1) errors.push("config/theme.json: spacing 은 " + SPACINGS.join(", ") + " 중 하나여야 합니다.");
+      if (LAYOUTS.indexOf(theme.layout) === -1) errors.push("config/theme.json: layout 은 " + LAYOUTS.join(", ") + " 중 하나여야 합니다.");
+      if (MENUS.indexOf(theme.menu) === -1) errors.push("config/theme.json: menu 는 " + MENUS.join(", ") + " 중 하나여야 합니다.");
     }
 
     var home = data.home;
@@ -294,7 +296,8 @@
         header: headerHtml(files, site, nav, fileName),
         main: (photo || "") + mainHtml,
         footer: footerHtml(files, site, data.contact),
-        layout: esc(theme.layout)
+        layout: esc(theme.layout),
+        menu: esc(theme.menu)
       });
     }
 
