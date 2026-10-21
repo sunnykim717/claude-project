@@ -96,10 +96,11 @@ def cmd_set(args):
         return 1
     path = root / FILE_FOR[parts[0]]
     original = path.read_text(encoding="utf-8")
+    text = " ".join(args.value)
     try:
-        value = json.loads(args.value)
+        value = json.loads(text)
     except json.JSONDecodeError:
-        value = args.value
+        value = text
     data = json.loads(original)
     try:
         node, last = _walk(data, parts[1:])
@@ -139,7 +140,7 @@ def build_parser():
     p.set_defaults(func=cmd_new)
     p = sub.add_parser("set", help="설정이나 콘텐츠 값 바꾸기 (검사 후 저장)")
     p.add_argument("path", help="예: site.name, theme.primaryColor, home.hero.title, projects.items.0.title")
-    p.add_argument("value")
+    p.add_argument("value", nargs="+", help="새 값. 따옴표 없이 여러 단어를 써도 됩니다")
     p.set_defaults(func=cmd_set)
     sub.add_parser("check", help="설정 검사").set_defaults(func=cmd_check)
     p = sub.add_parser("build", help="dist/ 에 페이지 만들기")

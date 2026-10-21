@@ -151,6 +151,11 @@ class SiteToolTest(unittest.TestCase):
         self.assertEqual(theme["primaryColor"], "#C2410C")
         self.assertEqual(theme["font"], "serif")
 
+    def test_set_accepts_unquoted_multi_word_value(self):
+        self.assertEqual(self._run("set", "site.name", "○○", "복지", "재단"), 0)
+        site = json.loads((self.target / "config" / "site.json").read_text(encoding="utf-8"))
+        self.assertEqual(site["name"], "○○ 복지 재단")
+
     def test_new_refuses_existing_folder_and_unknown_design(self):
         self.assertEqual(self.tool.main(["new", str(self.target)]), 1)
         other = Path(self.tmp) / "other"
