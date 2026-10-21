@@ -104,7 +104,7 @@
     <button type="button" id="importBtn" title="예전에 저장한 작업 파일을 열어 이어서 고칩니다.">📂 작업 불러오기</button>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
     <button id="exportSite" title="자동 갱신 기능(GitHub)을 쓰는 분만 필요합니다. 대부분은 필요 없습니다.">고급: site.json 내보내기</button>
-    <button id="reset" class="danger" title="모든 내용을 처음 상태로 지웁니다. 되돌릴 수 없습니다.">초기화</button>
+    <button id="reset" class="danger" title="모든 내용을 처음 상태로 지웁니다. 바로 전 상태는 ↩ 되돌리기로 되돌릴 수 있습니다.">초기화</button>
   </div>
 </header>
 <div class="howto">
@@ -205,7 +205,7 @@
         <select id="deco" data-bind="design.deco"></select>
         <details>
           <summary>도형으로 그림 만들기 (내 그림)</summary>
-          <p class="hint">도형을 더해서 위치(x, y), 크기(s), 색(c)을 정하세요. 0~100 사이 숫자입니다. 다 만들면 위의 장식 그림에서 "내 그림"을 고르세요.</p>
+          <p class="hint">도형을 더해서 위치(x, y), 크기, 색을 정하세요. 0~100 사이 숫자입니다. 다 만들면 위의 장식 그림에서 "내 그림"을 고르세요.</p>
           <div id="artList"></div>
           <div class="actions"><button type="button" id="addArt">+ 도형 추가</button></div>
         </details>
@@ -344,7 +344,7 @@
       <iframe class="preview-frame" id="frame" title="미리보기" sandbox="allow-scripts"></iframe>
     </div>
 
-    <details>
+    <details open>
       <summary>검수 결과</summary>
       <ul class="checks" id="checks"></ul>
     </details>
@@ -390,6 +390,11 @@
     frame:   { label: "액자 (각 섹션을 테두리로 감쌈)" },
     side:    { label: "옆줄 (제목 옆에 색 막대)" },
   };
+  // 여러 말 중 가장 긴 말을 고릅니다. "짙은숲"이 "숲"보다 먼저 맞도록 합니다.
+  function longestWord(map, line) {
+    return Object.keys(map).sort((a, b) => b.length - a.length).find((w) => line.includes(w)) || "";
+  }
+  const LOOK_LINE = new RegExp("^(?:화면\\s*스타일|배치|스타일)\\s*[:：]?\\s*(" + Object.keys({ 기본: 1, 띠: 1, 카드: 1, 가운데: 1, 둥근: 1, 선: 1, 포스터: 1, 옆줄: 1, 액자: 1 }).join("|") + ")");
   const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center", 둥근: "soft", 선: "line", 포스터: "poster", 옆줄: "side", 액자: "frame" };
   const GALLERY_MAX = 12;
   // 내 템플릿: 지금 디자인을 이름 붙여 저장합니다. 이 브라우저에만 저장되며, 저장 공간이 부족하면 알려 줍니다.
@@ -517,6 +522,22 @@
     }
     return "";
   }
+  // 날짜를 2026-09-30 형식으로 맞춥니다. 날짜가 없거나 잘못되면 빈 값(맨 뒤로 갑니다).
+  function dateKey(value) {
+    const m = /^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/.exec(String(value ?? "").trim());
+    if (!m) return "";
+    return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  }
+  // 카드 색: 밝은 바탕이면 흰색, 어두운 바탕이면 조금 밝은 색을 씁니다.
+  function cardFor(bg) {
+    const m = /^#([0-9a-f]{6})$/i.exec(String(bg));
+    if (!m) return "#ffffff";
+    const n = parseInt(m[1], 16);
+    const lum = (0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)) / 255;
+    if (lum > 0.5) return "#ffffff";
+    const lift = (c) => Math.round(c + (255 - c) * 0.1);
+    return "#" + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => lift(c).toString(16).padStart(2, "0")).join("");
+  }
   function customArtSvg(art) {
     const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${art.map(shapeSvg).join("")}</svg>`;
     return "data:image/svg+xml," + encodeURIComponent(svg).replace(/[()']/g, (m) => "%" + m.charCodeAt(0).toString(16).toUpperCase());
@@ -627,7 +648,7 @@
   const FONTS = {
     basic:    { label: "기본 고딕",     css: "system-ui, sans-serif" },
     malgun:   { label: "맑은 고딕",     css: "'Malgun Gothic', 'Apple SD Gothic Neo', system-ui, sans-serif" },
-    nanum:    { label: "나눔고딕",      css: "'Nanum Gothic', 'NanumGothic', 'Malgun Gothic', system-ui, sans-serif" },
+    nanum:    { label: "나눔고딕",      css: "'Nanum Gothic', 'NanumGothic', 'Malgun Gothic', system-ui, sans-serif", google: "Nanum+Gothic:wght@400;700" },
     batang:   { label: "바탕 · 명조",   css: "Batang, 'Nanum Myeongjo', 'Noto Serif KR', Georgia, serif" },
     serif:    { label: "세리프 (영문)", css: "Georgia, 'Times New Roman', serif" },
     sans:     { label: "산세리프 (영문)", css: "'Helvetica Neue', Arial, sans-serif" },
@@ -765,6 +786,13 @@
       s.sections = sections;
     }
 
+    // 글자로 된 칸은 글자만 받습니다. 잘못된 값은 기본값으로 바꿉니다.
+    const onlyText = (obj, defaults) => { for (const k of Object.keys(defaults)) if (typeof obj[k] !== "string") obj[k] = defaults[k]; };
+    onlyText(s.site, DEFAULT_STATE.site);
+    onlyText(s.headings, DEFAULT_STATE.headings);
+    onlyText(s.cta, DEFAULT_STATE.cta);
+    onlyText(s.social, DEFAULT_STATE.social);
+    ["about", "contact", "support", "volunteer", "location"].forEach((k) => { if (typeof s[k] !== "string") s[k] = ""; });
     const d = s.design;
     ["accent", "text", "bg"].forEach((k) => { if (!/^#[0-9a-f]{6}$/i.test(d[k])) d[k] = DEFAULT_STATE.design[k]; });
     if (!allTemplates()[d.template]) d.template = "minimal";
@@ -987,7 +1015,8 @@
     </section>`;
     }
     if (id === "news") {
-      const items = s.news.filter((n) => n.title.trim()).slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map((n) => {
+      const items = s.news.filter((n) => n.title.trim()).map((n, i) => ({ n, i, key: dateKey(n.date) }))
+        .sort((a, b) => (a.key === b.key ? a.i - b.i : a.key < b.key ? 1 : -1)).map(({ n }) => {
         const url = safeUrl(n.url);
         const name = url ? `<a href="${url}">${esc(n.title)}</a>` : esc(n.title);
         return `<article>
@@ -1056,7 +1085,7 @@
   <meta property="og:title" content="${title}">
   <meta property="og:type" content="website">${desc ? `\n  <meta property="og:description" content="${desc}">` : ""}${img ? `\n  <meta property="og:image" content="${img}">` : ""}
   <style>
-    :root { --accent: ${d.accent}; --text: ${d.text}; --bg: ${d.bg}; --radius: ${d.radius}px; --max: ${d.maxWidth}px; --gap: ${SPACING[d.spacing]}px; }
+    :root { --accent: ${d.accent}; --text: ${d.text}; --bg: ${d.bg}; --card: ${cardFor(d.bg)}; --radius: ${d.radius}px; --max: ${d.maxWidth}px; --gap: ${SPACING[d.spacing]}px; }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: ${d.font}; background: var(--bg); color: var(--text); font-size: 17px; line-height: 1.85; word-break: keep-all; }
     nav { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line, #e2e8f0); box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06); padding: 12px var(--gap); }
@@ -1100,7 +1129,7 @@
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
     .gallery img { width: 100%; height: auto; border-radius: var(--radius); display: block; }
     body.look-card article { background: rgba(127, 127, 127, 0.08); border: 1px solid rgba(127, 127, 127, 0.25); border-left: 4px solid var(--accent); padding: 12px 16px; }
-    body.look-soft article { background: #fff; border: none; border-left: 0; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); border-radius: calc(var(--radius) * 1.5); padding: 18px 22px; }
+    body.look-soft article { background: var(--card); border: none; border-left: 0; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); border-radius: calc(var(--radius) * 1.5); padding: 18px 22px; }
     body.look-soft .hero, body.look-soft .hero-bg { border-radius: calc(var(--radius) * 1.5); }
     body.look-poster h2 { font-size: 2rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 0; padding-bottom: 0; }
     body.look-poster h2::after { content: ""; display: block; width: 56px; height: 6px; background: var(--accent); margin-top: 6px; }
@@ -1417,21 +1446,21 @@ ${navHtml}
         const name = findColorName(line);
         state.design[target] = COLOR_NAMES[name];
         applied.push(`${{ accent: "강조색", bg: "배경색", text: "글자색" }[target]} → ${name}`);
-      } else if (/글꼴|폰트|글씨체/.test(line) && FONT_WORDS.some(([re]) => re.test(line))) {
-        const [, key] = FONT_WORDS.find(([re]) => re.test(line));
+      } else if (/글꼴|폰트|글씨체/.test(line) && FONT_WORDS.some(([re]) => re.test(line.replace(/\s+/g, "")))) {
+        const [, key] = FONT_WORDS.find(([re]) => re.test(line.replace(/\s+/g, "")));
         state.design.font = FONTS[key].css;
         applied.push(`글꼴 → ${FONTS[key].label}`);
-      } else if ((m = line.match(/^(?:화면\s*스타일|배치|스타일)\s*[:：]?\s*(기본|띠|카드|가운데)/))) {
+      } else if ((m = line.match(LOOK_LINE))) {
         state.design.look = LOOK_WORDS[m[1]];
         applied.push(`화면 스타일 → ${LOOKS[state.design.look].label}`);
-      } else if (/템플릿|스타일|테마/.test(line) && Object.keys(TEMPLATE_WORDS).some((w) => line.includes(w))) {
-        const word = Object.keys(TEMPLATE_WORDS).find((w) => line.includes(w));
-        const t = TEMPLATES[TEMPLATE_WORDS[word]];
+      } else if (/템플릿|스타일|테마/.test(line) && longestWord(TEMPLATE_WORDS, line)) {
+        const word = longestWord(TEMPLATE_WORDS, line);
+        const t = allTemplates()[TEMPLATE_WORDS[word]];
         Object.assign(state.design, { template: TEMPLATE_WORDS[word], accent: t.accent, text: t.text, bg: t.bg, font: t.font, radius: t.radius });
         applied.push(`템플릿 → ${t.label}`);
       } else if (isAboutContinuation) {
         state.about += "\n" + line;
-      } else if (STYLE_HINTS.some(([re]) => re.test(line))) {
+      } else if (/^(스타일|템플릿|테마|화면)/.test(line) && STYLE_HINTS.some(([re]) => re.test(line))) {
         const [, key, feel] = STYLE_HINTS.find(([re]) => re.test(line));
         if (hasExplicitDesign) {
           applied.push(`스타일 추천(${feel})은 직접 고른 디자인 값을 우선해 건너뜀`);
@@ -1528,6 +1557,10 @@ ${navHtml}
   $("makeLink").addEventListener("click", async () => {
     const base = location.href.split("?")[0].split("#")[0];
     const url = `${base}?spec=${textToBase64Url(JSON.stringify(state))}`;
+    if (url.length > 7000) {
+      $("specResult").textContent = "사진이 많아서 링크가 너무 깁니다. 대신 💾 작업 저장으로 파일을 받아 두세요.";
+      return;
+    }
     try {
       await navigator.clipboard.writeText(url);
       $("specResult").textContent = "링크를 복사했습니다. 이 링크를 열면 지금 내용이 채워집니다.";
@@ -1651,6 +1684,11 @@ ${navHtml}
       wizardMessage = "";
       renderWizard();
     } else if (action === "skip") {
+      if (step.required) {
+        wizardMessage = "이름은 꼭 적어 주셔야 다음으로 넘어갈 수 있습니다.";
+        renderWizard();
+        return;
+      }
       wizardMessage = "";
       advanceWizard();
     } else if (action === "next") {
@@ -1732,7 +1770,7 @@ ${navHtml}
       <div class="card">
         <div class="row">
           <select data-art="${i}" data-field="type">${Object.entries(SHAPES).map(([k, v]) => `<option value="${k}" ${item.type === k ? "selected" : ""}>${v}</option>`).join("")}</select>
-          <input type="color" data-art="${i}" data-field="c" value="${esc(item.c)}">
+          <input type="color" title="도형 색" data-art="${i}" data-field="c" value="${esc(item.c)}">
         </div>
         <div class="row">
           <label>x <input type="number" min="0" max="100" data-art="${i}" data-field="x" value="${item.x}"></label>
@@ -1773,7 +1811,12 @@ ${navHtml}
   function previewHtml() {
     return buildHtml().replace("</body>", PREVIEW_LINK_FIX + "\n</body>");
   }
+  let refreshTimer = null;
   function refresh() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(refreshNow, 180);
+  }
+  function refreshNow() {
     $("frame").srcdoc = previewHtml();
     $("frame").style.width = $("viewport").value;
     renderChecks();
@@ -1846,6 +1889,7 @@ ${navHtml}
         return;
       }
       if (data.length > MAX_STORED_CHARS) { alert("사진이 너무 복잡해서 줄이지 못했습니다. 다른 사진을 골라 주세요."); return; }
+      if (!fitsBudget(data.length)) { alert("저장 공간이 부족합니다. 사진을 몇 장 빼 주세요."); return; }
       const [kind, i] = el.dataset.photo.split(":");
       undoSnapshot = clone(state);
       (kind === "news" ? state.news : state.projects)[Number(i)].photo = data;
@@ -1914,12 +1958,18 @@ ${navHtml}
   });
 
   $("reset").addEventListener("click", () => {
-    if (!confirm("모든 내용을 초기화할까요?")) return;
+    if (!confirm("모든 내용을 초기화할까요? 바로 전 상태는 ↩ 되돌리기로 되돌릴 수 있습니다.")) return;
+    undoSnapshot = clone(state);
     state = clone(DEFAULT_STATE);
     fullRender();
   });
 
   $("download").addEventListener("click", () => {
+    const errors = runChecks().filter(([level]) => level === "err");
+    if (errors.length) {
+      alert("아래 오류를 먼저 고쳐 주세요.\n\n" + errors.map(([, msg]) => "- " + msg).join("\n"));
+      return;
+    }
     const blob = new Blob([buildHtml()], { type: "text/html;charset=utf-8" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -1938,6 +1988,12 @@ ${navHtml}
   });
 
   // 빌더의 섹션 이름을 자동화(update_homepage.py)의 섹션 이름으로 바꿉니다.
+  // 자동 갱신 프로그램은 글꼴 세 가지만 받습니다. 가까운 글꼴로 바꿔서 보냅니다.
+  function pipelineFont(css) {
+    if (/mono|courier/i.test(css)) return "ui-monospace, monospace";
+    if (/serif|batang|명조|myeongjo|gowun|georgia|times/i.test(css)) return "Georgia, serif";
+    return "system-ui, sans-serif";
+  }
   const SECTION_EXPORT = { about: "about", projects: "items", cta: "cta", social: "social", contact: "contact" };
 
   // 자동화 파이프라인(update_homepage.py)이 읽는 data/site.json 형식으로 바꿉니다.
@@ -1948,7 +2004,7 @@ ${navHtml}
       title: s.site.title.trim(),
       lang: s.site.lang,
       theme: {
-        accent: s.design.accent, text: s.design.text, bg: s.design.bg, font: s.design.font,
+        accent: s.design.accent, text: s.design.text, bg: s.design.bg, font: pipelineFont(s.design.font),
         radius: s.design.radius, spacing: s.design.spacing, maxWidth: s.design.maxWidth,
       },
     };
@@ -1977,6 +2033,8 @@ ${navHtml}
   }
 
   $("exportSite").addEventListener("click", () => {
+    const left = [["사진첩", state.gallery.length], ["소식", state.news.length], ["질문", state.faq.length], ["후원 안내", state.support.trim() ? 1 : 0], ["자원봉사", state.volunteer.trim() ? 1 : 0], ["오시는 길", state.location.trim() ? 1 : 0]].filter(([, n]) => n).map(([name]) => name);
+    if (left.length && !confirm(`자동 갱신 파일에는 다음 내용이 들어가지 않습니다: ${left.join(", ")}. 계속할까요? (홈페이지 파일 받기에는 모두 들어갑니다)`)) return;
     const errors = runChecks().filter(([level]) => level === "err");
     if (errors.length) {
       alert("아래 오류를 먼저 고쳐 주세요.\n\n" + errors.map(([, msg]) => "- " + msg).join("\n"));
@@ -2061,6 +2119,7 @@ ${navHtml}
       return;
     }
     if (data.length > MAX_STORED_CHARS) { alert("사진이 너무 복잡해서 줄이지 못했습니다. 다른 사진을 골라 주세요."); return; }
+    if (!fitsBudget(data.length)) { alert("저장 공간이 부족합니다. 사진을 몇 장 빼 주세요."); return; }
     undoSnapshot = clone(state);
     state.site[key] = data;
     fullRender();
@@ -2073,6 +2132,10 @@ ${navHtml}
     $("overlayValue").textContent = state.design.overlay;
     $("galleryState").textContent = `사진첩: ${state.gallery.length} / ${GALLERY_MAX}장`;
     $("galleryList").innerHTML = state.gallery.map((g, i) => `<figure><img src="${g.src}" alt="사진 ${i + 1}"><button type="button" data-gallery-remove="${i}">빼기</button></figure>`).join("");
+  }
+  // 저장 공간 여유를 확인합니다. 넘으면 사진을 넣지 않습니다.
+  function fitsBudget(extraChars) {
+    return JSON.stringify(state).length + extraChars < 4000000;
   }
   async function addGalleryFiles(files) {
     const room = GALLERY_MAX - state.gallery.length;
@@ -2089,6 +2152,7 @@ ${navHtml}
         continue;
       }
       if (data.length > MAX_STORED_CHARS) { alert(`${file.name} 은(는) 너무 복잡해서 넣지 못했습니다.`); continue; }
+      if (!fitsBudget(data.length)) { alert("저장 공간이 부족해서 나머지 사진은 넣지 않았습니다. 사진을 몇 장 빼 주세요."); break; }
       state.gallery.push({ src: data, alt: "" });
     }
     fullRender();
@@ -2256,7 +2320,8 @@ ${navHtml}
   $("deco").innerHTML = Object.entries(DECOS).map(([key, item]) => `<option value="${key}">${esc(item.label)}</option>`).join("");
   $("pattern").innerHTML = Object.entries(PATTERNS).map(([key, item]) => `<option value="${key}">${esc(item.label)}</option>`).join("");
   $("look").innerHTML = Object.entries(LOOKS).map(([key, look]) => `<option value="${key}">${esc(look.label)}</option>`).join("");
-  $("font").innerHTML = Object.values(FONTS).map((f) => `<option value="${esc(f.css)}">${esc(f.label)}</option>`).join("");
+  $("font").innerHTML = [...new Map([...Object.values(FONTS).map((f) => [f.css, f.label]), ...Object.values(TEMPLATES).map((x) => [x.font, x.font.split(",")[0].replace(/'/g, "")])]).entries()]
+    .map(([css, label]) => `<option value="${esc(css)}">${esc(label)}</option>`).join("");
 
   applyFromAddress();
   renderWizard();
