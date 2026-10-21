@@ -93,6 +93,23 @@
     </details>
 
     <details open>
+      <summary>0-2. 붙여넣기 · 링크로 열기</summary>
+      <p class="hint">명세(JSON)나 말로 적은 글을 붙여넣으면 적용합니다. 지금 내용을 링크로 복사해 두면 그 링크를 열 때 같은 내용이 채워집니다.</p>
+      <textarea id="specPaste" rows="4" placeholder="여기에 명세(JSON) 또는 말로 적은 글을 붙여넣으세요"></textarea>
+      <div class="actions">
+        <button type="button" id="specApply" class="primary">붙여넣은 내용 적용</button>
+        <button type="button" id="makeLink">지금 내용을 링크로 복사</button>
+      </div>
+      <div id="specResult" class="hint"></div>
+    </details>
+
+    <details open>
+      <summary>0-3. 질문에 답하며 만들기</summary>
+      <p class="hint">질문에 하나씩 답하면 됩니다. 건너뛰어도 되고, 나중에 아래 칸에서 직접 고칠 수 있습니다.</p>
+      <div id="wizardBox"></div>
+    </details>
+
+    <details open>
       <summary>1. 사이트 정보</summary>
       <label for="title">사이트 제목 (필수, 60자 이내 권장)</label>
       <input type="text" id="title" data-bind="site.title">
@@ -835,9 +852,9 @@ ${navHtml}
     return Object.keys(COLOR_NAMES).find((name) => line.includes(name));
   }
 
-  $("nlApply").addEventListener("click", () => {
-    const text = $("nlInput").value;
-    if (!text.trim()) return;
+  // 말로 적기 한 덩어리를 적용하고, 화면에 보여 줄 결과 HTML 을 돌려줍니다. 입력란, 붙여넣기, 주소, 질문 마법사가 같이 씁니다.
+  function applyText(text) {
+    if (!text.trim()) return "";
     const before = clone(state);
     const { applied, notUnderstood, wantsUndo } = parseNaturalText(text);
     if (wantsUndo) {
@@ -845,8 +862,7 @@ ${navHtml}
       if (undoSnapshot) state = undoSnapshot;
       undoSnapshot = null;
       fullRender();
-      $("nlResult").innerHTML = "<strong>직전 적용을 되돌렸습니다.</strong>";
-      return;
+      return "<strong>직전 적용을 되돌렸습니다.</strong>";
     }
     undoSnapshot = before;
     fullRender();
@@ -857,7 +873,161 @@ ${navHtml}
       lines.push("예: 제목:, 소개:, 소개글:, 연락처:, 강조색:, 글꼴:, 템플릿:, 소식 추가:, 버튼:, 인스타:, 모서리:, 여백:, 연락처 빼 줘");
     }
     if (!applied.length && !notUnderstood.length) lines.push("적용할 내용이 없습니다.");
-    $("nlResult").innerHTML = lines.join("<br>");
+    return lines.join("<br>");
+  }
+
+  $("nlApply").addEventListener("click", () => {
+    if (!$("nlInput").value.trim()) return;
+    $("nlResult").innerHTML = applyText($("nlInput").value);
+  });
+
+  // 명세(JSON) 이면 불러오고, 그 밖이면 말로 적은 글로 보고 적용합니다.
+  function applyPasted(text) {
+    const trimmed = text.trim();
+    if (!trimmed) return "";
+    if (trimmed.startsWith("{")) {
+      try {
+        undoSnapshot = clone(state);
+        state = normalize(JSON.parse(trimmed));
+        fullRender();
+        return "명세를 적용했습니다. 직전 상태로 되돌리려면 '말로 적기'의 되돌리기 를 누르세요.";
+      } catch (err) {
+        return "명세(JSON) 형식을 확인해 주세요. 말로 적은 내용이라면 '{' 로 시작하지 않게 적어 주세요.";
+      }
+    }
+    return applyText(trimmed);
+  }
+
+  $("specApply").addEventListener("click", () => {
+    $("specResult").innerHTML = applyPasted($("specPaste").value);
+  });
+
+  // 지금 내용을 링크로 만듭니다. 파일이 아니라 주소 안에 내용이 들어갑니다.
+  function textToBase64Url(text) {
+    const bytes = new TextEncoder().encode(text);
+    let binary = "";
+    bytes.forEach((b) => { binary += String.fromCharCode(b); });
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+  function base64UrlToText(value) {
+    const base64 = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+    const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  }
+
+  $("makeLink").addEventListener("click", async () => {
+    const base = location.href.split("?")[0].split("#")[0];
+    const url = `${base}?spec=${textToBase64Url(JSON.stringify(state))}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      $("specResult").textContent = "링크를 복사했습니다. 이 링크를 열면 지금 내용이 채워집니다.";
+    } catch (err) {
+      $("specResult").textContent = "복사하지 못했습니다. 아래 주소를 직접 복사하세요: " + url;
+    }
+  });
+
+  // 주소에 담긴 내용을 한 번 적용합니다. ?text= 는 말로 적은 글, ?spec= 는 링크로 만든 명세입니다.
+  function applyFromAddress() {
+    const params = new URLSearchParams(location.search);
+    const text = params.get("text");
+    const spec = params.get("spec");
+    if (!text && !spec) return;
+    let message = "";
+    try {
+      message = applyPasted(spec ? base64UrlToText(spec) : text);
+    } catch (err) {
+      message = "주소의 내용을 읽지 못했습니다. 링크를 다시 만들어 주세요.";
+    }
+    $("specResult").innerHTML = message;
+    history.replaceState(null, "", location.href.split("?")[0]);
+  }
+
+  // ---------- 질문 마법사: 한 번에 한 가지씩 묻고, 답은 말로 적기와 같은 규칙으로 적용합니다 ----------
+  const WIZARD_STEPS = [
+    { question: "홈페이지 이름은 무엇인가요?", type: "text", required: true, line: (v) => `제목: ${v}` },
+    { question: "한 줄 소개를 적어 주세요.", type: "text", line: (v) => `한 줄 소개: ${v}` },
+    { question: "소개 글을 적어 주세요. 여러 줄도 됩니다.", type: "textarea", line: (v) => `소개글: ${v}` },
+    { question: "연락처를 적어 주세요. 예: 02-000-0000, hello@example.com", type: "text", line: (v) => `연락처: ${v}` },
+    {
+      question: "느낌을 골라 주세요.", type: "choice",
+      options: [["깔끔하게", "템플릿: 미니멀"], ["시원하게", "템플릿: 오션"], ["따뜻하게", "템플릿: 웜"], ["어둡게", "템플릿: 나이트"]],
+    },
+    {
+      question: "강조색을 골라 주세요.", type: "choice",
+      options: [["파란색", "강조색: 파란색"], ["초록색", "강조색: 초록색"], ["빨간색", "강조색: 빨간색"], ["보라색", "강조색: 보라색"], ["주황색", "강조색: 주황색"]],
+    },
+    {
+      question: "글꼴을 골라 주세요.", type: "choice",
+      options: [["고딕 (기본)", "글꼴: 고딕"], ["명조 (세리프)", "글꼴: 명조"], ["모노", "글꼴: 모노"]],
+    },
+    {
+      question: "소식을 하나 추가할까요? 제목 | 날짜 | 요약 | 링크 순서로 적으세요. 날짜와 링크는 빼도 됩니다.",
+      type: "text", placeholder: "행사 안내 | 2026-11-03 | 주민 여러분을 초대합니다 | https://example.com", line: (v) => `소식 추가: ${v}`,
+    },
+  ];
+  let wizardStep = 0;
+  let wizardMessage = "";
+
+  function renderWizard() {
+    const box = $("wizardBox");
+    if (wizardStep >= WIZARD_STEPS.length) {
+      box.innerHTML = `<p>${wizardMessage}</p><p><strong>끝났습니다.</strong> 오른쪽 미리보기를 확인하고, 필요하면 칸을 직접 고치세요.</p>` +
+        '<div class="actions"><button type="button" data-wizard="restart">처음부터 다시</button></div>';
+      return;
+    }
+    const step = WIZARD_STEPS[wizardStep];
+    let input = "";
+    if (step.type === "choice") {
+      input = `<div class="actions">${step.options.map(([label], i) => `<button type="button" data-choice="${i}">${esc(label)}</button>`).join("")}</div>`;
+    } else if (step.type === "textarea") {
+      input = '<textarea id="wizardInput" rows="3"></textarea>';
+    } else {
+      input = `<input type="text" id="wizardInput" placeholder="${esc(step.placeholder || "")}">`;
+    }
+    const nav = `<button type="button" data-wizard="skip">건너뛰기</button>` +
+      (wizardStep > 0 ? '<button type="button" data-wizard="prev">이전</button>' : "") +
+      (step.type === "choice" ? "" : '<button type="button" data-wizard="next" class="primary">다음</button>');
+    box.innerHTML = `<p class="hint">${wizardStep + 1} / ${WIZARD_STEPS.length}</p>` +
+      `<p>${wizardMessage}</p><p><strong>${esc(step.question)}</strong></p>${input}` +
+      `<div class="actions">${nav}</div>`;
+  }
+
+  function advanceWizard() {
+    wizardStep += 1;
+    renderWizard();
+  }
+
+  $("wizardBox").addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    const step = WIZARD_STEPS[wizardStep];
+    if (button.dataset.choice !== undefined) {
+      wizardMessage = applyText(step.options[Number(button.dataset.choice)][1]);
+      advanceWizard();
+      return;
+    }
+    const action = button.dataset.wizard;
+    if (action === "restart") {
+      wizardStep = 0;
+      wizardMessage = "";
+      renderWizard();
+    } else if (action === "prev") {
+      wizardStep -= 1;
+      wizardMessage = "";
+      renderWizard();
+    } else if (action === "skip") {
+      wizardMessage = "";
+      advanceWizard();
+    } else if (action === "next") {
+      const value = $("wizardInput").value.trim();
+      if (!value && step.required) {
+        wizardMessage = "이름을 적어 주셔야 다음으로 넘어갈 수 있습니다.";
+        renderWizard();
+        return;
+      }
+      wizardMessage = value ? applyText(step.line(value)) : "";
+      advanceWizard();
+    }
   });
 
   $("nlUndo").addEventListener("click", () => {
@@ -1108,6 +1278,8 @@ ${navHtml}
     setTimeout(() => { $("copyBrief").textContent = "명세서 복사"; }, 1500);
   });
 
+  applyFromAddress();
+  renderWizard();
   fullRender();
 </script>
 </body>
