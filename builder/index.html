@@ -75,6 +75,9 @@
     .brief-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px; }
     .brief { width: 100%; min-height: 320px; font-family: ui-monospace, monospace; font-size: 0.8rem; white-space: pre; }
     .hint { font-size: 0.8rem; color: var(--muted); margin: 4px 0 0; }
+    .howto { padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--line); font-size: 0.9rem; }
+    .howto ol { margin: 6px 0 0; padding-left: 20px; }
+    .howto li { margin: 3px 0; }
     @media (max-width: 860px) {
       .layout { grid-template-columns: 1fr; }
       aside { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--line); }
@@ -86,14 +89,22 @@
 <header>
   <h1>바이브 홈페이지 빌더</h1>
   <div class="toolbar">
-    <button id="exportSite" class="primary">홈페이지 데이터(site.json) 내보내기</button>
-    <button id="exportSpec">명세(JSON) 저장</button>
-    <button type="button" id="importBtn">명세 불러오기</button>
+    <button id="download" class="primary" title="완성된 홈페이지 파일(index.html)을 내 컴퓨터에 저장합니다. 더블클릭하면 바로 열립니다.">📄 홈페이지 파일 받기</button>
+    <button id="exportSpec" title="지금까지 적은 내용을 파일 하나(명세)로 저장합니다. 나중에 다시 불러와 이어서 고칠 수 있습니다.">💾 작업 저장</button>
+    <button type="button" id="importBtn" title="예전에 저장한 작업 파일을 열어 이어서 고칩니다.">📂 작업 불러오기</button>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
-    <button id="reset" class="danger">초기화</button>
-    <button id="download" class="primary">index.html 다운로드</button>
+    <button id="exportSite" title="자동 갱신 기능(GitHub)을 쓰는 분만 필요합니다. 대부분은 필요 없습니다.">고급: site.json 내보내기</button>
+    <button id="reset" class="danger" title="모든 내용을 처음 상태로 지웁니다. 되돌릴 수 없습니다.">초기화</button>
   </div>
 </header>
+<div class="howto">
+  <strong>이렇게 쓰세요</strong>
+  <ol>
+    <li>왼쪽 질문에 답하면 오른쪽에 홈페이지가 바로 그려집니다.</li>
+    <li>다 됐으면 <b>📄 홈페이지 파일 받기</b> 를 누르세요. 받은 파일을 더블클릭하면 브라우저에서 열립니다.</li>
+    <li>내일 이어서 하려면 <b>💾 작업 저장</b> 으로 파일을 받아 두세요. 다시 열 때는 <b>📂 작업 불러오기</b> 로 그 파일을 고릅니다.</li>
+  </ol>
+</div>
 
 <div class="layout">
   <aside>
