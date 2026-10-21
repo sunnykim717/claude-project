@@ -1,6 +1,7 @@
 name: Deploy homepage to Pages
 
 # website-template 을 검사하고 페이지를 만들어 GitHub Pages 에 올립니다.
+# 빌더(builder/index.html)는 같은 사이트의 /builder/ 주소에 함께 올립니다.
 
 on:
   # 작업 브랜치 push 로는 공개 배포되지 않습니다. main 에 합친 뒤 또는 수동 실행으로만 배포합니다.
@@ -8,6 +9,7 @@ on:
     branches: [main]
     paths:
       - "website-template/**"
+      - "builder/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -34,6 +36,11 @@ jobs:
       - name: 페이지 만들기
         working-directory: website-template
         run: python scripts/generate.py --out dist
+      - name: 빌더 함께 넣기
+        run: |
+          mkdir -p website-template/dist/builder
+          cp builder/index.html website-template/dist/builder/index.html
+          test -f website-template/dist/builder/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: website-template/dist
