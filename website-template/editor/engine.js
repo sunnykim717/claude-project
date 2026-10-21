@@ -9,7 +9,7 @@
 
   // 설정 항목 목록은 schema.json 에서만 옵니다. useSchema() 로 한 번 넣어 주세요.
   var loaded = false;
-  var BASE_ROUTES, ROUTES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS, CONTENT_WIDTHS, HERO_VARIANTS, HOMEPAGE_SECTIONS;
+  var BASE_ROUTES, ROUTES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS, CONTENT_WIDTHS, HERO_VARIANTS, HOMEPAGE_SECTIONS, BUTTON_SHAPES, MENU_MARKS;
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -33,6 +33,8 @@
     CONTENT_WIDTHS = schema.content_widths;
     HERO_VARIANTS = schema.hero_variants;
     HOMEPAGE_SECTIONS = schema.homepage_sections;
+    BUTTON_SHAPES = schema.button_shapes;
+    MENU_MARKS = schema.menu_marks;
     loaded = true;
   }
 
@@ -253,6 +255,10 @@
       if (SPACINGS.indexOf(theme.spacing) === -1) errors.push("config/theme.json: spacing 은 " + SPACINGS.join(", ") + " 중 하나여야 합니다.");
       if (LAYOUTS.indexOf(theme.layout) === -1) errors.push("config/theme.json: layout 은 " + LAYOUTS.join(", ") + " 중 하나여야 합니다.");
       if (MENUS.indexOf(theme.menu) === -1) errors.push("config/theme.json: menu 는 " + MENUS.join(", ") + " 중 하나여야 합니다.");
+      var shape = theme.buttonShape === undefined ? "soft" : theme.buttonShape;
+      if (!hasKey(BUTTON_SHAPES, shape)) errors.push("config/theme.json: buttonShape 는 " + Object.keys(BUTTON_SHAPES).join(", ") + " 중 하나여야 합니다.");
+      var mark = theme.menuMark === undefined ? "underline" : theme.menuMark;
+      if (MENU_MARKS.indexOf(mark) === -1) errors.push("config/theme.json: menuMark 는 " + MENU_MARKS.join(", ") + " 중 하나여야 합니다.");
     }
 
     if (isObject(site)) checkImage(files, errors, "config/site.json", site.logo, "logo");
@@ -286,6 +292,7 @@
     checkImpact(errors, data.impact);
     checkContactFields(errors, data.contact);
     checkSiteUrl(errors, data.site);
+    checkBanner(errors, data.banner);
 
     var projects = data.projects;
     if (isObject(projects)) checkItems(errors, "content/projects.json", "사업", projects.items);
@@ -488,7 +495,10 @@
     var surface = hasKey(t, "surface") ? t.surface : "#FFFFFF";
     var muted = hasKey(t, "muted") ? t.muted : text;
     var accent = hasKey(t, "accent") ? t.accent : primary;
+    var shapeName = theme.buttonShape === undefined ? "soft" : theme.buttonShape;
+    var buttonRadius = BUTTON_SHAPES[shapeName];
     return ":root {" +
+      " --button-radius: " + buttonRadius + "px;" +
       " --primary: " + primary + "; --bg: " + bg + "; --text: " + text + "; --font: " + font + ";" +
       " --radius: " + radius + "px; --gap: " + gap + "px; --max: " + width + "px;" +
       " --surface: " + surface + "; --muted: " + muted + "; --accent: " + accent + ";" +
@@ -601,7 +611,7 @@
     };
     var homepage = isObject(data.homepage) ? data.homepage : {};
     var order = homepage.sections && homepage.sections.length ? homepage.sections : DEFAULT_SECTIONS;
-    return order.map(function (name) { return parts[name]; }).join("");
+    return bannerHtml(isObject(data.banner) ? data.banner : {}) + order.map(function (name) { return parts[name]; }).join("");
   }
 
   function headHtml(site, fileName, fullTitle, noindex) {
@@ -699,6 +709,25 @@
     });
   }
 
+  function checkBanner(errors, banner) {
+    if (!isObject(banner)) {
+      errors.push("content/banner.json: 최상위 값은 { } 묶음이어야 합니다.");
+      return;
+    }
+    if (banner.active !== true) return;
+    if (!str(banner.text).trim()) errors.push("content/banner.json: 알림 글 (text) 을 적어 주세요.");
+    if (banner.link && !isLinkOk(str(banner.link))) errors.push("content/banner.json: link 는 https:// 주소 또는 페이지 주소여야 합니다 (" + banner.link + ").");
+  }
+
+  function bannerHtml(banner) {
+    if (banner.active !== true || !str(banner.text).trim()) return "";
+    var link = "";
+    if (banner.link && banner.linkText) {
+      link = ' <a class="banner-link" href="' + esc(linkFor(banner.link)) + '">' + esc(banner.linkText) + "</a>";
+    }
+    return '<aside class="banner" aria-label="알림"><p>' + esc(str(banner.text).trim()) + "</p>" + link + "</aside>";
+  }
+
   function checkSiteUrl(errors, site) {
     if (isObject(site) && site.url && !startsWith(str(site.url), "https://")) {
       errors.push("config/site.json: url 은 https:// 로 시작해야 합니다.");
@@ -736,7 +765,8 @@
         main: top + mainHtml + bottom,
         footer: footerHtml(files, site, data.contact),
         layout: esc(theme.layout),
-        menu: esc(theme.menu)
+        menu: esc(theme.menu),
+        mark: esc(theme.menuMark === undefined ? "underline" : theme.menuMark)
       });
     }
 

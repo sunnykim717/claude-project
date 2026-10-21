@@ -93,8 +93,10 @@ def theme_css(theme, choice=None):
     radius = t.get("radius", theme["radius"])
     gap = SPACING_PX[t.get("spacing", theme["spacing"])]
     width = choice["width"] if choice else 760
+    button_radius = SCHEMA["button_shapes"][theme.get("buttonShape", "soft")]
     return (
         ":root {"
+        f" --button-radius: {button_radius}px;"
         f" --primary: {primary}; --bg: {bg}; --text: {text}; --font: {font};"
         f" --radius: {radius}px; --gap: {gap}px; --max: {width}px;"
         f" --surface: {t.get('surface', '#FFFFFF')}; --muted: {t.get('muted', text)}; --accent: {t.get('accent', primary)};"
@@ -358,8 +360,17 @@ def section_contact(contact):
     return block(contact["title"], body)
 
 
+def banner_html(banner):
+    if banner.get("active") is not True or not str(banner.get("text") or "").strip():
+        return ""
+    link = ""
+    if banner.get("link") and banner.get("linkText"):
+        link = f' <a class="banner-link" href="{esc(link_for(banner["link"]))}">{esc(banner["linkText"])}</a>'
+    return f'<aside class="banner" aria-label="알림"><p>{esc(str(banner["text"]).strip())}</p>{link}</aside>'
+
+
 def home_main(root, data, choice):
-    """설정의 순서대로 홈 칸을 이어 붙입니다. 데이터가 없는 칸은 빠집니다."""
+    """설정의 순서대로 홈 칸을 이어 붙입니다. 데이터가 없는 칸은 빠집니다. 알림 띠는 맨 위에 옵니다."""
     home = data["home"]
     parts = {
         "hero": hero_html(root, home, choice["hero"] if choice else "split"),
@@ -373,7 +384,7 @@ def home_main(root, data, choice):
         "contact": section_contact(data["contact"]),
     }
     order = (data.get("homepage") or {}).get("sections") or DEFAULT_SECTIONS
-    return "".join(parts[name] for name in order)
+    return banner_html(data["banner"]) + "".join(parts[name] for name in order)
 
 
 def not_found_main():
@@ -440,6 +451,7 @@ def build_pages(root, data, today=None):
             "footer": footer_html(root, site, data["contact"]),
             "layout": esc(theme["layout"]),
             "menu": esc(theme["menu"]),
+            "mark": esc(theme.get("menuMark", "underline")),
         })
 
     page("index.html", site["name"], home_main(root, data, choice), site.get("description", ""))

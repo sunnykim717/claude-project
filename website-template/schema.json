@@ -25,7 +25,8 @@
     "design": "config/design.json",
     "homepage": "config/homepage.json",
     "presets": "design/presets.json",
-    "impact": "content/impact.json"
+    "impact": "content/impact.json",
+    "banner": "content/banner.json"
   },
   "pages": {
     "/": "index.html",
@@ -141,7 +142,9 @@
     "숫자 칸(content/impact.json): title, period, items (value 숫자, label 이름, description 설명). 항목이 없으면 칸을 숨깁니다",
     "연락처: contact.address, contact.phone, contact.hours 를 적으면 연락처 칸에 함께 보입니다",
     "site.sample: true 이면 바닥글에 '가상의 샘플 정보' 라고 표시합니다. 실제 기관 정보로 바꿀 때는 false 또는 삭제하세요",
-    "site.url (선택): https://도메인 을 적으면 대표 주소(canonical), sitemap.xml 을 만듭니다"
+    "site.url (선택): https://도메인 을 적으면 대표 주소(canonical), sitemap.xml 을 만듭니다",
+    "버튼 모양(theme.buttonShape): square, soft, round, pill. 현재 메뉴 표시(theme.menuMark): underline, background, border, side. 둘 다 적지 않으면 soft, underline",
+    "알림 띠(content/banner.json): active 를 true 로 바꾸고 text 를 적으면 홈 맨 위에 보입니다. 기본값은 꺼져 있습니다 (자동 재생, 팝업 없음)"
   ],
   "menus": [
     "row",
@@ -211,5 +214,17 @@
     "impact",
     "participation",
     "contact"
+  ],
+  "button_shapes": {
+    "square": 0,
+    "soft": 6,
+    "round": 12,
+    "pill": 999
+  },
+  "menu_marks": [
+    "underline",
+    "background",
+    "border",
+    "side"
   ]
 }

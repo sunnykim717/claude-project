@@ -364,6 +364,67 @@ class SiteToolTest(unittest.TestCase):
         self.assertEqual((ROOT / "content" / "home.json").read_text(encoding="utf-8"), before)
 
 
+class ExamplesAndOptionsTest(unittest.TestCase):
+    def test_two_sample_organisations_build_independently(self):
+        import build_example
+        ok1, errors1, out1 = build_example.build("community-welfare")
+        ok2, errors2, out2 = build_example.build("youth-center")
+        self.assertTrue(ok1, errors1)
+        self.assertTrue(ok2, errors2)
+        first = (out1 / "index.html").read_text(encoding="utf-8")
+        second = (out2 / "index.html").read_text(encoding="utf-8")
+        self.assertIn("가상의 지역복지관", first)
+        self.assertIn("가상의 청소년 센터", second)
+        self.assertIn("--primary: #2F5D46", first)   # warm-nature
+        self.assertIn("--primary: #0A4BB5", second)  # vivid-youth
+        self.assertIn("샘플", first)
+        self.assertIn('class="banner"', second)       # 알림 띠를 켠 예시
+        self.assertNotIn('class="banner"', first)
+
+    def test_blank_example_reports_what_to_fill(self):
+        import build_example
+        ok, errors, _ = build_example.build("blank")
+        self.assertFalse(ok)
+        self.assertTrue(any("name" in e for e in errors))
+        self.assertTrue(any("hero.title" in e for e in errors))
+
+    def test_banner_is_off_by_default_and_checked_when_on(self):
+        with _Copy() as root:
+            data, errors = validate.validate(root)
+            self.assertEqual(errors, [])
+            self.assertNotIn('class="banner"', generate.home_main(root, data, None))
+            _edit(root, "content/banner.json", lambda d: d.update(active=True, text=""))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("banner" in e and "text" in e for e in errors))
+            _edit(root, "content/banner.json", lambda d: d.update(active=True, text="안내", link="javascript:x"))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("banner" in e and "link" in e for e in errors))
+
+    def test_button_shape_and_menu_mark_options(self):
+        with _Copy() as root:
+            _edit(root, "config/theme.json", lambda d: d.update(buttonShape="pill", menuMark="side"))
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            index = (out / "index.html").read_text(encoding="utf-8")
+            self.assertIn("--button-radius: 999px;", index)
+            self.assertIn("mark-side", index)
+        with _Copy() as root:
+            _edit(root, "config/theme.json", lambda d: d.update(buttonShape="hexagon", menuMark="zigzag"))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("buttonShape" in e for e in errors))
+            self.assertTrue(any("menuMark" in e for e in errors))
+
+    def test_brand_colour_suggestions_pass_contrast_and_repeat(self):
+        import palette
+        for colour in ("#2F5D46", "#FFD23F", "#7C3AED", "#0E5BD8", "#FFFFFF", "#123"):
+            result = palette.suggest(colour)
+            self.assertTrue(result["passes"], colour)
+            self.assertEqual(result, palette.suggest(colour))
+        self.assertEqual(palette.suggest("#abc")["primaryColor"], palette.suggest("#AABBCC")["primaryColor"])
+        with self.assertRaises(ValueError):
+            palette.suggest("blue")
+
+
 class FontRegistryTest(unittest.TestCase):
     """글꼴 레지스트리: 파일, 체크섬, 라이선스 파일이 서로 맞는지 확인합니다 (파일을 받는 것은 fetch_fonts.py 가 합니다)."""
 

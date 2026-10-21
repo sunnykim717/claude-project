@@ -14,7 +14,7 @@ try {
 
 const dir = path.resolve(process.argv[2] || "dist");
 const pages = process.argv.slice(3).length ? process.argv.slice(3) : ["index.html", "about.html"];
-const widths = [360, 768, 1440];
+const widths = [320, 360, 768, 1440];
 
 (async () => {
   const launch = { args: ["--no-sandbox"] };

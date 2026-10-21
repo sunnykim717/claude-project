@@ -211,6 +211,19 @@ def check_impact(errors, impact):
             errors.append(f"content/impact.json {i}번: value (숫자)와 label (이름)을 적어 주세요.")
 
 
+def check_banner(errors, banner):
+    """알림 띠: 켜 두었을 때만 글과 링크를 검사합니다. 기본값은 꺼짐입니다."""
+    if not isinstance(banner, dict):
+        errors.append("content/banner.json: 최상위 값은 { } 묶음이어야 합니다.")
+        return
+    if banner.get("active") is not True:
+        return
+    if not str(banner.get("text") or "").strip():
+        errors.append("content/banner.json: 알림 글 (text) 을 적어 주세요.")
+    if banner.get("link") and not is_link_ok(str(banner["link"])):
+        errors.append(f"content/banner.json: link 는 https:// 주소 또는 페이지 주소여야 합니다 ({banner['link']}).")
+
+
 def check_site_url(errors, site):
     """대표 주소(url)는 비워 두거나 https:// 로 시작해야 합니다. 있으면 지도와 대표 주소 표시에 씁니다."""
     if isinstance(site, dict) and site.get("url") and not str(site["url"]).startswith("https://"):
@@ -295,6 +308,10 @@ def validate(root):
             errors.append(f"config/theme.json: layout 은 {', '.join(SCHEMA['layouts'])} 중 하나여야 합니다.")
         if theme.get("menu") not in MENUS:
             errors.append(f"config/theme.json: menu 는 {', '.join(SCHEMA['menus'])} 중 하나여야 합니다.")
+        if theme.get("buttonShape", "soft") not in SCHEMA["button_shapes"]:
+            errors.append(f"config/theme.json: buttonShape 는 {', '.join(SCHEMA['button_shapes'])} 중 하나여야 합니다.")
+        if theme.get("menuMark", "underline") not in SCHEMA["menu_marks"]:
+            errors.append(f"config/theme.json: menuMark 는 {', '.join(SCHEMA['menu_marks'])} 중 하나여야 합니다.")
 
     if isinstance(site, dict):
         check_image(errors, root, "config/site.json", site.get("logo"), "logo")
@@ -326,6 +343,7 @@ def validate(root):
     check_impact(errors, data["impact"])
     check_contact_fields(errors, data["contact"])
     check_site_url(errors, data["site"])
+    check_banner(errors, data["banner"])
 
     projects = data["projects"]
     if isinstance(projects, dict):

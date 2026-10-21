@@ -80,6 +80,11 @@ python scripts/site_tool.py build --out dist
 | 페이지 | 기본 8개 + 추가 7개 (인사말, 연혁, 행사·캠페인, 활동 이야기, 자료실, 자주 묻는 질문, 오시는 길) | 메뉴에 `add-menu` |
 | 첫 화면 칸 순서 | intro, projects, news 중 골라 순서대로 | `home.sections` |
 | 직접 쓰는 CSS | 모든 페이지 맨 뒤에 붙음 | `config/custom.css` |
+| 버튼 모양 | square, soft, round, pill | `theme.buttonShape` |
+| 현재 메뉴 표시 | underline, background, border, side | `theme.menuMark` |
+| 알림 띠 | 기본은 꺼짐. 켜면 홈 맨 위에 한 줄 | `content/banner.json` (active, text, link) |
+| 브랜드 색 추천 | 대표색 하나로 버튼·링크·배경·글자 색을 규칙으로 계산 | `python scripts/palette.py #RRGGBB` |
+| 예시 기관 | 가상의 지역복지관, 가상의 청소년 센터, 빈 설정 | `python scripts/build_example.py community-welfare` |
 
 - 메뉴 추가: `add-menu 오시는 길 | /location`, 삭제: `remove-menu 번호` (편집기와 `site_tool.py` 모두 가능)
 - 직접 쓰는 CSS 에는 `url(`, `@import`, `<` 를 쓸 수 없습니다. 배경 사진은 `theme.backgroundImage` 로 넣으세요.
