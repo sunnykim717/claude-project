@@ -1,14 +1,13 @@
-name: Deploy homepage to Pages
+name: Deploy builder to Pages
 
-# website-template 을 검사하고 페이지를 만들어 GitHub Pages 에 올립니다.
-# 빌더(builder/index.html)는 같은 사이트의 /builder/ 주소에 함께 올립니다.
+# 빌더(builder/index.html)만 GitHub Pages 에 올립니다.
+# 샘플 홈페이지(website-template)는 공개하지 않습니다.
+# 작업 브랜치 push 로는 공개 배포되지 않습니다. main 에 합친 뒤 또는 수동 실행으로만 배포합니다.
 
 on:
-  # 작업 브랜치 push 로는 공개 배포되지 않습니다. main 에 합친 뒤 또는 수동 실행으로만 배포합니다.
   push:
     branches: [main]
     paths:
-      - "website-template/**"
       - "builder/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
@@ -27,23 +26,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: 설정 검사
-        working-directory: website-template
-        run: python scripts/validate.py
-      - name: 페이지 만들기
-        working-directory: website-template
-        run: python scripts/generate.py --out dist
-      - name: 빌더 함께 넣기
+      - name: 빌더 페이지 준비
         run: |
-          mkdir -p website-template/dist/builder
-          cp builder/index.html website-template/dist/builder/index.html
-          test -f website-template/dist/builder/index.html
+          mkdir -p site/builder
+          cp builder/index.html site/builder/index.html
+          test -f site/builder/index.html
+          printf '%s\n' \
+            '<!doctype html>' \
+            '<html lang="ko"><head><meta charset="utf-8">' \
+            '<meta name="robots" content="noindex">' \
+            '<meta http-equiv="refresh" content="0; url=builder/">' \
+            '<title>바이브 홈페이지 빌더</title></head>' \
+            '<body><p><a href="builder/">바이브 홈페이지 빌더 열기</a></p></body></html>' \
+            > site/index.html
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: website-template/dist
+          path: site
 
   deploy:
     needs: build
