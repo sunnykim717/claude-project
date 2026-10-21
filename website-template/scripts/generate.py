@@ -62,17 +62,42 @@ def custom_css(root):
     return path.read_text(encoding="utf-8") if path.exists() else ""
 
 
-def theme_css(theme):
-    """theme.json 의 값을 CSS 변수로 바꿉니다."""
+WIDTHS = SCHEMA["content_widths"]
+HERO_CLASS = {"split": "hero-split", "photo": "hero-photo-variant", "info": "hero-info"}
+DEFAULT_SECTIONS = ["hero", "quickLinks", "about", "programs", "news", "stories", "impact", "participation", "contact"]
+
+
+def design_choice(data):
+    """design.json 과 presets.json 을 합쳐 이번에 쓸 디자인 값을 돌려줍니다. 프리셋을 고르지 않았으면 None."""
+    design = data.get("design") or {}
+    presets = data.get("presets") or {}
+    name = design.get("preset")
+    if not name or name not in presets:
+        return None
+    preset = presets[name]
+    return {
+        "name": name,
+        "tokens": preset["tokens"],
+        "hero": design.get("hero") or preset["defaultHero"],
+        "width": WIDTHS[design.get("contentWidth") or "comfortable"],
+    }
+
+
+def theme_css(theme, choice=None):
+    """theme.json 의 값을 CSS 변수로 바꿉니다. 디자인 프리셋을 고르면 색, 글꼴, 모서리, 여백은 프리셋을 따릅니다."""
+    t = choice["tokens"] if choice else {}
+    primary = t.get("primary", theme["primaryColor"])
+    bg = t.get("bg", theme["backgroundColor"])
+    text = t.get("text", theme["textColor"])
+    font = FONT_STACK[t.get("font", theme["font"])]
+    radius = t.get("radius", theme["radius"])
+    gap = SPACING_PX[t.get("spacing", theme["spacing"])]
+    width = choice["width"] if choice else 760
     return (
         ":root {"
-        f" --primary: {theme['primaryColor']};"
-        f" --bg: {theme['backgroundColor']};"
-        f" --text: {theme['textColor']};"
-        f" --font: {FONT_STACK[theme['font']]};"
-        f" --radius: {theme['radius']}px;"
-        f" --gap: {SPACING_PX[theme['spacing']]}px;"
-        " --max: 760px;"
+        f" --primary: {primary}; --bg: {bg}; --text: {text}; --font: {font};"
+        f" --radius: {radius}px; --gap: {gap}px; --max: {width}px;"
+        f" --surface: {t.get('surface', '#FFFFFF')}; --muted: {t.get('muted', text)}; --accent: {t.get('accent', primary)};"
         " }"
     )
 
@@ -99,7 +124,7 @@ def header_html(root, site, nav, current_file):
     })
 
 
-def hero_html(root, home):
+def hero_html(root, home, variant="split"):
     hero = home["hero"]
     image = ""
     if hero.get("image"):
@@ -110,6 +135,7 @@ def hero_html(root, home):
     if hero.get("buttonText") and hero.get("buttonLink"):
         button = f'<a class="button" href="{esc(link_for(hero["buttonLink"]))}">{esc(hero["buttonText"])}</a>'
     return fill(read_part(root, "src/components/Hero.html"), {
+        "variant": HERO_CLASS[variant],
         "image": image,
         "title": esc(hero["title"]),
         "subtitle": esc(hero.get("subtitle")),
@@ -147,6 +173,8 @@ def footer_html(root, site, contact):
     if links:
         lines.append(f'<ul class="links">{"".join(links)}</ul>')
     lines.append('<p><a href="privacy.html">개인정보 처리방침</a></p>')
+    if site.get("sample"):
+        lines.append('<p class="sample-note">이 홈페이지의 기관 정보와 글은 가상의 샘플입니다.</p>')
     return fill(read_part(root, "src/components/Footer.html"), {
         "name": esc(site["name"]),
         "contact": "".join(lines),
@@ -230,14 +258,173 @@ def generic_body(content):
     return body
 
 
+def news_list(items):
+    ordered = sorted(items, key=lambda i: i.get("date") or "", reverse=True)
+    rows = []
+    for item in ordered:
+        title = esc(item["title"])
+        if item.get("url"):
+            title = f'<a href="{esc(item["url"])}">{title}</a>'
+        when = f'<time datetime="{esc(item["date"])}">{esc(item["date"])}</time>' if item.get("date") else ""
+        rows.append(f"<li>{when}<span>{title}</span></li>")
+    return '<ul class="news-list">' + "".join(rows) + "</ul>"
+
+
+def section_quick(nav):
+    links = [entry for entry in nav if entry["path"] != "/"][:6]
+    if not links:
+        return ""
+    items = "".join(
+        f'<li><a class="quick-link" href="{esc(ROUTES[entry["path"]])}">{esc(entry["label"])}</a></li>' for entry in links
+    )
+    return block("바로 가기", f'<ul class="quick-grid">{items}</ul>')
+
+
+def section_about(home):
+    intro = str(home.get("intro") or "").strip()
+    if not intro:
+        return ""
+    return block("기관 소개", f'<p class="pre">{esc(intro)}</p><p><a class="more" href="about.html">기관 소개 자세히 보기</a></p>')
+
+
+def section_programs(projects):
+    items = projects.get("items") or []
+    if not items:
+        return ""
+    return block(projects["title"], f'<div class="programs">{project_articles(items[:3])}</div>')
+
+
+def section_news(news):
+    items = news.get("items") or []
+    if not items:
+        return ""
+    return block(news["title"], news_list(items[:3]))
+
+
+def section_stories(stories):
+    items = stories.get("items") or []
+    if not items:
+        return ""
+    body = f'<div class="story-lead">{project_articles(items[:1])}</div>'
+    if items[1:]:
+        body += f'<div class="story-list">{project_articles(items[1:])}</div>'
+    return block(stories["title"], body)
+
+
+def section_impact(impact):
+    items = impact.get("items") or []
+    if not items:
+        return ""
+    cells = "".join(
+        f'<div><dt>{esc(i["value"])}</dt><dd>{esc(i["label"])}'
+        + (f'<br>{esc(i.get("description"))}' if i.get("description") else "")
+        + "</dd></div>"
+        for i in items
+    )
+    note = f'<p class="impact-note">{esc(impact.get("period"))}</p>' if impact.get("period") else ""
+    return block(impact["title"], f'<dl class="impact">{cells}</dl>{note}')
+
+
+def section_participation(support, volunteer):
+    ways = support.get("ways") or []
+    positions = volunteer.get("positions") or []
+    if not ways and not positions:
+        return ""
+    body = project_articles(ways) if ways else ""
+    body += (
+        '<p class="participation-actions">'
+        '<a class="button" href="support.html">후원 안내 보기</a>'
+        '<a class="button secondary" href="volunteer.html">자원봉사 안내 보기</a>'
+        "</p>"
+    )
+    return block("참여 방법", body)
+
+
+def section_contact(contact):
+    rows = []
+    if contact.get("phone"):
+        rows.append(("전화", esc(contact["phone"])))
+    if contact.get("email"):
+        rows.append(("이메일", f'<a href="{esc("mailto:" + contact["email"])}">{esc(contact["email"])}</a>'))
+    if contact.get("address"):
+        rows.append(("주소", esc(contact["address"])))
+    if contact.get("hours"):
+        rows.append(("운영시간", esc(contact["hours"])))
+    body = f'<p class="pre">{esc(contact.get("body"))}</p>' if contact.get("body") else ""
+    if rows:
+        body += '<ul class="contact-list">' + "".join(f"<li><strong>{label}</strong> {value}</li>" for label, value in rows) + "</ul>"
+    if not body:
+        return ""
+    return block(contact["title"], body)
+
+
+def home_main(root, data, choice):
+    """설정의 순서대로 홈 칸을 이어 붙입니다. 데이터가 없는 칸은 빠집니다."""
+    home = data["home"]
+    parts = {
+        "hero": hero_html(root, home, choice["hero"] if choice else "split"),
+        "quickLinks": section_quick(data["nav"]),
+        "about": section_about(home),
+        "programs": section_programs(data["projects"]),
+        "news": section_news(data["news"]),
+        "stories": section_stories(data["stories"]),
+        "impact": section_impact(data["impact"]),
+        "participation": section_participation(data["support"], data["volunteer"]),
+        "contact": section_contact(data["contact"]),
+    }
+    order = (data.get("homepage") or {}).get("sections") or DEFAULT_SECTIONS
+    return "".join(parts[name] for name in order)
+
+
+def not_found_main():
+    return block("페이지를 찾을 수 없습니다", '<p class="pre">주소가 바뀌었거나 없는 페이지입니다. 메뉴나 홈으로 이동해 주세요.</p>'
+                 '<p><a class="button" href="index.html">홈으로 돌아가기</a></p>')
+
+
+def head_html(site, file_name, full_title, noindex=False):
+    """페이지 머리 정보: 색인 제외, 공유용 제목과 설명, 대표 주소(canonical). 주소가 없으면 대표 주소는 넣지 않습니다."""
+    lines = []
+    if noindex:
+        lines.append('<meta name="robots" content="noindex">')
+    lines.append(f'<meta property="og:title" content="{esc(full_title)}">')
+    lines.append(f'<meta property="og:description" content="{esc(site.get("description"))}">')
+    lines.append('<meta property="og:type" content="website">')
+    base = str(site.get("url") or "").rstrip("/")
+    if base:
+        href = base + "/" + ("" if file_name == "index.html" else file_name)
+        lines.append(f'<link rel="canonical" href="{esc(href)}">')
+        lines.append(f'<meta property="og:url" content="{esc(href)}">')
+    return "\n  ".join(lines)
+
+
+def robots_txt(site):
+    base = str(site.get("url") or "").rstrip("/")
+    lines = ["User-agent: *", "Disallow: /admin.html", "Disallow: /gallery/"]
+    if base:
+        lines.append(f"Sitemap: {base}/sitemap.xml")
+    return "\n".join(lines) + "\n"
+
+
+def sitemap_xml(site, page_files):
+    base = str(site.get("url") or "").rstrip("/")
+    urls = [f"  <url><loc>{esc(base + '/' + ('' if name == 'index.html' else name))}</loc></url>"
+            for name in page_files if name not in ("admin.html", "404.html")]
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + "\n".join(urls) + "\n</urlset>\n")
+
+
 def build_pages(root, data, today=None):
     """페이지 이름과 전체 HTML 을 돌려줍니다."""
     data = drop_unpublished(data, today or today_kst())
     site, nav, theme = data["site"], data["nav"], data["theme"]
-    style = "\n".join([theme_css(theme), background_css(theme), read_part(root, "src/styles/site.css"), custom_css(root)])
+    choice = design_choice(data)
+    style = "\n".join([theme_css(theme, choice), background_css(theme), read_part(root, "src/styles/site.css"), custom_css(root)])
     pages = {}
 
-    def page(file_name, title, main_html, description, content=None):
+    def page(file_name, title, main_html, description, content=None, noindex=False):
+        if file_name != "index.html":
+            # 하위 페이지의 첫 제목은 페이지 제목(h1)입니다. 홈은 첫 화면 제목이 h1 입니다.
+            main_html = main_html.replace("<h2>", "<h1>", 1).replace("</h2>", "</h1>", 1)
         top = photo_html(content) if content else ""
         bottom = gallery_html(content) if content else ""
         full_title = site["name"] if file_name == "index.html" else f"{title} | {site['name']}"
@@ -245,6 +432,8 @@ def build_pages(root, data, today=None):
             "lang": esc(site.get("language", "ko")),
             "title": esc(full_title),
             "description": esc(site.get("description")),
+            "head": head_html(site, file_name, full_title, noindex),
+            "script": read_part(root, "src/scripts/reading.js").strip(),
             "style": style,
             "header": header_html(root, site, nav, file_name),
             "main": top + main_html + bottom,
@@ -253,17 +442,7 @@ def build_pages(root, data, today=None):
             "menu": esc(theme["menu"]),
         })
 
-    home = data["home"]
-    preview = items_html(data["projects"].get("items", [])[:3], theme["layout"])
-    news = data["news"]
-    home_parts = {
-        "intro": block("소개", f'<p class="pre">{esc(home.get("intro"))}</p>'),
-        "projects": block(data["projects"]["title"], preview) if preview else "",
-        "news": block(news["title"], project_articles(news.get("items", [])[:3])) if news.get("items") else "",
-    }
-    order = home.get("sections") or ["intro", "projects"]
-    home_main = hero_html(root, home) + "".join(home_parts[name] for name in order)
-    page("index.html", site["name"], home_main, site.get("description", ""))
+    page("index.html", site["name"], home_main(root, data, choice), site.get("description", ""))
 
     page("about.html", data["about"]["title"],
          block(data["about"]["title"], f'<p class="pre">{esc(data["about"]["body"])}</p>'),
@@ -314,7 +493,11 @@ def build_pages(root, data, today=None):
         page(f"{name}.html", content["title"], body, content["body"], content)
     for content in data["custom_pages"]:
         page(f"{content['slug']}.html", content["title"], generic_body(content), content.get("body"), content)
-    page("admin.html", "관리자", admin_main(root, url, key), ADMIN_INTRO)
+    page("admin.html", "관리자", admin_main(root, url, key), ADMIN_INTRO, noindex=True)
+    page("404.html", "페이지를 찾을 수 없습니다", not_found_main(), "요청한 페이지가 없습니다.", noindex=True)
+    pages["robots.txt"] = robots_txt(site)
+    if str(site.get("url") or "").strip():
+        pages["sitemap.xml"] = sitemap_xml(site, list(dict.fromkeys(ROUTES.values())))
     return pages
 
 

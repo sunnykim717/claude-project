@@ -9,7 +9,7 @@
 
   // 설정 항목 목록은 schema.json 에서만 옵니다. useSchema() 로 한 번 넣어 주세요.
   var loaded = false;
-  var BASE_ROUTES, ROUTES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS;
+  var BASE_ROUTES, ROUTES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS, CONTENT_WIDTHS, HERO_VARIANTS, HOMEPAGE_SECTIONS;
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -30,6 +30,9 @@
     GALLERY_MAX = schema.gallery_max;
     GENERIC_PAGES = schema.generic_pages;
     HOME_SECTIONS = schema.home_sections;
+    CONTENT_WIDTHS = schema.content_widths;
+    HERO_VARIANTS = schema.hero_variants;
+    HOMEPAGE_SECTIONS = schema.homepage_sections;
     loaded = true;
   }
 
@@ -70,6 +73,7 @@
 
   function checkPhoto(files, errors, rel, content) {
     checkImage(files, errors, rel, content.image, "image");
+    if (content.image && !str(content.imageAlt).trim()) errors.push(rel + ": 사진이 있으면 imageAlt (사진 설명) 을 적어 주세요.");
     var gallery = content.gallery;
     if (gallery === undefined || gallery === null) return;
     if (!Array.isArray(gallery)) {
@@ -263,14 +267,6 @@
       if (hero.buttonLink && !isLinkOk(str(hero.buttonLink))) {
         errors.push("content/home.json: buttonLink 은 https:// 주소 또는 페이지 주소여야 합니다 (" + hero.buttonLink + ").");
       }
-      var sections = home.sections;
-      if (sections !== undefined && sections !== null) {
-        if (!Array.isArray(sections)) {
-          errors.push("content/home.json: sections 는 목록이어야 합니다.");
-        } else if (sections.some(function (s, i) { return HOME_SECTIONS.indexOf(s) === -1 || sections.indexOf(s) !== i; })) {
-          errors.push("content/home.json: sections 는 " + HOME_SECTIONS.join(", ") + " 중에서 한 번씩만 고를 수 있습니다.");
-        }
-      }
     }
 
     PHOTO_PAGES.forEach(function (name) {
@@ -285,6 +281,11 @@
 
     checkCustomPages(files, errors, data.custom_pages);
     checkSupabase(errors, data.supabase);
+    checkDesign(errors, data);
+    checkHomepage(errors, data);
+    checkImpact(errors, data.impact);
+    checkContactFields(errors, data.contact);
+    checkSiteUrl(errors, data.site);
 
     var projects = data.projects;
     if (isObject(projects)) checkItems(errors, "content/projects.json", "사업", projects.items);
@@ -321,17 +322,6 @@
     });
   }
 
-  function themeCss(theme) {
-    return ":root {" +
-      " --primary: " + theme.primaryColor + ";" +
-      " --bg: " + theme.backgroundColor + ";" +
-      " --text: " + theme.textColor + ";" +
-      " --font: " + FONT_STACK[theme.font] + ";" +
-      " --radius: " + theme.radius + "px;" +
-      " --gap: " + SPACING_PX[theme.spacing] + "px;" +
-      " --max: 760px;" +
-      " }";
-  }
 
   function linkFor(value) {
     if (startsWith(value, "https://") || startsWith(value, "http://")) return value;
@@ -349,7 +339,7 @@
     return fill(files["src/components/Header.html"], { brand: brand, links: links.join("") });
   }
 
-  function heroHtml(files, home) {
+  function heroHtml(files, home, variant) {
     var hero = home.hero;
     var image = "";
     if (hero.image) {
@@ -361,7 +351,7 @@
       button = '<a class="button" href="' + esc(linkFor(hero.buttonLink)) + '">' + esc(hero.buttonText) + "</a>";
     }
     return fill(files["src/components/Hero.html"], {
-      image: image, title: esc(hero.title), subtitle: esc(hero.subtitle), button: button
+      variant: HERO_CLASS[variant], image: image, title: esc(hero.title), subtitle: esc(hero.subtitle), button: button
     });
   }
 
@@ -377,6 +367,7 @@
     });
     if (links.length) lines.push('<ul class="links">' + links.join("") + "</ul>");
     lines.push('<p><a href="privacy.html">개인정보 처리방침</a></p>');
+    if (site.sample) lines.push('<p class="sample-note">이 홈페이지의 기관 정보와 글은 가상의 샘플입니다.</p>');
     return fill(files["src/components/Footer.html"], { name: esc(site.name), contact: lines.join("") });
   }
 
@@ -463,12 +454,274 @@
     });
   }
 
+  // ----- 디자인 플랫폼: 프리셋, 첫 화면 변형, 홈 칸 (Python 생성기와 같은 규칙) -----
+  var HERO_CLASS = { split: "hero-split", photo: "hero-photo-variant", info: "hero-info" };
+  var DEFAULT_SECTIONS = ["hero", "quickLinks", "about", "programs", "news", "stories", "impact", "participation", "contact"];
+
+  function hasKey(obj, key) {
+    return isObject(obj) && Object.prototype.hasOwnProperty.call(obj, key);
+  }
+
+  function designChoice(data) {
+    var design = isObject(data.design) ? data.design : {};
+    var presets = isObject(data.presets) ? data.presets : {};
+    var name = design.preset;
+    if (!name || !hasKey(presets, name)) return null;
+    var preset = presets[name];
+    return {
+      name: name,
+      tokens: preset.tokens,
+      hero: design.hero || preset.defaultHero,
+      width: CONTENT_WIDTHS[design.contentWidth || "comfortable"]
+    };
+  }
+
+  function themeCss(theme, choice) {
+    var t = choice ? choice.tokens : {};
+    var primary = hasKey(t, "primary") ? t.primary : theme.primaryColor;
+    var bg = hasKey(t, "bg") ? t.bg : theme.backgroundColor;
+    var text = hasKey(t, "text") ? t.text : theme.textColor;
+    var font = FONT_STACK[hasKey(t, "font") ? t.font : theme.font];
+    var radius = hasKey(t, "radius") ? t.radius : theme.radius;
+    var gap = SPACING_PX[hasKey(t, "spacing") ? t.spacing : theme.spacing];
+    var width = choice ? choice.width : 760;
+    var surface = hasKey(t, "surface") ? t.surface : "#FFFFFF";
+    var muted = hasKey(t, "muted") ? t.muted : text;
+    var accent = hasKey(t, "accent") ? t.accent : primary;
+    return ":root {" +
+      " --primary: " + primary + "; --bg: " + bg + "; --text: " + text + "; --font: " + font + ";" +
+      " --radius: " + radius + "px; --gap: " + gap + "px; --max: " + width + "px;" +
+      " --surface: " + surface + "; --muted: " + muted + "; --accent: " + accent + ";" +
+      " }";
+  }
+
+  function newsList(items) {
+    var ordered = items.map(function (item, index) { return { item: item, index: index }; });
+    ordered.sort(function (a, b) {
+      var da = str(a.item.date), db = str(b.item.date);
+      if (da !== db) return da < db ? 1 : -1;
+      return a.index - b.index;
+    });
+    var rows = ordered.map(function (pair) {
+      var item = pair.item;
+      var title = esc(item.title);
+      if (item.url) title = '<a href="' + esc(item.url) + '">' + title + "</a>";
+      var when = item.date ? '<time datetime="' + esc(item.date) + '">' + esc(item.date) + "</time>" : "";
+      return "<li>" + when + "<span>" + title + "</span></li>";
+    });
+    return '<ul class="news-list">' + rows.join("") + "</ul>";
+  }
+
+  function sectionQuick(nav) {
+    var links = nav.filter(function (entry) { return entry.path !== "/"; }).slice(0, 6);
+    if (!links.length) return "";
+    var items = links.map(function (entry) {
+      return '<li><a class="quick-link" href="' + esc(ROUTES[entry.path]) + '">' + esc(entry.label) + "</a></li>";
+    }).join("");
+    return block("바로 가기", '<ul class="quick-grid">' + items + "</ul>");
+  }
+
+  function sectionAbout(home) {
+    var intro = str(home.intro).trim();
+    if (!intro) return "";
+    return block("기관 소개", '<p class="pre">' + esc(intro) + '</p><p><a class="more" href="about.html">기관 소개 자세히 보기</a></p>');
+  }
+
+  function sectionPrograms(projects) {
+    var items = projects.items || [];
+    if (!items.length) return "";
+    return block(projects.title, '<div class="programs">' + projectArticles(items.slice(0, 3)) + "</div>");
+  }
+
+  function sectionNews(news) {
+    var items = news.items || [];
+    if (!items.length) return "";
+    return block(news.title, newsList(items.slice(0, 3)));
+  }
+
+  function sectionStories(stories) {
+    var items = stories.items || [];
+    if (!items.length) return "";
+    var body = '<div class="story-lead">' + projectArticles(items.slice(0, 1)) + "</div>";
+    if (items.length > 1) body += '<div class="story-list">' + projectArticles(items.slice(1)) + "</div>";
+    return block(stories.title, body);
+  }
+
+  function sectionImpact(impact) {
+    var items = impact.items || [];
+    if (!items.length) return "";
+    var cells = items.map(function (i) {
+      return "<div><dt>" + esc(i.value) + "</dt><dd>" + esc(i.label) +
+        (i.description ? "<br>" + esc(i.description) : "") + "</dd></div>";
+    }).join("");
+    var note = impact.period ? '<p class="impact-note">' + esc(impact.period) + "</p>" : "";
+    return block(impact.title, '<dl class="impact">' + cells + "</dl>" + note);
+  }
+
+  function sectionParticipation(support, volunteer) {
+    var ways = support.ways || [];
+    var positions = volunteer.positions || [];
+    if (!ways.length && !positions.length) return "";
+    var body = ways.length ? projectArticles(ways) : "";
+    body += '<p class="participation-actions">' +
+      '<a class="button" href="support.html">후원 안내 보기</a>' +
+      '<a class="button secondary" href="volunteer.html">자원봉사 안내 보기</a>' +
+      "</p>";
+    return block("참여 방법", body);
+  }
+
+  function sectionContact(contact) {
+    var rows = [];
+    if (contact.phone) rows.push(["전화", esc(contact.phone)]);
+    if (contact.email) rows.push(["이메일", '<a href="' + esc("mailto:" + contact.email) + '">' + esc(contact.email) + "</a>"]);
+    if (contact.address) rows.push(["주소", esc(contact.address)]);
+    if (contact.hours) rows.push(["운영시간", esc(contact.hours)]);
+    var body = contact.body ? '<p class="pre">' + esc(contact.body) + "</p>" : "";
+    if (rows.length) {
+      body += '<ul class="contact-list">' + rows.map(function (row) {
+        return "<li><strong>" + row[0] + "</strong> " + row[1] + "</li>";
+      }).join("") + "</ul>";
+    }
+    if (!body) return "";
+    return block(contact.title, body);
+  }
+
+  function homeMain(files, data, choice) {
+    var home = data.home;
+    var parts = {
+      hero: heroHtml(files, home, choice ? choice.hero : "split"),
+      quickLinks: sectionQuick(data.nav),
+      about: sectionAbout(home),
+      programs: sectionPrograms(data.projects),
+      news: sectionNews(data.news),
+      stories: sectionStories(data.stories),
+      impact: sectionImpact(data.impact),
+      participation: sectionParticipation(data.support, data.volunteer),
+      contact: sectionContact(data.contact)
+    };
+    var homepage = isObject(data.homepage) ? data.homepage : {};
+    var order = homepage.sections && homepage.sections.length ? homepage.sections : DEFAULT_SECTIONS;
+    return order.map(function (name) { return parts[name]; }).join("");
+  }
+
+  function headHtml(site, fileName, fullTitle, noindex) {
+    var lines = [];
+    if (noindex) lines.push('<meta name="robots" content="noindex">');
+    lines.push('<meta property="og:title" content="' + esc(fullTitle) + '">');
+    lines.push('<meta property="og:description" content="' + esc(site.description) + '">');
+    lines.push('<meta property="og:type" content="website">');
+    var base = str(site.url || "").replace(/\/+$/, "");
+    if (base) {
+      var href = base + "/" + (fileName === "index.html" ? "" : fileName);
+      lines.push('<link rel="canonical" href="' + esc(href) + '">');
+      lines.push('<meta property="og:url" content="' + esc(href) + '">');
+    }
+    return lines.join("\n  ");
+  }
+
+  function robotsTxt(site) {
+    var base = str(site.url || "").replace(/\/+$/, "");
+    var lines = ["User-agent: *", "Disallow: /admin.html", "Disallow: /gallery/"];
+    if (base) lines.push("Sitemap: " + base + "/sitemap.xml");
+    return lines.join("\n") + "\n";
+  }
+
+  function sitemapXml(site, pageFiles) {
+    var base = str(site.url || "").replace(/\/+$/, "");
+    var urls = pageFiles.filter(function (name) {
+      return name !== "admin.html" && name !== "404.html";
+    }).map(function (name) {
+      return "  <url><loc>" + esc(base + "/" + (name === "index.html" ? "" : name)) + "</loc></url>";
+    });
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls.join("\n") + "\n</urlset>\n";
+  }
+
+  function notFoundMain() {
+    return block("페이지를 찾을 수 없습니다", '<p class="pre">주소가 바뀌었거나 없는 페이지입니다. 메뉴나 홈으로 이동해 주세요.</p>' +
+      '<p><a class="button" href="index.html">홈으로 돌아가기</a></p>');
+  }
+
+  // ----- 디자인 플랫폼: 검사 (Python 검사와 같은 문장) -----
+  function checkDesign(errors, data) {
+    var design = data.design;
+    if (!isObject(design)) {
+      errors.push("config/design.json: 최상위 값은 { } 묶음이어야 합니다.");
+      return;
+    }
+    var presets = isObject(data.presets) ? data.presets : {};
+    var name = design.preset;
+    if (name === undefined || name === null) return;
+    if (!hasKey(presets, name)) {
+      errors.push("config/design.json: preset 은 " + Object.keys(presets).join(", ") + " 중 하나여야 합니다.");
+      return;
+    }
+    var hero = design.hero;
+    var heroes = presets[name].heroes;
+    if (hero !== undefined && hero !== null && (HERO_VARIANTS.indexOf(hero) === -1 || heroes.indexOf(hero) === -1)) {
+      errors.push("config/design.json: " + name + " 프리셋의 hero 는 " + heroes.join(", ") + " 중 하나여야 합니다.");
+    }
+    var width = design.contentWidth;
+    if (width !== undefined && width !== null && !hasKey(CONTENT_WIDTHS, width)) {
+      errors.push("config/design.json: contentWidth 는 " + Object.keys(CONTENT_WIDTHS).join(", ") + " 중 하나여야 합니다.");
+    }
+  }
+
+  function checkHomepage(errors, data) {
+    var homepage = data.homepage;
+    if (!isObject(homepage)) {
+      errors.push("config/homepage.json: 최상위 값은 { } 묶음이어야 합니다.");
+      return;
+    }
+    var sections = homepage.sections;
+    if (sections === undefined || sections === null) return;
+    if (!Array.isArray(sections)) {
+      errors.push("config/homepage.json: sections 는 목록이어야 합니다.");
+    } else if (sections.some(function (s, i) { return HOMEPAGE_SECTIONS.indexOf(s) === -1 || sections.indexOf(s) !== i; })) {
+      errors.push("config/homepage.json: sections 는 " + HOMEPAGE_SECTIONS.join(", ") + " 중에서 한 번씩만 고를 수 있습니다.");
+    }
+  }
+
+  function checkImpact(errors, impact) {
+    if (!isObject(impact)) {
+      errors.push("content/impact.json: 최상위 값은 { } 묶음이어야 합니다.");
+      return;
+    }
+    var items = impact.items || [];
+    if (!Array.isArray(items)) {
+      errors.push("content/impact.json: items 는 목록이어야 합니다.");
+      return;
+    }
+    items.forEach(function (item, i) {
+      if (!isObject(item) || !str(item.value || "").trim() || !str(item.label || "").trim()) {
+        errors.push("content/impact.json " + (i + 1) + "번: value (숫자)와 label (이름)을 적어 주세요.");
+      }
+    });
+  }
+
+  function checkSiteUrl(errors, site) {
+    if (isObject(site) && site.url && !startsWith(str(site.url), "https://")) {
+      errors.push("config/site.json: url 은 https:// 로 시작해야 합니다.");
+    }
+  }
+
+  function checkContactFields(errors, contact) {
+    if (!isObject(contact)) return;
+    ["address", "phone", "hours"].forEach(function (key) {
+      if (key in contact && typeof contact[key] !== "string") errors.push("content/contact.json: " + key + " 는 글자여야 합니다.");
+    });
+  }
+
   function buildPages(files, data) {
     var site = data.site, nav = data.nav, theme = data.theme;
-    var style = [themeCss(theme), backgroundCss(theme), files["src/styles/site.css"], files["config/custom.css"] || ""].join("\n");
+    var choice = designChoice(data);
+    var style = [themeCss(theme, choice), backgroundCss(theme), files["src/styles/site.css"], files["config/custom.css"] || ""].join("\n");
     var pages = {};
 
-    function page(fileName, title, mainHtml, description, content) {
+    function page(fileName, title, mainHtml, description, content, noindex) {
+      if (fileName !== "index.html") {
+        mainHtml = mainHtml.replace("<h2>", "<h1>").replace("</h2>", "</h1>");
+      }
       var top = content ? photoHtml(content) : "";
       var bottom = content ? galleryHtml(content) : "";
       var fullTitle = fileName === "index.html" ? site.name : title + " | " + site.name;
@@ -476,6 +729,8 @@
         lang: esc(site.language || "ko"),
         title: esc(fullTitle),
         description: esc(site.description),
+        head: headHtml(site, fileName, fullTitle, noindex),
+        script: str(files["src/scripts/reading.js"]).trim(),
         style: style,
         header: headerHtml(files, site, nav, fileName),
         main: top + mainHtml + bottom,
@@ -485,19 +740,7 @@
       });
     }
 
-    var home = data.home;
-    var previewItems = (data.projects.items || []).slice(0, 3);
-    var preview = itemsHtml(previewItems, theme.layout);
-    var news = data.news;
-    var newsItems = news.items || [];
-    var homeParts = {
-      intro: block("소개", '<p class="pre">' + esc(home.intro) + "</p>"),
-      projects: preview ? block(data.projects.title, preview) : "",
-      news: newsItems.length ? block(news.title, projectArticles(newsItems.slice(0, 3))) : ""
-    };
-    var order = home.sections && home.sections.length ? home.sections : ["intro", "projects"];
-    var homeMain = heroHtml(files, home) + order.map(function (name) { return homeParts[name]; }).join("");
-    page("index.html", site.name, homeMain, site.description || "");
+    page("index.html", site.name, homeMain(files, data, choice), site.description || "");
 
     page("about.html", data.about.title,
       block(data.about.title, '<p class="pre">' + esc(data.about.body) + "</p>"), data.about.body, data.about);
@@ -541,7 +784,10 @@
     (data.custom_pages || []).forEach(function (content) {
       page(content.slug + ".html", content.title, genericBody(content), content.body, content);
     });
-    page("admin.html", "관리자", adminMain(files, connection.url, connection.key), ADMIN_INTRO);
+    page("admin.html", "관리자", adminMain(files, connection.url, connection.key), ADMIN_INTRO, null, true);
+    page("404.html", "페이지를 찾을 수 없습니다", notFoundMain(), "요청한 페이지가 없습니다.", null, true);
+    pages["robots.txt"] = robotsTxt(site);
+    if (str(site.url || "").trim()) pages["sitemap.xml"] = sitemapXml(site, Object.keys(ROUTES).map(function (r) { return ROUTES[r]; }).filter(function (v, i, a) { return a.indexOf(v) === i; }));
     return pages;
   }
 

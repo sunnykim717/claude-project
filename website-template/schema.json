@@ -21,7 +21,11 @@
     "location": "content/location.json",
     "board": "content/board.json",
     "custom_pages": "content/custom-pages.json",
-    "supabase": "config/supabase.json"
+    "supabase": "config/supabase.json",
+    "design": "config/design.json",
+    "homepage": "config/homepage.json",
+    "presets": "design/presets.json",
+    "impact": "content/impact.json"
   },
   "pages": {
     "/": "index.html",
@@ -131,7 +135,13 @@
     "게시판(board): 글마다 본문(body)을 적으면 '자세히 보기'로 펼쳐집니다. 글 쓰기 칸에서 쓰세요",
     "직접 추가한 페이지(custom_pages): 목록에 {slug, title, body, items...} 를 적으면 /slug 주소로 페이지가 생깁니다. 편집기 명령 add-page 제목 | slug",
     "예약 발행: 목록 항목에 publish (YYYY-MM-DD) 를 적으면 그 날짜 전에는 보이지 않고, 매일 자동 배포 때 날짜가 되면 나타납니다",
-    "Supabase 연결 (선택): config/supabase.json 의 url (https://프로젝트.supabase.co) 과 anonKey (anon 키 또는 sb_publishable_ 키). 둘 다 비우면 연결하지 않습니다. service_role 키는 쓸 수 없습니다"
+    "Supabase 연결 (선택): config/supabase.json 의 url (https://프로젝트.supabase.co) 과 anonKey (anon 키 또는 sb_publishable_ 키). 둘 다 비우면 연결하지 않습니다. service_role 키는 쓸 수 없습니다",
+    "디자인 프리셋(config/design.json): preset = warm, trust, companion, sprout, calm 중 하나. hero = split, photo, info (프리셋마다 허용된 것만). contentWidth = narrow, comfortable, wide",
+    "홈페이지 칸(config/homepage.json): sections 에 hero, quickLinks, about, programs, news, stories, impact, participation, contact 를 원하는 순서로 적습니다. 데이터가 없는 칸은 자동으로 빠집니다",
+    "숫자 칸(content/impact.json): title, period, items (value 숫자, label 이름, description 설명). 항목이 없으면 칸을 숨깁니다",
+    "연락처: contact.address, contact.phone, contact.hours 를 적으면 연락처 칸에 함께 보입니다",
+    "site.sample: true 이면 바닥글에 '가상의 샘플 정보' 라고 표시합니다. 실제 기관 정보로 바꿀 때는 false 또는 삭제하세요",
+    "site.url (선택): https://도메인 을 적으면 대표 주소(canonical), sitemap.xml 을 만듭니다"
   ],
   "menus": [
     "row",
@@ -180,5 +190,26 @@
   ],
   "form_skip_files": [
     "custom_pages"
+  ],
+  "hero_variants": [
+    "split",
+    "photo",
+    "info"
+  ],
+  "content_widths": {
+    "narrow": 760,
+    "comfortable": 1120,
+    "wide": 1200
+  },
+  "homepage_sections": [
+    "hero",
+    "quickLinks",
+    "about",
+    "programs",
+    "news",
+    "stories",
+    "impact",
+    "participation",
+    "contact"
   ]
 }

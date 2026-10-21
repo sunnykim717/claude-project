@@ -71,6 +71,8 @@ def check_image(errors, root, rel, value, field="image"):
 
 def check_photo(errors, root, rel, content):
     check_image(errors, root, rel, content.get("image"))
+    if content.get("image") and not str(content.get("imageAlt") or "").strip():
+        errors.append(f"{rel}: 사진이 있으면 imageAlt (사진 설명) 을 적어 주세요.")
     gallery = content.get("gallery")
     if gallery is None:
         return
@@ -159,6 +161,70 @@ def check_supabase(errors, cfg):
         errors.append("config/supabase.json: anon 또는 publishable 키를 넣어 주세요 (Settings → API).")
 
 
+def check_design(errors, data):
+    """디자인 프리셋: 고른 프리셋, 첫 화면 변형, 본문 너비가 허용된 값인지 봅니다."""
+    design = data["design"]
+    if not isinstance(design, dict):
+        errors.append("config/design.json: 최상위 값은 { } 묶음이어야 합니다.")
+        return
+    presets = data["presets"] if isinstance(data["presets"], dict) else {}
+    name = design.get("preset")
+    if name is None:
+        return
+    if name not in presets:
+        errors.append(f"config/design.json: preset 은 {', '.join(presets)} 중 하나여야 합니다.")
+        return
+    hero = design.get("hero")
+    if hero is not None and (hero not in SCHEMA["hero_variants"] or hero not in presets[name]["heroes"]):
+        errors.append(f"config/design.json: {name} 프리셋의 hero 는 {', '.join(presets[name]['heroes'])} 중 하나여야 합니다.")
+    width = design.get("contentWidth")
+    if width is not None and width not in SCHEMA["content_widths"]:
+        errors.append(f"config/design.json: contentWidth 는 {', '.join(SCHEMA['content_widths'])} 중 하나여야 합니다.")
+
+
+def check_homepage(errors, data):
+    """홈 칸 순서: 정해 둔 칸만, 한 번씩 고를 수 있습니다."""
+    homepage = data["homepage"]
+    if not isinstance(homepage, dict):
+        errors.append("config/homepage.json: 최상위 값은 { } 묶음이어야 합니다.")
+        return
+    sections = homepage.get("sections")
+    if sections is None:
+        return
+    if not isinstance(sections, list):
+        errors.append("config/homepage.json: sections 는 목록이어야 합니다.")
+    elif len(set(map(str, sections))) != len(sections) or any(s not in SCHEMA["homepage_sections"] for s in sections):
+        errors.append(f"config/homepage.json: sections 는 {', '.join(SCHEMA['homepage_sections'])} 중에서 한 번씩만 고를 수 있습니다.")
+
+
+def check_impact(errors, impact):
+    """숫자 칸: 항목마다 숫자와 이름이 있어야 합니다. 항목이 없으면 칸은 숨깁니다."""
+    if not isinstance(impact, dict):
+        errors.append("content/impact.json: 최상위 값은 { } 묶음이어야 합니다.")
+        return
+    items = impact.get("items") or []
+    if not isinstance(items, list):
+        errors.append("content/impact.json: items 는 목록이어야 합니다.")
+        return
+    for i, item in enumerate(items, start=1):
+        if not isinstance(item, dict) or not str(item.get("value") or "").strip() or not str(item.get("label") or "").strip():
+            errors.append(f"content/impact.json {i}번: value (숫자)와 label (이름)을 적어 주세요.")
+
+
+def check_site_url(errors, site):
+    """대표 주소(url)는 비워 두거나 https:// 로 시작해야 합니다. 있으면 지도와 대표 주소 표시에 씁니다."""
+    if isinstance(site, dict) and site.get("url") and not str(site["url"]).startswith("https://"):
+        errors.append("config/site.json: url 은 https:// 로 시작해야 합니다.")
+
+
+def check_contact_fields(errors, contact):
+    if not isinstance(contact, dict):
+        return
+    for key in ("address", "phone", "hours"):
+        if key in contact and not isinstance(contact[key], str):
+            errors.append(f"content/contact.json: {key} 는 글자여야 합니다.")
+
+
 def check_custom_pages(errors, root, custom):
     """직접 추가한 페이지: 주소(slug)는 영문 소문자로 시작하고 기본 페이지와 겹치지 않아야 합니다."""
     if not isinstance(custom, list):
@@ -244,12 +310,6 @@ def validate(root):
         check_photo(errors, root, "content/home.json", hero)
         if hero.get("buttonLink") and not is_link_ok(hero["buttonLink"]):
             errors.append(f"content/home.json: buttonLink 은 https:// 주소 또는 페이지 주소여야 합니다 ({hero['buttonLink']}).")
-        sections = home.get("sections")
-        if sections is not None:
-            if not isinstance(sections, list):
-                errors.append("content/home.json: sections 는 목록이어야 합니다.")
-            elif len(set(map(str, sections))) != len(sections) or any(s not in SCHEMA["home_sections"] for s in sections):
-                errors.append(f"content/home.json: sections 는 {', '.join(SCHEMA['home_sections'])} 중에서 한 번씩만 고를 수 있습니다.")
 
     for name in SCHEMA["photo_pages"]:
         if isinstance(data[name], dict):
@@ -261,6 +321,11 @@ def validate(root):
             check_items(errors, f"content/{name}.json", "항목", data[name].get("items", []))
     check_custom_pages(errors, root, data["custom_pages"])
     check_supabase(errors, data["supabase"])
+    check_design(errors, data)
+    check_homepage(errors, data)
+    check_impact(errors, data["impact"])
+    check_contact_fields(errors, data["contact"])
+    check_site_url(errors, data["site"])
 
     projects = data["projects"]
     if isinstance(projects, dict):

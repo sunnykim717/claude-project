@@ -157,22 +157,22 @@ class GenerateTest(unittest.TestCase):
             self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
             for name in ("greetings", "history", "events", "stories", "library", "faq", "location"):
                 page = (out / f"{name}.html").read_text(encoding="utf-8")
-                self.assertIn("<h2>", page, name)
+                self.assertIn("<h1>", page, name)
             self.assertIn("<h2>연도별 기록</h2>", (out / "history.html").read_text(encoding="utf-8"))
             self.assertNotIn("<h2>연도별 기록</h2>", (out / "greetings.html").read_text(encoding="utf-8"))
 
-    def test_home_sections_change_order_and_reject_unknown(self):
+    def test_homepage_sections_change_order_and_reject_unknown(self):
         with _Copy() as root:
-            _edit(root, "content/home.json", lambda d: d.update(sections=["news", "intro"]))
+            _edit(root, "config/homepage.json", lambda d: d.update(sections=["hero", "news", "about"]))
             out = root / "dist"
             self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
             index = (out / "index.html").read_text(encoding="utf-8")
-            self.assertLess(index.index("<h2>소식</h2>"), index.index("<h2>소개</h2>"))
-            self.assertNotIn("<h2>주요사업</h2>", index)
+            self.assertLess(index.index("<h2>소식</h2>"), index.index("<h2>기관 소개</h2>"))
+            self.assertNotIn("<h2>바로 가기</h2>", index)
         with _Copy() as root:
-            _edit(root, "content/home.json", lambda d: d.update(sections=["intro", "video"]))
+            _edit(root, "config/homepage.json", lambda d: d.update(sections=["hero", "video"]))
             _, errors = validate.validate(root)
-            self.assertTrue(any("sections" in e for e in errors))
+            self.assertTrue(any("homepage.json" in e and "sections" in e for e in errors))
 
     def test_board_post_body_is_expandable_and_escaped(self):
         with _Copy() as root:
@@ -199,7 +199,7 @@ class GenerateTest(unittest.TestCase):
             out = root / "dist"
             self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
             page = (out / "open-house.html").read_text(encoding="utf-8")
-            self.assertIn("<h2>열린 행사</h2>", page)
+            self.assertIn("<h1>열린 행사</h1>", page)
             self.assertIn('href="open-house.html"', (out / "about.html").read_text(encoding="utf-8"))
 
     def test_custom_page_slug_rules(self):
@@ -278,6 +278,7 @@ class GenerateTest(unittest.TestCase):
 
     def test_theme_values_become_css_variables(self):
         with _Copy() as root:
+            _edit(root, "config/design.json", lambda d: d.clear())  # 디자인 프리셋을 쓰지 않을 때 theme.json 값이 그대로 나옵니다
             _edit(root, "config/theme.json", lambda d: d.update(primaryColor="#0F766E", font="serif", radius=14))
             out = root / "dist"
             generate.main(["--root", str(root), "--out", str(out)])
@@ -379,6 +380,38 @@ class DesignAndSchemaTest(unittest.TestCase):
             self.assertIn(design["font"], schema["fonts"], name)
             self.assertIn(design["layout"], schema["layouts"], name)
             self.assertIn(design["spacing"], schema["spacings"], name)
+
+    def test_all_eight_presets_pass_contrast_for_text_buttons_and_links(self):
+        presets = json.loads((ROOT / "design" / "presets.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(presets), 8)
+
+        def lum(hex_color):
+            n = int(hex_color[1:], 16)
+            channels = []
+            for shift in (16, 8, 0):
+                c = ((n >> shift) & 255) / 255
+                channels.append(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4)
+            return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+
+        def ratio(a, b):
+            hi, lo = sorted([lum(a), lum(b)], reverse=True)
+            return (hi + 0.05) / (lo + 0.05)
+
+        for name, preset in presets.items():
+            t = preset["tokens"]
+            pairs = {
+                "본문/배경": (t["text"], t["bg"]), "링크·강조/배경": (t["primary"], t["bg"]),
+                "버튼 글자/버튼": (t["bg"], t["primary"]), "보조 글자/배경": (t["muted"], t["bg"]),
+                "보조 글자/카드": (t["muted"], t["surface"]), "본문/강조 면": (t["text"], t["accent"]),
+            }
+            for label, (fg, bg) in pairs.items():
+                self.assertGreaterEqual(ratio(fg, bg), 4.5, f"{name} {label}")
+
+    def test_site_url_must_be_https(self):
+        with _Copy() as root:
+            _edit(root, "config/site.json", lambda d: d.update(url="http://example.org"))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("url" in e and "https" in e for e in errors))
 
     def test_menu_must_be_a_known_style(self):
         with _Copy() as root:

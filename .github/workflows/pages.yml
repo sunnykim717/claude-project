@@ -1,11 +1,11 @@
 name: Deploy homepage to Pages
 
 # website-template 을 검사하고 페이지를 만들어 GitHub Pages 에 올립니다.
-# 합친 뒤에는 main 브랜치만 남겨도 됩니다.
 
 on:
+  # 작업 브랜치 push 로는 공개 배포되지 않습니다. main 에 합친 뒤 또는 수동 실행으로만 배포합니다.
   push:
-    branches: [main, claude/funny-franklin-mknfpi]
+    branches: [main]
     paths:
       - "website-template/**"
       - ".github/workflows/pages.yml"
