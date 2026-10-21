@@ -10,6 +10,8 @@ NGO, 사회복지법인, 비영리 법인의 기관 소개와 후원 모금 홈�
 
 **A. 브라우저에서 (터미널 없이)**
 
+> 편집기 열기: [편집기 파일 보기](https://github.com/sunnykim717/claude-project/blob/claude/funny-franklin-mknfpi/website-template/editor/index.html) — 이 페이지에서 **Raw** 를 누르거나 파일을 내려받아 `index.html` 로 저장한 뒤 브라우저로 여세요. 저장소를 합치면 주소의 `claude/funny-franklin-mknfpi` 부분이 `main` 으로 바뀝니다.
+
 1. `editor/index.html` 을 브라우저(크롬, 엣지 등)로 엽니다.
 2. 위쪽 명령 칸에 적고 Enter 를 누릅니다. 예: `set site.name 희망 나눔 복지재단`
 3. 오른쪽 미리보기에서 확인하고, **프로젝트 내려받기 (zip)** 을 누릅니다.
