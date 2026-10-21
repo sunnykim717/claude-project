@@ -27,6 +27,16 @@ class LoadSiteTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             uh.load_site(path)
 
+    def test_javascript_url_raises(self):
+        path = self._write({"title": "t", "items": [{"title": "a", "url": "javascript:alert(1)"}]})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+
+    def test_bad_date_raises(self):
+        path = self._write({"title": "t", "items": [{"title": "a", "date": "2026/10/21"}]})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+
     def test_valid_file_loads(self):
         path = self._write({"title": "t", "items": [{"title": "a"}]})
         self.assertEqual(uh.load_site(path)["title"], "t")

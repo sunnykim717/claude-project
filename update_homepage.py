@@ -9,10 +9,12 @@
 import argparse
 import html
 import json
+import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 KST = timezone(timedelta(hours=9))
+DATE_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 DEFAULT_DATA = Path("data/site.json")
 DEFAULT_OUTPUT = Path("index.html")
@@ -43,7 +45,16 @@ def load_site(path):
     for item in site.get("items", []):
         if not item.get("title"):
             raise ValueError(f"{path}: 모든 item 에 'title' 이 필요합니다.")
+        if item.get("url") and not is_http_url(item["url"]):
+            raise ValueError(f"{path}: '{item['title']}' 의 url 은 http(s):// 로 시작해야 합니다.")
+        if item.get("date") and not DATE_PATTERN.match(item["date"]):
+            raise ValueError(f"{path}: '{item['title']}' 의 date 는 YYYY-MM-DD 형식이어야 합니다.")
     return site
+
+
+def is_http_url(value):
+    """http(s) 주소만 허용해서 javascript: 같은 주소를 막습니다."""
+    return value.startswith(("https://", "http://"))
 
 
 def render_item(item):

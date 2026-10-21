@@ -54,6 +54,17 @@ python -m unittest discover -s tests
 
 변경 사항이 없으면 커밋하지 않습니다.
 
+## 바이브 코딩으로 내용 수정 (클라우드 세션 우선)
+
+자연어로 요청하면 Claude Code 클라우드 세션이 `data/site.json` 만 수정합니다. API 키는 필요 없습니다.
+
+1. Claude Code 클라우드 세션을 이 저장소에 연결합니다.
+2. 요청을 말합니다. 예: "프로젝트에 2026-10-21 자 '빌더 공개' 항목 추가하고 제목을 '민수의 작업실'로 바꿔 줘"
+3. 세션은 `data/site.json` 만 고치고, `python -m unittest discover -s tests` 와 `python update_homepage.py` 로 확인한 뒤 push 합니다.
+4. push 가 `data/site.json` 을 건드리면 워크플로가 검증, 생성, 커밋을 자동으로 처리합니다.
+
+검증 실패 시(예: `javascript:` 링크, 잘못된 날짜 형식) 생성기가 오류를 내고 커밋하지 않습니다.
+
 ## GitHub Pages 로 공개하기
 
 저장소 Settings → Pages 에서 `Deploy from a branch` 를 선택하고 기본 브랜치의 `/ (root)` 를 지정하면
