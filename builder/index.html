@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>바이브 홈페이지 빌더</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f8fafc; --panel: #ffffff; --text: #0f172a; --muted: #64748b; --line: #e2e8f0; --accent: #3b82f6;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --line: #334155; }
+    }
+    :root[data-theme="dark"] { --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --line: #334155; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+    header { padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    header h1 { font-size: 1.1rem; margin: 0; }
+    .layout { display: grid; grid-template-columns: 340px 1fr; min-height: calc(100vh - 60px); }
+    aside { padding: 16px; border-right: 1px solid var(--line); background: var(--panel); overflow-y: auto; }
+    aside h2 { font-size: 0.95rem; margin: 18px 0 8px; color: var(--muted); }
+    aside h2:first-child { margin-top: 0; }
+    label { display: block; font-size: 0.85rem; margin: 8px 0 4px; }
+    input[type="text"], textarea, select {
+      width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px;
+      background: var(--bg); color: var(--text); font: inherit;
+    }
+    textarea { min-height: 64px; resize: vertical; }
+    .item { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+    .item button { margin-top: 6px; }
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row input[type="color"] { width: 44px; height: 36px; padding: 0; border: none; background: none; }
+    button {
+      padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+      background: var(--bg); color: var(--text); font: inherit;
+    }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    button.danger { color: #dc2626; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+    .check { display: flex; align-items: center; gap: 6px; margin: 6px 0; font-size: 0.9rem; }
+    .templates { display: flex; gap: 6px; flex-wrap: wrap; }
+    .preview { padding: 16px; }
+    .preview-frame { width: 100%; height: calc(100vh - 110px); min-height: 480px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin: 6px 0 0; }
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { border-right: none; border-bottom: 1px solid var(--line); }
+      .preview-frame { height: 70vh; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>바이브 홈페이지 빌더</h1>
+  <div class="actions" style="margin-top:0">
+    <button id="save">저장</button>
+    <button id="reset" class="danger">초기화</button>
+    <button id="download" class="primary">index.html 다운로드</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <h2>1. 기본 정보</h2>
+    <label for="title">사이트 제목</label>
+    <input type="text" id="title">
+    <label for="subtitle">한 줄 소개</label>
+    <input type="text" id="subtitle">
+
+    <h2>2. 디자인</h2>
+    <label>템플릿</label>
+    <div class="templates" id="templates"></div>
+    <label>강조 색상</label>
+    <div class="row">
+      <input type="color" id="accent">
+      <span class="hint" id="accentHex"></span>
+    </div>
+    <label for="font">글꼴</label>
+    <select id="font">
+      <option value="system-ui, sans-serif">기본 고딕</option>
+      <option value="Georgia, serif">세리프</option>
+      <option value="ui-monospace, monospace">모노스페이스</option>
+    </select>
+
+    <h2>3. 섹션</h2>
+    <label class="check"><input type="checkbox" id="showHero"> 상단 소개(Hero) 표시</label>
+    <label class="check"><input type="checkbox" id="showAbout"> 소개 글 표시</label>
+    <label for="about">소개 글</label>
+    <textarea id="about"></textarea>
+    <label class="check"><input type="checkbox" id="showContact"> 연락처 표시</label>
+    <label for="contact">이메일 또는 연락처</label>
+    <input type="text" id="contact">
+
+    <h2>4. 콘텐츠 목록</h2>
+    <div id="items"></div>
+    <button id="addItem">+ 항목 추가</button>
+  </aside>
+
+  <section class="preview">
+    <iframe class="preview-frame" id="frame" title="미리보기"></iframe>
+  </section>
+</div>
+
+<script>
+  const STORAGE_KEY = "vibe-homepage-builder:v1";
+
+  const TEMPLATES = {
+    minimal: { label: "미니멀", accent: "#111827", font: "system-ui, sans-serif", bg: "#ffffff", text: "#111827" },
+    ocean:   { label: "오션",   accent: "#0ea5e9", font: "system-ui, sans-serif", bg: "#f0f9ff", text: "#0c4a6e" },
+    warm:    { label: "웜",     accent: "#f97316", font: "Georgia, serif",        bg: "#fffbeb", text: "#431407" },
+    night:   { label: "나이트", accent: "#a78bfa", font: "system-ui, sans-serif", bg: "#0f172a", text: "#e2e8f0" },
+  };
+
+  const DEFAULT_STATE = {
+    title: "나의 홈페이지",
+    subtitle: "여기에 한 줄 소개를 적어 보세요.",
+    template: "minimal",
+    accent: "#111827",
+    font: "system-ui, sans-serif",
+    showHero: true,
+    showAbout: true,
+    about: "이곳에 나를 소개하는 글을 적어 보세요.",
+    showContact: true,
+    contact: "hello@example.com",
+    items: [
+      { title: "첫 번째 프로젝트", summary: "진행한 작업이나 소식을 짧게 적어 보세요.", url: "" },
+    ],
+  };
+
+  let state = load();
+
+  const $ = (id) => document.getElementById(id);
+
+  function load() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      if (saved) return { ...structuredClone(DEFAULT_STATE), ...saved };
+    } catch (e) { /* 저장소를 쓸 수 없으면 기본값 사용 */ }
+    return structuredClone(DEFAULT_STATE);
+  }
+
+  function persist() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* 무시 */ }
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+  }
+
+  function safeUrl(value) {
+    // javascript: 같은 위험한 주소는 막고 http(s) 만 허용
+    return /^https?:\/\//i.test(value) ? escapeHtml(value) : "";
+  }
+
+  function buildHtml() {
+    const t = TEMPLATES[state.template] ?? TEMPLATES.minimal;
+    const { bg, text } = t;
+    const accent = state.accent;
+
+    const itemsHtml = state.items
+      .filter((item) => item.title)
+      .map((item) => {
+        const title = safeUrl(item.url)
+          ? `<a href="${safeUrl(item.url)}">${escapeHtml(item.title)}</a>`
+          : escapeHtml(item.title);
+        return `<article><h3>${title}</h3>${item.summary ? `<p>${escapeHtml(item.summary)}</p>` : ""}</article>`;
+      })
+      .join("\n    ");
+
+    const hero = state.showHero
+      ? `<header class="hero"><h1>${escapeHtml(state.title)}</h1><p class="subtitle">${escapeHtml(state.subtitle)}</p></header>`
+      : "";
+    const about = state.showAbout && state.about
+      ? `<section><h2>소개</h2><p>${escapeHtml(state.about)}</p></section>`
+      : "";
+    const contact = state.showContact && state.contact
+      ? `<footer><h2>연락처</h2><p>${escapeHtml(state.contact)}</p></footer>`
+      : "";
+
+    return `<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(state.title)}</title>
+  <style>
+    body { margin: 0; font-family: ${state.font}; background: ${bg}; color: ${text}; line-height: 1.7; }
+    main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+    .hero { padding: 48px 0 24px; border-bottom: 4px solid ${accent}; margin-bottom: 24px; }
+    .hero h1 { margin: 0; font-size: 2.2rem; }
+    .subtitle { margin: 8px 0 0; opacity: 0.75; }
+    h2 { color: ${accent}; font-size: 1.2rem; margin-top: 32px; }
+    article { border-left: 4px solid ${accent}; padding: 4px 14px; margin: 16px 0; }
+    article h3 { margin: 0; }
+    article h3 a { color: inherit; }
+    footer { margin-top: 40px; border-top: 1px solid ${accent}; padding-top: 8px; }
+  </style>
+</head>
+<body>
+<main>
+  ${hero}
+  ${about}
+  <section>
+    ${itemsHtml}
+  </section>
+  ${contact}
+</main>
+</body>
+</html>
+`;
+  }
+
+  function renderItems() {
+    const container = $("items");
+    container.innerHTML = "";
+    state.items.forEach((item, index) => {
+      const box = document.createElement("div");
+      box.className = "item";
+      box.innerHTML = `
+        <label>제목</label>
+        <input type="text" data-field="title" data-index="${index}" value="${escapeHtml(item.title)}">
+        <label>설명</label>
+        <input type="text" data-field="summary" data-index="${index}" value="${escapeHtml(item.summary)}">
+        <label>링크 (선택, http:// 로 시작)</label>
+        <input type="text" data-field="url" data-index="${index}" value="${escapeHtml(item.url)}">
+        <button class="danger" data-remove="${index}">삭제</button>`;
+      container.appendChild(box);
+    });
+  }
+
+  function renderTemplates() {
+    const container = $("templates");
+    container.innerHTML = "";
+    Object.entries(TEMPLATES).forEach(([key, t]) => {
+      const button = document.createElement("button");
+      button.textContent = t.label;
+      button.dataset.template = key;
+      if (key === state.template) button.className = "primary";
+      container.appendChild(button);
+    });
+  }
+
+  function syncInputs() {
+    $("title").value = state.title;
+    $("subtitle").value = state.subtitle;
+    $("accent").value = state.accent;
+    $("accentHex").textContent = state.accent;
+    $("font").value = state.font;
+    $("showHero").checked = state.showHero;
+    $("showAbout").checked = state.showAbout;
+    $("about").value = state.about;
+    $("showContact").checked = state.showContact;
+    $("contact").value = state.contact;
+    renderTemplates();
+    renderItems();
+  }
+
+  function refresh() {
+    $("frame").srcdoc = buildHtml();
+    $("accentHex").textContent = state.accent;
+    persist();
+  }
+
+  function applyTemplate(key) {
+    const t = TEMPLATES[key];
+    state.template = key;
+    state.accent = t.accent;
+    state.font = t.font;
+    syncInputs();
+    refresh();
+  }
+
+  // 입력 이벤트: 일반 필드
+  ["title", "subtitle", "font", "about", "contact", "accent"].forEach((id) => {
+    $(id).addEventListener("input", (e) => {
+      state[id] = e.target.value;
+      refresh();
+    });
+  });
+  ["showHero", "showAbout", "showContact"].forEach((id) => {
+    $(id).addEventListener("change", (e) => {
+      state[id] = e.target.checked;
+      refresh();
+    });
+  });
+
+  // 콘텐츠 항목 편집 (이벤트 위임)
+  $("items").addEventListener("input", (e) => {
+    const { field, index } = e.target.dataset;
+    if (!field) return;
+    state.items[Number(index)][field] = e.target.value;
+    refresh();
+  });
+  $("items").addEventListener("click", (e) => {
+    const index = e.target.dataset.remove;
+    if (index === undefined) return;
+    state.items.splice(Number(index), 1);
+    renderItems();
+    refresh();
+  });
+  $("addItem").addEventListener("click", () => {
+    state.items.push({ title: "새 항목", summary: "", url: "" });
+    renderItems();
+    refresh();
+  });
+
+  $("templates").addEventListener("click", (e) => {
+    const key = e.target.dataset.template;
+    if (key) applyTemplate(key);
+  });
+
+  $("save").addEventListener("click", () => {
+    persist();
+    alert("브라우저에 저장했습니다.");
+  });
+  $("reset").addEventListener("click", () => {
+    if (!confirm("모든 내용을 초기화할까요?")) return;
+    state = structuredClone(DEFAULT_STATE);
+    syncInputs();
+    refresh();
+  });
+  $("download").addEventListener("click", () => {
+    const blob = new Blob([buildHtml()], { type: "text/html;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "index.html";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+
+  syncInputs();
+  refresh();
+</script>
+</body>
+</html>
