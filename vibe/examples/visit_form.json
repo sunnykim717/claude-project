@@ -9,8 +9,8 @@
         {"label": "이름", "type": "text", "required": true},
         {"label": "연락 이메일", "type": "email", "required": true},
         {"label": "연락처", "type": "phone", "required": false},
-        {"label": "방문 날짜", "type": "date", "required": true},
-        {"label": "방문 인원", "type": "number", "required": true},
+        {"label": "방문 날짜", "type": "date", "required": true, "minToday": true},
+        {"label": "방문 인원", "type": "number", "required": true, "min": 1, "max": 20},
         {"label": "방문 목적", "type": "select", "required": true, "options": ["상담", "견학", "기타"]},
         {"label": "요청 사항", "type": "textarea", "required": false}
       ]
