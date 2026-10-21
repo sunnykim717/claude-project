@@ -1,0 +1,34 @@
+[
+  {
+    "label": "홈",
+    "path": "/"
+  },
+  {
+    "label": "기관소개",
+    "path": "/about"
+  },
+  {
+    "label": "주요사업",
+    "path": "/projects"
+  },
+  {
+    "label": "후원안내",
+    "path": "/support"
+  },
+  {
+    "label": "투명성",
+    "path": "/transparency"
+  },
+  {
+    "label": "소식",
+    "path": "/news"
+  },
+  {
+    "label": "자원봉사",
+    "path": "/volunteer"
+  },
+  {
+    "label": "문의",
+    "path": "/contact"
+  }
+]

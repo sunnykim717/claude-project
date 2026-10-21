@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "note": "글꼴 레지스트리. 파일은 개발 단계에서 scripts/fetch_fonts.py 로 받아 fonts/files 에 둡니다. 생성 단계는 이 로컬 파일만 씁니다.",
+  "fonts": [
+    {"id": "pretendard", "label": "Pretendard", "category": "고딕", "korean": true,
+     "source": {"type": "npm", "package": "pretendard", "version": "1.3.9", "homepage": "https://github.com/orioncactus/pretendard"},
+     "license": "OFL-1.1",
+     "files": [
+       {"weight": 400, "from": "package/dist/web/static/woff2/Pretendard-Regular.woff2"},
+       {"weight": 700, "from": "package/dist/web/static/woff2/Pretendard-Bold.woff2"}
+     ],
+     "recommendedRoles": ["base", "heading", "body", "menu", "button"]},
+    {"id": "noto-sans-kr", "label": "Noto Sans KR", "category": "고딕", "korean": true,
+     "source": {"type": "npm", "package": "@fontsource/noto-sans-kr", "version": "5.3.1", "homepage": "https://github.com/google/fonts"},
+     "license": "OFL-1.1",
+     "files": [
+       {"weight": 400, "from": "package/files/noto-sans-kr-korean-400-normal.woff2"},
+       {"weight": 700, "from": "package/files/noto-sans-kr-korean-700-normal.woff2"}
+     ],
+     "recommendedRoles": ["base", "body", "heading"]},
+    {"id": "nanum-gothic", "label": "나눔고딕", "category": "고딕", "korean": true,
+     "source": {"type": "npm", "package": "@fontsource/nanum-gothic", "version": "5.3.0", "homepage": "https://github.com/naver/nanumfont"},
+     "license": "OFL-1.1",
+     "files": [
+       {"weight": 400, "from": "package/files/nanum-gothic-korean-400-normal.woff2"},
+       {"weight": 700, "from": "package/files/nanum-gothic-korean-700-normal.woff2"}
+     ],
+     "recommendedRoles": ["base", "body", "heading", "menu"]},
+    {"id": "noto-serif-kr", "label": "Noto Serif KR", "category": "명조", "korean": true,
+     "source": {"type": "npm", "package": "@fontsource/noto-serif-kr", "version": "5.3.1", "homepage": "https://github.com/google/fonts"},
+     "license": "OFL-1.1",
+     "files": [
+       {"weight": 400, "from": "package/files/noto-serif-kr-korean-400-normal.woff2"},
+       {"weight": 600, "from": "package/files/noto-serif-kr-korean-600-normal.woff2"}
+     ],
+     "recommendedRoles": ["heading", "quote"]},
+    {"id": "nanum-myeongjo", "label": "나눔명조", "category": "명조", "korean": true,
+     "source": {"type": "npm", "package": "@fontsource/nanum-myeongjo", "version": "5.3.0", "homepage": "https://github.com/naver/nanumfont"},
+     "license": "OFL-1.1",
+     "files": [
+       {"weight": 400, "from": "package/files/nanum-myeongjo-korean-400-normal.woff2"},
+       {"weight": 700, "from": "package/files/nanum-myeongjo-korean-700-normal.woff2"}
+     ],
+     "recommendedRoles": ["heading", "quote"]},
+    {"id": "nanum-pen-script", "label": "나눔손글씨 펜", "category": "손글씨", "korean": true,
+     "source": {"type": "npm", "package": "@fontsource/nanum-pen-script", "version": "5.3.0", "homepage": "https://github.com/naver/nanumfont"},
+     "license": "OFL-1.1",
+     "files": [
+       {"weight": 400, "from": "package/files/nanum-pen-script-korean-400-normal.woff2"}
+     ],
+     "recommendedRoles": ["quote"],
+     "notForLongText": true},
+    {"id": "nanum-brush-script", "label": "나눔손글씨 붓", "category": "손글씨", "korean": true,
+     "source": {"type": "npm", "package": "@fontsource/nanum-brush-script", "version": "5.3.0", "homepage": "https://github.com/naver/nanumfont"},
+     "license": "OFL-1.1",
+     "files": [
+       {"weight": 400, "from": "package/files/nanum-brush-script-korean-400-normal.woff2"}
+     ],
+     "recommendedRoles": ["quote"],
+     "notForLongText": true},
+    {"id": "system", "label": "시스템 글꼴", "category": "시스템", "korean": true,
+     "source": {"type": "system"},
+     "license": "해당 없음 (운영체제 제공)",
+     "files": [],
+     "recommendedRoles": ["base", "body", "menu", "button"]}
+  ]
+}

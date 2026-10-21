@@ -1,0 +1,250 @@
+{
+  "files": {
+    "site": "config/site.json",
+    "nav": "config/navigation.json",
+    "theme": "config/theme.json",
+    "home": "content/home.json",
+    "about": "content/about.json",
+    "projects": "content/projects.json",
+    "support": "content/support.json",
+    "transparency": "content/transparency.json",
+    "volunteer": "content/volunteer.json",
+    "privacy": "content/privacy.json",
+    "news": "content/news.json",
+    "contact": "content/contact.json",
+    "greetings": "content/greetings.json",
+    "history": "content/history.json",
+    "events": "content/events.json",
+    "stories": "content/stories.json",
+    "library": "content/library.json",
+    "faq": "content/faq.json",
+    "location": "content/location.json",
+    "board": "content/board.json",
+    "custom_pages": "content/custom-pages.json",
+    "supabase": "config/supabase.json",
+    "design": "config/design.json",
+    "homepage": "config/homepage.json",
+    "presets": "design/presets.json",
+    "impact": "content/impact.json",
+    "banner": "content/banner.json",
+    "font_registry": "fonts/registry.json"
+  },
+  "pages": {
+    "/": "index.html",
+    "/about": "about.html",
+    "/projects": "projects.html",
+    "/support": "support.html",
+    "/transparency": "transparency.html",
+    "/news": "news.html",
+    "/volunteer": "volunteer.html",
+    "/contact": "contact.html",
+    "/privacy": "privacy.html",
+    "/greetings": "greetings.html",
+    "/history": "history.html",
+    "/events": "events.html",
+    "/stories": "stories.html",
+    "/library": "library.html",
+    "/faq": "faq.html",
+    "/location": "location.html",
+    "/board": "board.html"
+  },
+  "languages": [
+    "ko",
+    "en",
+    "ja"
+  ],
+  "fonts": {
+    "system-ui": "system-ui, sans-serif",
+    "sans": "'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
+    "myeongjo": "Batang, 'Apple SD Myungjo', serif",
+    "rounded": "'Trebuchet MS', 'Malgun Gothic', sans-serif",
+    "humanist": "Verdana, 'Malgun Gothic', sans-serif",
+    "modern-latin": "'Helvetica Neue', Arial, sans-serif",
+    "serif": "Georgia, serif",
+    "classic-latin": "Palatino, 'Palatino Linotype', 'Book Antiqua', serif",
+    "mono": "ui-monospace, monospace"
+  },
+  "spacings": {
+    "tight": 8,
+    "compact": 12,
+    "normal": 24,
+    "airy": 40,
+    "spacious": 56
+  },
+  "layouts": [
+    "classic",
+    "modern",
+    "card",
+    "minimal",
+    "wide",
+    "bold"
+  ],
+  "theme_keys": [
+    "primaryColor",
+    "backgroundColor",
+    "textColor",
+    "font",
+    "radius",
+    "spacing",
+    "layout",
+    "menu"
+  ],
+  "image_extensions": [
+    "jpg",
+    "jpeg",
+    "png",
+    "webp",
+    "gif"
+  ],
+  "photo_pages": [
+    "about",
+    "projects",
+    "support",
+    "transparency",
+    "volunteer",
+    "news",
+    "contact",
+    "privacy",
+    "greetings",
+    "history",
+    "events",
+    "stories",
+    "library",
+    "faq",
+    "location"
+  ],
+  "help": [
+    "site.logo: 로고 사진 경로 (/images/파일이름.png). 비우면 글자만 나옵니다",
+    "site.name / site.description / site.language (ko, en, ja)",
+    "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy), theme.layout (classic, modern, card, minimal)",
+    "theme.backgroundImage: 배경 사진 경로 (/images/파일이름.jpg). 비우면 배경색만 씁니다",
+    "페이지이름.gallery: 사진 여러 장 (목록). 각 항목은 image (/images/파일이름.jpg), alt (설명). 최대 12장",
+    "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
+    "about.title / about.body",
+    "사진 (첫 화면은 home.hero.image): 페이지이름.image 에 /images/파일이름.jpg, 페이지이름.imageAlt 에 설명. 페이지이름은 about, projects, support, transparency, volunteer, news, contact, privacy",
+    "projects.title, projects.items.번호.title / .date / .summary / .url",
+    "support.title / support.body / support.notice, support.ways.번호.title / .summary",
+    "transparency.title / transparency.body / transparency.costs / transparency.disclosure, transparency.reports.번호.title / .summary",
+    "volunteer.title / volunteer.body / volunteer.apply, volunteer.positions.번호.title / .summary",
+    "privacy.title / privacy.body, privacy.items.번호.title / .summary",
+    "news.title, news.items.번호.title / .date / .summary / .url",
+    "contact.title / contact.body / contact.email, contact.social.github / .instagram / .youtube",
+    "nav.번호.label / nav.번호.path (/, /about, /projects, /support, /transparency, /news, /volunteer, /contact)",
+    "config/custom.css: 직접 쓰는 CSS. 모든 페이지 맨 뒤에 붙습니다 (url( , @import , < 는 쓸 수 없음)",
+    "home.sections: 첫 화면에 보일 칸 순서 (intro, projects, news 중 골라 쓰기). 예: [\"news\",\"intro\"]",
+    "새 페이지: greetings, history, events, stories, library, faq, location 의 title, body, itemsTitle, items (제목, 날짜, 설명, 주소)",
+    "메뉴: add-menu 이름 | /주소 , remove-menu 번호 (편집기 명령) 또는 config/navigation.json 직접 고치기",
+    "게시판(board): 글마다 본문(body)을 적으면 '자세히 보기'로 펼쳐집니다. 글 쓰기 칸에서 쓰세요",
+    "직접 추가한 페이지(custom_pages): 목록에 {slug, title, body, items...} 를 적으면 /slug 주소로 페이지가 생깁니다. 편집기 명령 add-page 제목 | slug",
+    "예약 발행: 목록 항목에 publish (YYYY-MM-DD) 를 적으면 그 날짜 전에는 보이지 않고, 매일 자동 배포 때 날짜가 되면 나타납니다",
+    "Supabase 연결 (선택): config/supabase.json 의 url (https://프로젝트.supabase.co) 과 anonKey (anon 키 또는 sb_publishable_ 키). 둘 다 비우면 연결하지 않습니다. service_role 키는 쓸 수 없습니다",
+    "디자인 프리셋(config/design.json): preset = warm, trust, companion, sprout, calm 중 하나. hero = split, photo, info (프리셋마다 허용된 것만). contentWidth = narrow, comfortable, wide",
+    "홈페이지 칸(config/homepage.json): sections 에 hero, quickLinks, about, programs, news, stories, impact, participation, contact 를 원하는 순서로 적습니다. 데이터가 없는 칸은 자동으로 빠집니다",
+    "숫자 칸(content/impact.json): title, period, items (value 숫자, label 이름, description 설명). 항목이 없으면 칸을 숨깁니다",
+    "연락처: contact.address, contact.phone, contact.hours 를 적으면 연락처 칸에 함께 보입니다",
+    "site.sample: true 이면 바닥글에 '가상의 샘플 정보' 라고 표시합니다. 실제 기관 정보로 바꿀 때는 false 또는 삭제하세요",
+    "site.url (선택): https://도메인 을 적으면 대표 주소(canonical), sitemap.xml 을 만듭니다",
+    "버튼 모양(theme.buttonShape): square, soft, round, pill. 현재 메뉴 표시(theme.menuMark): underline, background, border, side. 둘 다 적지 않으면 soft, underline",
+    "알림 띠(content/banner.json): active 를 true 로 바꾸고 text 를 적으면 홈 맨 위에 보입니다. 기본값은 꺼져 있습니다 (자동 재생, 팝업 없음)",
+    "글꼴 역할(config/design.json 의 fonts): base, heading, body, menu, button, quote 에 fonts/registry.json 의 글꼴 이름을 적습니다. 적지 않은 역할은 base 를 따릅니다"
+  ],
+  "menus": [
+    "row",
+    "center",
+    "buttons",
+    "stack"
+  ],
+  "gallery_max": 12,
+  "generic_pages": [
+    "greetings",
+    "history",
+    "events",
+    "stories",
+    "library",
+    "faq",
+    "location",
+    "board"
+  ],
+  "home_sections": [
+    "intro",
+    "projects",
+    "news"
+  ],
+  "page_labels": {
+    "home": "첫 화면",
+    "about": "기관소개",
+    "projects": "주요사업",
+    "support": "후원안내",
+    "transparency": "투명성",
+    "news": "소식",
+    "volunteer": "자원봉사",
+    "contact": "문의",
+    "privacy": "개인정보처리방침",
+    "greetings": "인사말",
+    "history": "연혁",
+    "events": "행사·캠페인",
+    "stories": "활동 이야기",
+    "library": "자료실",
+    "faq": "자주 묻는 질문",
+    "location": "오시는 길",
+    "site": "기관 기본 정보",
+    "board": "게시판"
+  },
+  "long_item_pages": [
+    "board"
+  ],
+  "form_skip_files": [
+    "custom_pages"
+  ],
+  "hero_variants": [
+    "split",
+    "photo",
+    "info"
+  ],
+  "content_widths": {
+    "narrow": 760,
+    "comfortable": 1120,
+    "wide": 1200
+  },
+  "homepage_sections": [
+    "hero",
+    "quickLinks",
+    "about",
+    "programs",
+    "news",
+    "stories",
+    "impact",
+    "participation",
+    "contact"
+  ],
+  "button_shapes": {
+    "square": 0,
+    "soft": 6,
+    "round": 12,
+    "pill": 999
+  },
+  "menu_marks": [
+    "underline",
+    "background",
+    "border",
+    "side"
+  ],
+  "font_roles": [
+    "base",
+    "heading",
+    "body",
+    "menu",
+    "button",
+    "quote"
+  ],
+  "font_fallbacks": {
+    "고딕": "'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
+    "명조": "Batang, 'Apple SD Myungjo', serif",
+    "손글씨": "'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
+    "시스템": "system-ui, sans-serif"
+  },
+  "button_sizes": [
+    "normal",
+    "large"
+  ]
+}

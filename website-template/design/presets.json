@@ -1,0 +1,202 @@
+{
+  "warm-nature": {
+    "label": "따뜻한 자연",
+    "target": "지역복지·환경단체",
+    "character": "아이보리 바탕과 짙은 초록. 부드러운 곡선과 편안한 여백.",
+    "tokens": {
+      "bg": "#F7F4EC",
+      "text": "#22302A",
+      "primary": "#2F5D46",
+      "accent": "#F1DCC9",
+      "surface": "#FFFFFF",
+      "muted": "#55645D",
+      "font": "sans",
+      "radius": 18,
+      "spacing": "airy"
+    },
+    "heroes": [
+      "split",
+      "photo"
+    ],
+    "defaultHero": "split",
+    "fonts": {
+      "base": "pretendard",
+      "heading": "nanum-myeongjo",
+      "quote": "nanum-myeongjo"
+    }
+  },
+  "trust-public": {
+    "label": "신뢰하는 공공",
+    "target": "복지관, 재단",
+    "character": "흰 바탕과 남색 강조. 구분선과 정돈된 정보 위계.",
+    "tokens": {
+      "bg": "#FFFFFF",
+      "text": "#1B2A3D",
+      "primary": "#1F3F66",
+      "accent": "#E7EDF4",
+      "surface": "#F6F8FB",
+      "muted": "#4D5D70",
+      "font": "sans",
+      "radius": 4,
+      "spacing": "normal"
+    },
+    "heroes": [
+      "info",
+      "split"
+    ],
+    "defaultHero": "info",
+    "fonts": {
+      "base": "pretendard"
+    }
+  },
+  "bright-community": {
+    "label": "밝은 공동체",
+    "target": "자원봉사·지역공동체",
+    "character": "코랄과 노랑 포인트. 다양한 사진 배치로 생기 있게.",
+    "tokens": {
+      "bg": "#FFF9F3",
+      "text": "#2A2A2E",
+      "primary": "#B83D3D",
+      "accent": "#FFE8A3",
+      "surface": "#FFFFFF",
+      "muted": "#55555C",
+      "font": "rounded",
+      "radius": 16,
+      "spacing": "normal"
+    },
+    "heroes": [
+      "photo",
+      "split"
+    ],
+    "defaultHero": "photo",
+    "fonts": {
+      "base": "nanum-gothic",
+      "heading": "nanum-gothic",
+      "quote": "nanum-brush-script"
+    }
+  },
+  "gentle-care": {
+    "label": "편안한 돌봄",
+    "target": "돌봄·상담기관",
+    "character": "크림 바탕과 연보라. 큰 본문과 넉넉한 간격.",
+    "tokens": {
+      "bg": "#FBF8F4",
+      "text": "#33283A",
+      "primary": "#6B4E8A",
+      "accent": "#E9DFF2",
+      "surface": "#FFFFFF",
+      "muted": "#5E5468",
+      "font": "sans",
+      "radius": 20,
+      "spacing": "airy"
+    },
+    "heroes": [
+      "info",
+      "photo"
+    ],
+    "defaultHero": "info",
+    "fonts": {
+      "base": "nanum-gothic",
+      "heading": "nanum-gothic"
+    }
+  },
+  "vivid-youth": {
+    "label": "활기찬 청소년",
+    "target": "청소년·교육기관",
+    "character": "선명한 파랑과 노랑. 큰 제목과 절제된 비대칭 구성.",
+    "tokens": {
+      "bg": "#FFFFFF",
+      "text": "#111827",
+      "primary": "#0A4BB5",
+      "accent": "#FFD23F",
+      "surface": "#F3F6FC",
+      "muted": "#4B5563",
+      "font": "sans",
+      "radius": 6,
+      "spacing": "normal"
+    },
+    "heroes": [
+      "split",
+      "info"
+    ],
+    "defaultHero": "split",
+    "fonts": {
+      "base": "pretendard"
+    }
+  },
+  "quiet-editorial": {
+    "label": "차분한 편집",
+    "target": "문화·비영리 미디어",
+    "character": "제한된 색상과 큰 사진. 잡지처럼 차분한 편집.",
+    "tokens": {
+      "bg": "#FAFAF7",
+      "text": "#1E1E1E",
+      "primary": "#3B3B3B",
+      "accent": "#E6E1D6",
+      "surface": "#FFFFFF",
+      "muted": "#5A5A5A",
+      "font": "myeongjo",
+      "radius": 0,
+      "spacing": "airy"
+    },
+    "heroes": [
+      "photo",
+      "info"
+    ],
+    "defaultHero": "photo",
+    "fonts": {
+      "base": "noto-sans-kr",
+      "heading": "noto-serif-kr",
+      "quote": "noto-serif-kr"
+    }
+  },
+  "campaign": {
+    "label": "캠페인 중심",
+    "target": "모금·권익옹호 활동",
+    "character": "강한 제목과 넓은 색 면. 참여 행동이 바로 보입니다.",
+    "tokens": {
+      "bg": "#FFFFFF",
+      "text": "#1A1A1A",
+      "primary": "#C8102E",
+      "accent": "#FBE3E6",
+      "surface": "#FFFFFF",
+      "muted": "#4B4B4B",
+      "font": "sans",
+      "radius": 4,
+      "spacing": "normal"
+    },
+    "heroes": [
+      "photo",
+      "info"
+    ],
+    "defaultHero": "photo",
+    "fonts": {
+      "base": "pretendard",
+      "quote": "nanum-pen-script"
+    }
+  },
+  "simple-guide": {
+    "label": "간결한 안내",
+    "target": "이용 안내 중심 기관",
+    "character": "단순한 배치와 높은 가독성. 큰 서비스 바로가기.",
+    "tokens": {
+      "bg": "#FFFFFF",
+      "text": "#111111",
+      "primary": "#1F5F8B",
+      "accent": "#EEF4F8",
+      "surface": "#F7F9FB",
+      "muted": "#3F4A55",
+      "font": "system-ui",
+      "radius": 10,
+      "spacing": "normal"
+    },
+    "heroes": [
+      "info",
+      "split"
+    ],
+    "defaultHero": "info",
+    "fonts": {
+      "base": "pretendard"
+    }
+  }
+}

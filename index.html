@@ -5,17 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>나의 홈페이지</title>
   <style>
-  :root { color-scheme: light dark; --accent: #3b82f6; }
+  :root { color-scheme: light dark; --accent: #3b82f6; --radius: 8px; --gap: 16px; }
   body { margin: 0; font-family: system-ui, sans-serif; line-height: 1.6; }
-  main { max-width: 760px; margin: 0 auto; padding: 16px; }
+  main { max-width: var(--max, 760px); margin: 0 auto; padding: var(--gap); }
   header h1 { margin-bottom: 0; }
   .subtitle { color: #64748b; margin-top: 4px; }
-  article { border-left: 4px solid var(--accent); padding: 4px 12px; margin: 20px 0; }
+  section { margin: 32px 0 0; }
+  section h2 { font-size: 1.1rem; color: var(--accent); margin: 0 0 8px; }
+  .pre { white-space: pre-line; }
+  article { border-left: 4px solid var(--accent); padding: 4px 12px; margin: 20px 0; border-radius: 0 var(--radius) var(--radius) 0; }
   article h2 { margin: 0; font-size: 1.15rem; }
   article h2 a { color: inherit; }
   .date { color: #64748b; font-size: 0.9rem; }
+  .btn { display: inline-block; padding: 10px 18px; border-radius: var(--radius); background: var(--accent); color: var(--bg, #ffffff); text-decoration: none; font-weight: 700; }
+  .links { list-style: none; display: flex; gap: 14px; flex-wrap: wrap; padding: 0; margin: 0; }
+  .links a { color: var(--accent); }
   footer { color: #64748b; font-size: 0.85rem; margin: 40px 0 16px; }
-</style>
+
+  main { max-width: 760px; }
+  </style>
 </head>
 <body>
 <main>
@@ -33,7 +41,7 @@
     <p class="date">2026-10-01</p>
     <p>홈페이지 자동 업데이트를 시작했습니다.</p>
   </article>
-  <footer>마지막 자동 업데이트: 2026-10-21 10:12 (KST)</footer>
+  <footer>마지막 자동 업데이트: 2026-10-21 10:44 (KST)</footer>
 </main>
 </body>
 </html>

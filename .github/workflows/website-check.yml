@@ -1,0 +1,47 @@
+name: Check website template
+
+# website-template 의 설정 검사와 페이지 만들기를 PR 에서 확인합니다.
+# 배포는 하지 않습니다. 새 홈페이지 저장소에서는 website-template/.github/workflows/deploy.yml 을 씁니다.
+
+on:
+  pull_request:
+    paths:
+      - "website-template/**"
+      - ".github/workflows/website-check.yml"
+  push:
+    branches: [main]
+    paths:
+      - "website-template/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website-template
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 설정 검사
+        run: python scripts/validate.py
+      - name: 페이지 만들기
+        run: python scripts/generate.py --out dist
+      - name: 만든 페이지 확인
+        run: |
+          test -f dist/index.html
+          test -f dist/support.html
+          test -f dist/privacy.html
+      - name: 테스트
+        run: python -m unittest discover -s tests -p "test_website_template.py"
+        working-directory: .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: website-preview
+          path: website-template/dist
+          if-no-files-found: error

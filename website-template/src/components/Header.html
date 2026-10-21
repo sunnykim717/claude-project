@@ -1,0 +1,16 @@
+<header class="site-header">
+  <a class="brand" href="index.html">{{brand}}</a>
+  <div class="reading" data-reading hidden role="group" aria-label="읽기 설정">
+    <button type="button" data-read="smaller">글자 작게</button>
+    <button type="button" data-read="larger">글자 크게</button>
+    <button type="button" data-read="contrast" aria-pressed="false">고대비 보기</button>
+    <button type="button" data-read="motion" aria-pressed="false">움직임 줄이기</button>
+    <button type="button" data-read="reset">기본값으로</button>
+  </div>
+  <details class="menu-details" open>
+    <summary>메뉴 열기 · 닫기</summary>
+    <nav aria-label="페이지 메뉴">
+      <ul>{{links}}</ul>
+    </nav>
+  </details>
+</header>
