@@ -224,6 +224,44 @@ def check_banner(errors, banner):
         errors.append(f"content/banner.json: link 는 https:// 주소 또는 페이지 주소여야 합니다 ({banner['link']}).")
 
 
+def check_fonts(errors, data, root):
+    """글꼴 역할과 글꼴 이름이 맞는지 봅니다. 쓰는 글꼴 파일이 없으면 내려받는 방법을 안내합니다."""
+    registry = data["font_registry"]
+    ids = {entry["id"]: entry for entry in registry.get("fonts", [])} if isinstance(registry, dict) else {}
+    design = data["design"] if isinstance(data["design"], dict) else {}
+    presets = data["presets"] if isinstance(data["presets"], dict) else {}
+    preset = presets.get(design.get("preset"), {}) if isinstance(design.get("preset"), str) else {}
+    for source, fonts in (("config/design.json", design.get("fonts")), ("design/presets.json", preset.get("fonts"))):
+        if fonts is None:
+            continue
+        if not isinstance(fonts, dict):
+            errors.append(source + ": fonts 는 { } 묶음이어야 합니다.")
+            continue
+        for role, font_id in fonts.items():
+            if role not in SCHEMA["font_roles"]:
+                errors.append(f"{source}: 글꼴 역할은 {', '.join(SCHEMA['font_roles'])} 중 하나여야 합니다 ({role}).")
+            elif font_id not in ids:
+                errors.append(f"{source}: {role} 글꼴은 fonts/registry.json 에 있는 이름이어야 합니다 ({font_id}).")
+    used = set()
+    for fonts in (design.get("fonts"), preset.get("fonts")):
+        if isinstance(fonts, dict):
+            used.update(v for v in fonts.values() if v in ids)
+    used.add(design_base(design, preset))
+    for font_id in sorted(used):
+        if font_id not in ids:
+            continue  # 등록되지 않은 이름은 위에서 이미 알려 주었습니다
+        entry = ids[font_id]
+        if entry["files"] and not all((Path(root) / "fonts" / "files" / f"{font_id}-{item['weight']}.woff2").exists() for item in entry["files"]):
+            errors.append(f"fonts/files 에 {font_id} 글꼴 파일이 없습니다. 개발 중이면 python scripts/fetch_fonts.py 를 실행하세요.")
+
+
+def design_base(design, preset):
+    """base 글꼴 이름. 설정이 없으면 pretendard 입니다 (생성기와 같은 규칙)."""
+    fonts = design.get("fonts") if isinstance(design.get("fonts"), dict) else {}
+    presets_fonts = preset.get("fonts") if isinstance(preset.get("fonts"), dict) else {}
+    return fonts.get("base") or presets_fonts.get("base") or "pretendard"
+
+
 def check_site_url(errors, site):
     """대표 주소(url)는 비워 두거나 https:// 로 시작해야 합니다. 있으면 지도와 대표 주소 표시에 씁니다."""
     if isinstance(site, dict) and site.get("url") and not str(site["url"]).startswith("https://"):
@@ -344,6 +382,7 @@ def validate(root):
     check_contact_fields(errors, data["contact"])
     check_site_url(errors, data["site"])
     check_banner(errors, data["banner"])
+    check_fonts(errors, data, root)
 
     projects = data["projects"]
     if isinstance(projects, dict):

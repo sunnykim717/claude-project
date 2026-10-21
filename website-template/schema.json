@@ -26,7 +26,8 @@
     "homepage": "config/homepage.json",
     "presets": "design/presets.json",
     "impact": "content/impact.json",
-    "banner": "content/banner.json"
+    "banner": "content/banner.json",
+    "font_registry": "fonts/registry.json"
   },
   "pages": {
     "/": "index.html",
@@ -144,7 +145,8 @@
     "site.sample: true 이면 바닥글에 '가상의 샘플 정보' 라고 표시합니다. 실제 기관 정보로 바꿀 때는 false 또는 삭제하세요",
     "site.url (선택): https://도메인 을 적으면 대표 주소(canonical), sitemap.xml 을 만듭니다",
     "버튼 모양(theme.buttonShape): square, soft, round, pill. 현재 메뉴 표시(theme.menuMark): underline, background, border, side. 둘 다 적지 않으면 soft, underline",
-    "알림 띠(content/banner.json): active 를 true 로 바꾸고 text 를 적으면 홈 맨 위에 보입니다. 기본값은 꺼져 있습니다 (자동 재생, 팝업 없음)"
+    "알림 띠(content/banner.json): active 를 true 로 바꾸고 text 를 적으면 홈 맨 위에 보입니다. 기본값은 꺼져 있습니다 (자동 재생, 팝업 없음)",
+    "글꼴 역할(config/design.json 의 fonts): base, heading, body, menu, button, quote 에 fonts/registry.json 의 글꼴 이름을 적습니다. 적지 않은 역할은 base 를 따릅니다"
   ],
   "menus": [
     "row",
@@ -226,5 +228,19 @@
     "background",
     "border",
     "side"
-  ]
+  ],
+  "font_roles": [
+    "base",
+    "heading",
+    "body",
+    "menu",
+    "button",
+    "quote"
+  ],
+  "font_fallbacks": {
+    "고딕": "'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
+    "명조": "Batang, 'Apple SD Myungjo', serif",
+    "손글씨": "'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif",
+    "시스템": "system-ui, sans-serif"
+  }
 }

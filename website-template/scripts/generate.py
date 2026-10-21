@@ -46,6 +46,48 @@ def read_part(root, rel):
     return (Path(root) / rel).read_text(encoding="utf-8")
 
 
+FONT_MAIN_WEIGHT = {"base": 400, "body": 400, "heading": 700, "menu": 400, "button": 700, "quote": 400}
+FONT_ROLE_VAR = {"base": "--font-base", "heading": "--font-heading", "body": "--font-body",
+                 "menu": "--font-menu", "button": "--font-button", "quote": "--font-quote"}
+
+
+def font_plan(data, choice):
+    """역할마다 쓸 글꼴과 굵기를 정합니다. 프리셋도 글꼴 설정도 없으면 None 입니다 (theme.json 의 글꼴을 씁니다).
+    굵기 파일이 없으면 가장 가까운 굵기를 쓰고, 가짜 굵기는 만들지 않습니다 (font-synthesis: none)."""
+    design_fonts = (data.get("design") or {}).get("fonts") or {}
+    preset_fonts = choice["fonts"] if choice else {}
+    if not design_fonts and not preset_fonts:
+        return None
+    registry = {entry["id"]: entry for entry in data["font_registry"]["fonts"]}
+    base = design_fonts.get("base") or preset_fonts.get("base") or "pretendard"
+    faces, variables = set(), {}
+    for role in SCHEMA["font_roles"]:
+        font_id = base if role == "base" else (design_fonts.get(role) or preset_fonts.get(role) or base)
+        entry = registry[font_id]
+        fallback = SCHEMA["font_fallbacks"][entry["category"]]
+        weights = sorted(item["weight"] for item in entry["files"])
+        if not weights:
+            variables[role] = fallback
+            continue
+        wanted = FONT_MAIN_WEIGHT[role]
+        weight = min(weights, key=lambda w: abs(w - wanted))
+        faces.add((font_id, weight))
+        variables[role] = f'"site-{font_id}", {fallback}'
+    return {"faces": sorted(faces), "variables": variables}
+
+
+def font_css(plan):
+    if not plan:
+        return ""
+    faces = "".join(
+        f'@font-face {{ font-family: "site-{font_id}"; src: url("fonts/{font_id}-{weight}.woff2") format("woff2"); '
+        f"font-weight: {weight}; font-style: normal; font-display: swap; }}\n"
+        for font_id, weight in plan["faces"]
+    )
+    variables = " ".join(f"{FONT_ROLE_VAR[role]}: {plan['variables'][role]};" for role in SCHEMA["font_roles"])
+    return faces + ":root { " + variables + " }"
+
+
 def background_css(theme):
     """배경 사진이 있으면 배경색 위에 얇은 막을 씌워 글자가 읽히게 합니다."""
     if not theme.get("backgroundImage"):
@@ -78,6 +120,7 @@ def design_choice(data):
     return {
         "name": name,
         "tokens": preset["tokens"],
+        "fonts": preset.get("fonts") or {},
         "hero": design.get("hero") or preset["defaultHero"],
         "width": WIDTHS[design.get("contentWidth") or "comfortable"],
     }
@@ -429,7 +472,8 @@ def build_pages(root, data, today=None):
     data = drop_unpublished(data, today or today_kst())
     site, nav, theme = data["site"], data["nav"], data["theme"]
     choice = design_choice(data)
-    style = "\n".join([theme_css(theme, choice), background_css(theme), read_part(root, "src/styles/site.css"), custom_css(root)])
+    style = "\n".join([theme_css(theme, choice), font_css(font_plan(data, choice)), background_css(theme),
+                       read_part(root, "src/styles/site.css"), custom_css(root)])
     pages = {}
 
     def page(file_name, title, main_html, description, content=None, noindex=False):
@@ -523,6 +567,14 @@ def write_site(root, out_dir, pages):
     public = Path(root) / "public"
     if public.exists():
         shutil.copytree(public, out / "public", ignore=shutil.ignore_patterns(".gitkeep"))
+    # 페이지가 쓰는 글꼴 파일만 복사합니다 (글꼴 파일은 fonts/files 에 있고 생성 때 내려받지 않습니다)
+    used = set()
+    for content in pages.values():
+        used.update(re.findall(r'fonts/([a-z0-9-]+-\d+\.woff2)', content))
+    if used:
+        (out / "fonts").mkdir(parents=True, exist_ok=True)
+        for name in sorted(used):
+            shutil.copyfile(Path(root) / "fonts" / "files" / name, out / "fonts" / name)
     return sorted(pages)
 
 

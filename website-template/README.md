@@ -85,6 +85,11 @@ python scripts/site_tool.py build --out dist
 | 알림 띠 | 기본은 꺼짐. 켜면 홈 맨 위에 한 줄 | `content/banner.json` (active, text, link) |
 | 브랜드 색 추천 | 대표색 하나로 버튼·링크·배경·글자 색을 규칙으로 계산 | `python scripts/palette.py #RRGGBB` |
 | 예시 기관 | 가상의 지역복지관, 가상의 청소년 센터, 빈 설정 | `python scripts/build_example.py community-welfare` |
+| 글꼴 역할 | base, heading, body, menu, button, quote 마다 글꼴 선택 (적지 않으면 base 를 따름) | `config/design.json` 의 `fonts` |
+| 글꼴 파일 | 굵기마다 WOFF2 파일, 쓰는 파일만 사이트에 복사, 외부 서비스 사용 안 함 | `fonts/registry.json`, `fonts/files` |
+| 글꼴과 함께 zip | 홈페이지 파일, 글꼴, 라이선스를 한 zip 으로 | `python scripts/package.py --out site.zip` |
+
+글꼴 파일은 개발할 때 `python scripts/fetch_fonts.py` 로 한 번 받아 둡니다. 편집실의 zip 내려받기에는 글꼴 파일이 들어가지 않으므로, 글꼴까지 담은 배포 묶음은 `scripts/package.py` 로 만드세요.
 
 - 메뉴 추가: `add-menu 오시는 길 | /location`, 삭제: `remove-menu 번호` (편집기와 `site_tool.py` 모두 가능)
 - 직접 쓰는 CSS 에는 `url(`, `@import`, `<` 를 쓸 수 없습니다. 배경 사진은 `theme.backgroundImage` 로 넣으세요.

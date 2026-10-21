@@ -1,7 +1,11 @@
 /* 디자인 플랫폼 기본 스타일. 색과 간격은 :root 의 변수(토큰)를 씁니다. */
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); font-size: 18px; line-height: 1.7; word-break: keep-all; overflow-wrap: anywhere; }
+body { margin: 0; font-family: var(--font-body, var(--font)); font-synthesis: none; background: var(--bg); color: var(--text); font-size: 18px; line-height: 1.7; word-break: keep-all; overflow-wrap: anywhere; }
+h1, h2, h3 { font-family: var(--font-heading, var(--font)); }
+.site-header nav a, .menu-details > summary { font-family: var(--font-menu, var(--font)); }
+.button { font-family: var(--font-button, var(--font)); }
+blockquote, .quote { font-family: var(--font-quote, var(--font)); }
 img { max-width: 100%; height: auto; }
 a { color: var(--primary); }
 :focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }

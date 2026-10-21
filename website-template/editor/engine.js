@@ -9,7 +9,7 @@
 
   // 설정 항목 목록은 schema.json 에서만 옵니다. useSchema() 로 한 번 넣어 주세요.
   var loaded = false;
-  var BASE_ROUTES, ROUTES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS, CONTENT_WIDTHS, HERO_VARIANTS, HOMEPAGE_SECTIONS, BUTTON_SHAPES, MENU_MARKS;
+  var BASE_ROUTES, ROUTES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS, CONTENT_WIDTHS, HERO_VARIANTS, HOMEPAGE_SECTIONS, BUTTON_SHAPES, MENU_MARKS, FONT_ROLES, FONT_FALLBACKS;
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -35,6 +35,8 @@
     HOMEPAGE_SECTIONS = schema.homepage_sections;
     BUTTON_SHAPES = schema.button_shapes;
     MENU_MARKS = schema.menu_marks;
+    FONT_ROLES = schema.font_roles;
+    FONT_FALLBACKS = schema.font_fallbacks;
     loaded = true;
   }
 
@@ -293,6 +295,7 @@
     checkContactFields(errors, data.contact);
     checkSiteUrl(errors, data.site);
     checkBanner(errors, data.banner);
+    checkFonts(errors, data);
 
     var projects = data.projects;
     if (isObject(projects)) checkItems(errors, "content/projects.json", "사업", projects.items);
@@ -478,6 +481,7 @@
     return {
       name: name,
       tokens: preset.tokens,
+      fonts: isObject(preset.fonts) ? preset.fonts : {},
       hero: design.hero || preset.defaultHero,
       width: CONTENT_WIDTHS[design.contentWidth || "comfortable"]
     };
@@ -728,6 +732,67 @@
     return '<aside class="banner" aria-label="알림"><p>' + esc(str(banner.text).trim()) + "</p>" + link + "</aside>";
   }
 
+  var FONT_MAIN_WEIGHT = { base: 400, body: 400, heading: 700, menu: 400, button: 700, quote: 400 };
+  var FONT_ROLE_VAR = { base: "--font-base", heading: "--font-heading", body: "--font-body", menu: "--font-menu", button: "--font-button", quote: "--font-quote" };
+
+  // 역할마다 쓸 글꼴과 굵기 (Python font_plan 과 같은 규칙). 설정이 없으면 null 입니다.
+  function fontPlan(data, choice) {
+    var designFonts = isObject(data.design) && isObject(data.design.fonts) ? data.design.fonts : {};
+    var presetFonts = choice ? choice.fonts : {};
+    if (!Object.keys(designFonts).length && !Object.keys(presetFonts).length) return null;
+    var registry = {};
+    (data.font_registry.fonts || []).forEach(function (entry) { registry[entry.id] = entry; });
+    var base = designFonts.base || presetFonts.base || "pretendard";
+    var faces = [], seen = {}, variables = {};
+    FONT_ROLES.forEach(function (role) {
+      var fontId = role === "base" ? base : (designFonts[role] || presetFonts[role] || base);
+      var entry = registry[fontId];
+      var fallback = FONT_FALLBACKS[entry.category];
+      var weights = entry.files.map(function (item) { return item.weight; }).sort(function (a, b) { return a - b; });
+      if (!weights.length) {
+        variables[role] = fallback;
+        return;
+      }
+      var wanted = FONT_MAIN_WEIGHT[role];
+      var weight = weights[0];
+      weights.forEach(function (w) { if (Math.abs(w - wanted) < Math.abs(weight - wanted)) weight = w; });
+      var key = fontId + "-" + weight;
+      if (!seen[key]) { seen[key] = true; faces.push([fontId, weight]); }
+      variables[role] = '"site-' + fontId + '", ' + fallback;
+    });
+    faces.sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1]; });
+    return { faces: faces, variables: variables };
+  }
+
+  function fontCss(plan) {
+    if (!plan) return "";
+    var faces = plan.faces.map(function (face) {
+      return '@font-face { font-family: "site-' + face[0] + '"; src: url("fonts/' + face[0] + "-" + face[1] + '.woff2") format("woff2"); ' +
+        "font-weight: " + face[1] + "; font-style: normal; font-display: swap; }\n";
+    }).join("");
+    var variables = FONT_ROLES.map(function (role) { return FONT_ROLE_VAR[role] + ": " + plan.variables[role] + ";"; }).join(" ");
+    return faces + ":root { " + variables + " }";
+  }
+
+  function checkFonts(errors, data) {
+    var registry = {};
+    (data.font_registry && data.font_registry.fonts || []).forEach(function (entry) { registry[entry.id] = entry; });
+    var design = isObject(data.design) ? data.design : {};
+    var preset = isObject(data.presets) && design.preset && isObject(data.presets[design.preset]) ? data.presets[design.preset] : {};
+    [["config/design.json", design.fonts], ["design/presets.json", preset.fonts]].forEach(function (pair) {
+      var source = pair[0], fonts = pair[1];
+      if (fonts === undefined || fonts === null) return;
+      if (!isObject(fonts)) {
+        errors.push(source + ": fonts 는 { } 묶음이어야 합니다.");
+        return;
+      }
+      Object.keys(fonts).forEach(function (role) {
+        if (FONT_ROLES.indexOf(role) === -1) errors.push(source + ": 글꼴 역할은 " + FONT_ROLES.join(", ") + " 중 하나여야 합니다 (" + role + ").");
+        else if (!hasKey(registry, fonts[role])) errors.push(source + ": " + role + " 글꼴은 fonts/registry.json 에 있는 이름이어야 합니다 (" + fonts[role] + ").");
+      });
+    });
+  }
+
   function checkSiteUrl(errors, site) {
     if (isObject(site) && site.url && !startsWith(str(site.url), "https://")) {
       errors.push("config/site.json: url 은 https:// 로 시작해야 합니다.");
@@ -744,7 +809,7 @@
   function buildPages(files, data) {
     var site = data.site, nav = data.nav, theme = data.theme;
     var choice = designChoice(data);
-    var style = [themeCss(theme, choice), backgroundCss(theme), files["src/styles/site.css"], files["config/custom.css"] || ""].join("\n");
+    var style = [themeCss(theme, choice), fontCss(fontPlan(data, choice)), backgroundCss(theme), files["src/styles/site.css"], files["config/custom.css"] || ""].join("\n");
     var pages = {};
 
     function page(fileName, title, mainHtml, description, content, noindex) {

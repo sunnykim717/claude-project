@@ -18,7 +18,12 @@
       "split",
       "photo"
     ],
-    "defaultHero": "split"
+    "defaultHero": "split",
+    "fonts": {
+      "base": "pretendard",
+      "heading": "nanum-myeongjo",
+      "quote": "nanum-myeongjo"
+    }
   },
   "trust-public": {
     "label": "신뢰하는 공공",
@@ -39,7 +44,10 @@
       "info",
       "split"
     ],
-    "defaultHero": "info"
+    "defaultHero": "info",
+    "fonts": {
+      "base": "pretendard"
+    }
   },
   "bright-community": {
     "label": "밝은 공동체",
@@ -60,7 +68,12 @@
       "photo",
       "split"
     ],
-    "defaultHero": "photo"
+    "defaultHero": "photo",
+    "fonts": {
+      "base": "nanum-gothic",
+      "heading": "nanum-gothic",
+      "quote": "nanum-brush-script"
+    }
   },
   "gentle-care": {
     "label": "편안한 돌봄",
@@ -81,7 +94,11 @@
       "info",
       "photo"
     ],
-    "defaultHero": "info"
+    "defaultHero": "info",
+    "fonts": {
+      "base": "nanum-gothic",
+      "heading": "nanum-gothic"
+    }
   },
   "vivid-youth": {
     "label": "활기찬 청소년",
@@ -102,7 +119,10 @@
       "split",
       "info"
     ],
-    "defaultHero": "split"
+    "defaultHero": "split",
+    "fonts": {
+      "base": "pretendard"
+    }
   },
   "quiet-editorial": {
     "label": "차분한 편집",
@@ -123,7 +143,12 @@
       "photo",
       "info"
     ],
-    "defaultHero": "photo"
+    "defaultHero": "photo",
+    "fonts": {
+      "base": "noto-sans-kr",
+      "heading": "noto-serif-kr",
+      "quote": "noto-serif-kr"
+    }
   },
   "campaign": {
     "label": "캠페인 중심",
@@ -144,7 +169,11 @@
       "photo",
       "info"
     ],
-    "defaultHero": "photo"
+    "defaultHero": "photo",
+    "fonts": {
+      "base": "pretendard",
+      "quote": "nanum-pen-script"
+    }
   },
   "simple-guide": {
     "label": "간결한 안내",
@@ -165,6 +194,9 @@
       "info",
       "split"
     ],
-    "defaultHero": "info"
+    "defaultHero": "info",
+    "fonts": {
+      "base": "pretendard"
+    }
   }
 }

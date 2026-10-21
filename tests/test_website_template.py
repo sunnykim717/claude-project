@@ -425,6 +425,56 @@ class ExamplesAndOptionsTest(unittest.TestCase):
             palette.suggest("blue")
 
 
+class FontSystemTest(unittest.TestCase):
+    def test_missing_weight_falls_back_to_nearest_without_fake_bold(self):
+        import zipfile
+        with _Copy() as root:
+            # 나눔손글씨 펜은 400 굵기만 있습니다. 제목(700)은 400 으로 대체하고 가짜 굵기는 만들지 않습니다.
+            _edit(root, "config/design.json", lambda d: d.update(fonts={"heading": "nanum-pen-script"}))
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            index = (out / "index.html").read_text(encoding="utf-8")
+            self.assertIn('font-family: "site-nanum-pen-script"', index)
+            self.assertNotIn("nanum-pen-script-700", index)
+            self.assertIn("font-synthesis: none", index)
+            self.assertIn("--font-heading:", index)
+            self.assertTrue((out / "fonts" / "nanum-pen-script-400.woff2").exists())
+            names = sorted(f.name for f in (out / "fonts").iterdir())
+            self.assertIn("nanum-pen-script-400.woff2", names)
+            self.assertIn("pretendard-700.woff2", names)
+            self.assertNotIn("nanum-brush-script-400.woff2", names)  # 쓰지 않는 글꼴은 복사하지 않습니다
+
+    def test_unknown_font_and_role_are_rejected(self):
+        with _Copy() as root:
+            _edit(root, "config/design.json", lambda d: d.update(fonts={"base": "comic-sans"}))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("comic-sans" in e for e in errors))
+        with _Copy() as root:
+            _edit(root, "config/design.json", lambda d: d.update(fonts={"title": "pretendard"}))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("글꼴 역할" in e for e in errors))
+
+    def test_missing_font_file_tells_how_to_fetch(self):
+        with _Copy() as root:
+            _edit(root, "config/design.json", lambda d: d.update(fonts={"base": "pretendard"}))
+            (root / "fonts" / "files" / "pretendard-400.woff2").unlink()
+            _, errors = validate.validate(root)
+            self.assertTrue(any("pretendard" in e and "fetch_fonts.py" in e for e in errors))
+
+    def test_package_zip_contains_site_fonts_and_licences(self):
+        import zipfile
+        import package
+        with _Copy() as root:
+            zip_path = root.parent / "site.zip"
+            ok, errors = package.package(root, zip_path)
+            self.assertTrue(ok, errors)
+            with zipfile.ZipFile(zip_path) as archive:
+                names = archive.namelist()
+            self.assertIn("index.html", names)
+            self.assertIn("fonts/pretendard-400.woff2", names)
+            self.assertTrue(any(n.startswith("LICENSES/") for n in names))
+
+
 class FontRegistryTest(unittest.TestCase):
     """글꼴 레지스트리: 파일, 체크섬, 라이선스 파일이 서로 맞는지 확인합니다 (파일을 받는 것은 fetch_fonts.py 가 합니다)."""
 
