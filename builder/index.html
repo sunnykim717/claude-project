@@ -550,9 +550,33 @@
     serif:    { label: "세리프 (영문)", css: "Georgia, 'Times New Roman', serif" },
     sans:     { label: "산세리프 (영문)", css: "'Helvetica Neue', Arial, sans-serif" },
     mono:     { label: "모노스페이스",  css: "ui-monospace, monospace" },
+    // 아래는 무료 글꼴(Google Fonts, SIL 오픈 글꼴 라이선스)입니다. 사용할 때만 글꼴 파일을 불러옵니다.
+    notosans: { label: "노토 산스 (고딕)",   css: "'Noto Sans KR', system-ui, sans-serif", google: "Noto+Sans+KR:wght@400;700" },
+    myeongjo: { label: "나눔명조 (명조)",    css: "'Nanum Myeongjo', 'Noto Serif KR', Georgia, serif", google: "Nanum+Myeongjo:wght@400;700" },
+    gowunbat: { label: "고운바탕 (명조)",    css: "'Gowun Batang', Batang, Georgia, serif", google: "Gowun+Batang:wght@400;700" },
+    gowundod: { label: "고운돋움 (둥근 고딕)", css: "'Gowun Dodum', 'Noto Sans KR', system-ui, sans-serif", google: "Gowun+Dodum" },
+    blackhan: { label: "검은고딕 (굵은 제목)", css: "'Black Han Sans', 'Noto Sans KR', system-ui, sans-serif", google: "Black+Han+Sans" },
+    dohyeon:  { label: "도현 (두꺼운 제목)",  css: "'Do Hyeon', 'Noto Sans KR', system-ui, sans-serif", google: "Do+Hyeon" },
+    jua:      { label: "주아 (동글동글)",     css: "'Jua', 'Noto Sans KR', system-ui, sans-serif", google: "Jua" },
+    gaegu:    { label: "개구 (손글씨 느낌)",  css: "'Gaegu', 'Noto Sans KR', system-ui, sans-serif", google: "Gaegu:wght@400;700" },
   };
+  // 글꼴을 쓰는 페이지가 필요할 때만 Google Fonts 주소를 넣습니다.
+  function fontLinkFor(css) {
+    const hit = Object.values(FONTS).find((f) => f.google && f.css === css);
+    if (!hit) return "";
+    return `\n  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>` +
+      `\n  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${hit.google}&display=swap">`;
+  }
   // 글꼴 말 → 위 글꼴 이름. 더 구체적인 말을 먼저 적습니다.
   const FONT_WORDS = [
+    [/노토|산스/, "notosans"],
+    [/나눔명조/, "myeongjo"],
+    [/고운바탕/, "gowunbat"],
+    [/고운돋움|둥근고딕/, "gowundod"],
+    [/검은고딕|굵은/, "blackhan"],
+    [/도현|두꺼운/, "dohyeon"],
+    [/주아|동글/, "jua"],
+    [/개구|손글씨/, "gaegu"],
     [/맑은|애플/, "malgun"],
     [/나눔/, "nanum"],
     [/바탕|명조|신문/, "batang"],
@@ -945,7 +969,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${title}</title>${desc ? `\n  <meta name="description" content="${desc}">` : ""}
+  <title>${title}</title>${fontLinkFor(d.font)}${desc ? `\n  <meta name="description" content="${desc}">` : ""}
   <meta property="og:title" content="${title}">
   <meta property="og:type" content="website">${desc ? `\n  <meta property="og:description" content="${desc}">` : ""}${img ? `\n  <meta property="og:image" content="${img}">` : ""}
   <style>
@@ -1464,7 +1488,9 @@ ${navHtml}
     {
       question: "글꼴을 골라 주세요.", type: "choice",
       options: [["기본 고딕", "글꼴: 기본"], ["맑은 고딕", "글꼴: 맑은 고딕"], ["나눔고딕", "글꼴: 나눔고딕"],
-        ["바탕 · 명조", "글꼴: 명조"], ["세리프 (영문)", "글꼴: 세리프"], ["산세리프 (영문)", "글꼴: 산세리프"], ["모노", "글꼴: 모노"]],
+        ["바탕 · 명조", "글꼴: 명조"], ["세리프 (영문)", "글꼴: 세리프"], ["산세리프 (영문)", "글꼴: 산세리프"], ["모노", "글꼴: 모노"],
+        ["노토 산스", "글꼴: 노토"], ["나눔명조", "글꼴: 나눔명조"], ["고운바탕", "글꼴: 고운바탕"], ["고운돋움", "글꼴: 고운돋움"],
+        ["검은고딕", "글꼴: 검은고딕"], ["도현", "글꼴: 도현"], ["주아", "글꼴: 주아"], ["개구 (손글씨)", "글꼴: 개구"]],
     },
     {
       question: "화면 모양을 골라 주세요.", type: "choice",
