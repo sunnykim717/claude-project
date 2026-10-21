@@ -14,11 +14,12 @@ import json
 import re
 import shutil
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from validate import PAGE_FILES, validate  # noqa: E402
+from validate import ROUTES, validate  # noqa: E402
 
 ROOT = HERE.parent
 SCHEMA = json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))
@@ -80,13 +81,13 @@ def link_for(value):
     """설정의 주소를 파일 주소로 바꿉니다. https 주소는 그대로 둡니다."""
     if value.startswith(("https://", "http://")):
         return value
-    return PAGE_FILES[value]
+    return ROUTES[value]
 
 
 def header_html(root, site, nav, current_file):
     links = []
     for entry in nav:
-        target = PAGE_FILES[entry["path"]]
+        target = ROUTES[entry["path"]]
         current = ' aria-current="page"' if target == current_file else ""
         links.append(f'<li><a href="{esc(target)}"{current}>{esc(entry["label"])}</a></li>')
     brand = esc(site["name"])
@@ -178,8 +179,35 @@ def project_articles(items):
     return "".join(out)
 
 
-def build_pages(root, data):
+KST = timezone(timedelta(hours=9))
+
+
+def today_kst():
+    return datetime.now(KST).strftime("%Y-%m-%d")
+
+
+def drop_unpublished(value, today):
+    """publish 날짜가 오늘보다 뒤인 항목은 아직 보이지 않게 뺍니다. 날짜가 없는 항목은 바로 보입니다."""
+    if isinstance(value, list):
+        return [drop_unpublished(v, today) for v in value
+                if not (isinstance(v, dict) and isinstance(v.get("publish"), str) and v["publish"] > today)]
+    if isinstance(value, dict):
+        return {k: drop_unpublished(v, today) for k, v in value.items()}
+    return value
+
+
+def generic_body(content):
+    """제목, 본문, 목록으로 된 간단한 페이지의 내용입니다."""
+    items = content.get("items") or []
+    body = block(content["title"], f'<p class="pre">{esc(content.get("body"))}</p>')
+    if items:
+        body += block(content.get("itemsTitle") or "목록", project_articles(items))
+    return body
+
+
+def build_pages(root, data, today=None):
     """페이지 이름과 전체 HTML 을 돌려줍니다."""
+    data = drop_unpublished(data, today or today_kst())
     site, nav, theme = data["site"], data["nav"], data["theme"]
     style = "\n".join([theme_css(theme), background_css(theme), read_part(root, "src/styles/site.css"), custom_css(root)])
     pages = {}
@@ -253,11 +281,9 @@ def build_pages(root, data):
          contact["body"], contact)
     for name in SCHEMA["generic_pages"]:
         content = data[name]
-        items = content.get("items") or []
-        body = block(content["title"], f'<p class="pre">{esc(content["body"])}</p>')
-        if items:
-            body += block(content.get("itemsTitle") or "목록", project_articles(items))
-        page(f"{name}.html", content["title"], body, content["body"], content)
+        page(f"{name}.html", content["title"], generic_body(content), content["body"], content)
+    for content in data["custom_pages"]:
+        page(f"{content['slug']}.html", content["title"], generic_body(content), content.get("body"), content)
     return pages
 
 
@@ -278,6 +304,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="설정으로 홈페이지 파일 만들기")
     parser.add_argument("--root", default=str(ROOT), help="템플릿 폴더 (기본: 이 스크립트의 상위 폴더)")
     parser.add_argument("--out", default=None, help="만들 폴더 (기본: <템플릿 폴더>/dist)")
+    parser.add_argument("--today", default=None, help="예약 발행 기준 날짜 YYYY-MM-DD (기본: 오늘, 한국 시간)")
     args = parser.parse_args(argv)
 
     root = Path(args.root)
@@ -288,7 +315,7 @@ def main(argv=None):
             print(f"- {e}")
         return 1
     out = args.out or (root / "dist")
-    names = write_site(root, out, build_pages(root, data))
+    names = write_site(root, out, build_pages(root, data, args.today))
     print(f"홈페이지 파일을 만들었습니다 ({out}): {', '.join(names)}")
     return 0
 

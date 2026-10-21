@@ -190,6 +190,42 @@ class GenerateTest(unittest.TestCase):
             _, errors = validate.validate(root)
             self.assertTrue(any("board.json" in e and "body" in e for e in errors))
 
+    def test_custom_page_is_built_and_can_be_linked(self):
+        with _Copy() as root:
+            _edit(root, "content/custom-pages.json", lambda d: d.extend([
+                {"slug": "open-house", "title": "열린 행사", "body": "가족 행사입니다.",
+                 "itemsTitle": "일정", "items": [{"title": "토요일 오후", "date": "2026-11-07", "summary": "", "url": ""}]}]))
+            _edit(root, "config/navigation.json", lambda d: d.append({"label": "열린 행사", "path": "/open-house"}))
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            page = (out / "open-house.html").read_text(encoding="utf-8")
+            self.assertIn("<h2>열린 행사</h2>", page)
+            self.assertIn('href="open-house.html"', (out / "about.html").read_text(encoding="utf-8"))
+
+    def test_custom_page_slug_rules(self):
+        for slug in ("About", "1st", "news", "a", "with space"):
+            with _Copy() as root:
+                _edit(root, "content/custom-pages.json", lambda d, slug=slug: d.append({"slug": slug, "title": "t", "body": ""}))
+                _, errors = validate.validate(root)
+                self.assertTrue(any("slug" in e or "이미 있습니다" in e for e in errors), slug)
+
+    def test_scheduled_item_appears_only_on_its_day(self):
+        with _Copy() as root:
+            _edit(root, "content/news.json", lambda d: d["items"].append(
+                {"title": "예약 소식", "date": "2026-11-01", "summary": "", "url": "", "publish": "2026-11-01"}))
+            data, errors = validate.validate(root)
+            self.assertEqual(errors, [])
+            before = generate.build_pages(root, data, today="2026-10-31")
+            on_day = generate.build_pages(root, data, today="2026-11-01")
+            self.assertNotIn("예약 소식", before["news.html"])
+            self.assertIn("예약 소식", on_day["news.html"])
+
+    def test_bad_publish_date_is_rejected(self):
+        with _Copy() as root:
+            _edit(root, "content/news.json", lambda d: d["items"][0].update(publish="2026/11/01"))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("publish" in e for e in errors))
+
     def test_generic_page_needs_a_title(self):
         with _Copy() as root:
             _edit(root, "content/faq.json", lambda d: d.update(title=""))

@@ -159,7 +159,8 @@
     var parts = text.split("|").map(function (p) { return p.trim(); }).filter(Boolean);
     if (parts.length < 2) return say("사용법: add-menu 메뉴이름 | /주소   예: add-menu 오시는 길 | /location", false);
     var path = parts[1];
-    if (!SCHEMA.pages[path]) return say("주소는 " + Object.keys(SCHEMA.pages).join(", ") + " 중 하나여야 합니다.", false);
+    var routes = allRoutes();
+    if (!routes[path]) return say("주소는 " + Object.keys(routes).join(", ") + " 중 하나여야 합니다.", false);
     commit(function (f) {
       var nav = JSON.parse(f[KEY_FILES.nav]);
       nav.push({ label: parts[0], path: path });
@@ -195,6 +196,8 @@
     if (word === "add-project") return addProject(rest);
     if (word === "remove-project") return removeProject(rest);
     if (word === "add-menu") return addMenu(rest);
+    if (word === "add-page") return addPage(rest);
+    if (word === "remove-page") return removePage(rest);
     if (word === "remove-menu") return removeMenu(rest);
     if (word === "check") {
       var errors = validateCurrent();
@@ -208,6 +211,8 @@
       "remove-project 번호  - 사업 삭제",
       "add-menu 이름 | /주소  - 메뉴 추가 (예: add-menu 오시는 길 | /location)",
       "remove-menu 번호  - 메뉴 삭제",
+      "add-page 제목 | 주소이름  - 페이지 추가 (예: add-page 오시는 길 | location2)",
+      "remove-page 주소이름  - 추가한 페이지 삭제",
       "check        - 검사",
       "",
       "바꿀 수 있는 경로:",
@@ -610,20 +615,58 @@
   // 글 칸에 맞는 목록 이름을 채웁니다. 첫 화면과 기관 정보를 포함해 설정 파일 전부를 고를 수 있습니다.
   function fillFormPages() {
     var select = document.getElementById("form-page");
-    Object.keys(KEY_FILES).filter(function (key) { return key !== "nav" && key !== "theme"; }).forEach(function (key) {
+    Object.keys(KEY_FILES).filter(function (key) {
+      return key !== "nav" && key !== "theme" && SCHEMA.form_skip_files.indexOf(key) === -1;
+    }).forEach(function (key) {
       select.add(new Option(PAGE_LABELS[key] || key, key));
     });
   }
 
   // 미리보기 목록: 모든 페이지를 고를 수 있습니다.
+  // 기본 페이지와 직접 추가한 페이지의 주소 목록 (route -> 파일 이름)
+  function allRoutes() {
+    var routes = Object.assign({}, SCHEMA.pages);
+    JSON.parse(files[KEY_FILES.custom_pages] || "[]").forEach(function (page) {
+      if (page && page.slug && !routes["/" + page.slug]) routes["/" + page.slug] = page.slug + ".html";
+    });
+    return routes;
+  }
+
   function fillPreviewPages() {
     var select = document.getElementById("page-select");
+    var routes = allRoutes();
     select.replaceChildren();
-    Object.keys(SCHEMA.pages).forEach(function (route) {
-      var file = SCHEMA.pages[route];
+    Object.keys(routes).forEach(function (route) {
+      var file = routes[route];
       var key = route === "/" ? "home" : route.slice(1);
       select.add(new Option(PAGE_LABELS[key] || file, file));
     });
+  }
+
+  // 직접 추가한 페이지: add-page 제목 | 주소이름
+  function addPage(text) {
+    var parts = text.split("|").map(function (p) { return p.trim(); }).filter(Boolean);
+    if (parts.length < 2) return say("사용법: add-page 페이지 제목 | 주소이름   예: add-page 오시는 길 | location2", false);
+    var slug = parts[1];
+    commit(function (f) {
+      var list = JSON.parse(f[KEY_FILES.custom_pages] || "[]");
+      list.push({ slug: slug, title: parts[0], body: "" });
+      f[KEY_FILES.custom_pages] = JSON.stringify(list, null, 2) + "\n";
+    }, "페이지 '" + parts[0] + "' 을 추가했습니다. 메뉴에 넣으려면 add-menu 를 쓰세요.");
+    fillPreviewPages();
+  }
+
+  // 직접 추가한 페이지를 지웁니다. 그 페이지로 가는 메뉴도 함께 지웁니다.
+  function removePage(slug) {
+    commit(function (f) {
+      var list = JSON.parse(f[KEY_FILES.custom_pages] || "[]");
+      var next = list.filter(function (page) { return page.slug !== slug.trim(); });
+      if (next.length === list.length) throw new Error("그런 주소의 페이지가 없습니다: " + slug);
+      f[KEY_FILES.custom_pages] = JSON.stringify(next, null, 2) + "\n";
+      var nav = JSON.parse(f[KEY_FILES.nav]).filter(function (entry) { return entry.path !== "/" + slug.trim(); });
+      f[KEY_FILES.nav] = JSON.stringify(nav, null, 2) + "\n";
+    }, "페이지 '" + slug + "' 을 지웠습니다.");
+    fillPreviewPages();
   }
 
   // 홈페이지 저장소 폴더를 통째로 불러와 이어서 고칩니다. 쓰는 파일만 골라 읽습니다.

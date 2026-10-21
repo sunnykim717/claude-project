@@ -9,13 +9,14 @@
 
   // 설정 항목 목록은 schema.json 에서만 옵니다. useSchema() 로 한 번 넣어 주세요.
   var loaded = false;
-  var PAGE_FILES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS;
+  var BASE_ROUTES, ROUTES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS;
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
 
   function useSchema(schema) {
-    PAGE_FILES = schema.pages;
+    BASE_ROUTES = schema.pages;
+    ROUTES = schema.pages;
     FILES = schema.files;
     FONT_STACK = schema.fonts;
     ALLOWED_FONTS = Object.keys(schema.fonts);
@@ -53,7 +54,7 @@
   function pyStrip(v) { return str(v).replace(/^\s+|\s+$/g, ""); }
 
   function isLinkOk(value) {
-    return startsWith(value, "https://") || startsWith(value, "http://") || Object.prototype.hasOwnProperty.call(PAGE_FILES, value);
+    return startsWith(value, "https://") || startsWith(value, "http://") || Object.prototype.hasOwnProperty.call(ROUTES, value);
   }
 
   // 사진 칸이 비어 있으면 아무것도 하지 않습니다. 있으면 형식과 파일 존재를 봅니다.
@@ -99,6 +100,36 @@
     if (found.length) errors.push("config/custom.css: 다음은 쓸 수 없습니다: " + found.join(", "));
   }
 
+  var SLUG = /^[a-z][a-z0-9-]{1,30}$/;
+
+  function checkCustomPages(files, errors, custom) {
+    if (!Array.isArray(custom)) {
+      errors.push("content/custom-pages.json: 목록이어야 합니다.");
+      return;
+    }
+    var seen = {};
+    custom.forEach(function (page, i) {
+      var rel = "content/custom-pages.json " + (i + 1) + "번";
+      if (!isObject(page)) {
+        errors.push(rel + ": 페이지 칸이 올바르지 않습니다.");
+        return;
+      }
+      var slug = page.slug;
+      if (typeof slug !== "string" || !SLUG.test(slug)) {
+        errors.push(rel + ": slug 는 영문 소문자로 시작하는 2~31자 (소문자, 숫자, -) 여야 합니다.");
+        return;
+      }
+      if (Object.prototype.hasOwnProperty.call(BASE_ROUTES, "/" + slug) || seen[slug]) {
+        errors.push(rel + ": 주소 /" + slug + " 가 이미 있습니다.");
+        return;
+      }
+      seen[slug] = true;
+      if (!page.title) errors.push(rel + ": title 을 적어 주세요.");
+      checkItems(errors, rel, "항목", page.items || []);
+      checkPhoto(files, errors, rel, page);
+    });
+  }
+
   function checkItems(errors, rel, label, items) {
     if (!Array.isArray(items)) {
       errors.push(rel + ": 목록이어야 합니다.");
@@ -111,6 +142,9 @@
         return;
       }
       if (item.date && !DATE.test(str(item.date))) errors.push(rel + " " + n + "번 " + label + ": date 는 YYYY-MM-DD 형식이어야 합니다.");
+      if ("publish" in item && !(typeof item.publish === "string" && DATE.test(item.publish))) {
+        errors.push(rel + " " + n + "번 " + label + ": publish 는 YYYY-MM-DD 형식이어야 합니다.");
+      }
       if ("body" in item && typeof item.body !== "string") errors.push(rel + " " + n + "번 " + label + ": body 는 글자여야 합니다.");
       if (item.url && !(startsWith(str(item.url), "https://") || startsWith(str(item.url), "http://"))) {
         errors.push(rel + " " + n + "번 " + label + ": url 은 https:// 로 시작해야 합니다.");
@@ -120,6 +154,7 @@
 
   function validate(files) {
     requireSchema();
+    ROUTES = Object.assign({}, BASE_ROUTES);
     var errors = [];
     var data = {};
     Object.keys(FILES).forEach(function (key) {
@@ -138,6 +173,14 @@
       }
     });
 
+    if (Array.isArray(data.custom_pages)) {
+      data.custom_pages.forEach(function (page) {
+        if (isObject(page) && typeof page.slug === "string" && SLUG.test(page.slug)) {
+          if (!Object.prototype.hasOwnProperty.call(ROUTES, "/" + page.slug)) ROUTES["/" + page.slug] = page.slug + ".html";
+        }
+      });
+    }
+
     var site = data.site, nav = data.nav, theme = data.theme;
     if (isObject(site)) {
       ["name", "language"].forEach(function (key) {
@@ -155,7 +198,7 @@
         var n = i + 1;
         if (!isObject(entry) || !entry.label) {
           errors.push("config/navigation.json " + n + "번: label 이 필요합니다.");
-        } else if (!Object.prototype.hasOwnProperty.call(PAGE_FILES, entry.path)) {
+        } else if (!Object.prototype.hasOwnProperty.call(ROUTES, entry.path)) {
           errors.push("config/navigation.json " + n + "번: 알 수 없는 페이지 주소입니다 (" + str(entry.path) + ").");
         }
       });
@@ -209,6 +252,8 @@
       checkItems(errors, "content/" + name + ".json", "항목", data[name].items || []);
     });
 
+    checkCustomPages(files, errors, data.custom_pages);
+
     var projects = data.projects;
     if (isObject(projects)) checkItems(errors, "content/projects.json", "사업", projects.items);
     var news = data.news;
@@ -258,12 +303,12 @@
 
   function linkFor(value) {
     if (startsWith(value, "https://") || startsWith(value, "http://")) return value;
-    return PAGE_FILES[value];
+    return ROUTES[value];
   }
 
   function headerHtml(files, site, nav, currentFile) {
     var links = nav.map(function (entry) {
-      var target = PAGE_FILES[entry.path];
+      var target = ROUTES[entry.path];
       var current = target === currentFile ? ' aria-current="page"' : "";
       return '<li><a href="' + esc(target) + '"' + current + ">" + esc(entry.label) + "</a></li>";
     });
@@ -355,6 +400,14 @@
     return '<div class="gallery">' + figures + "</div>";
   }
 
+  // 제목, 본문, 목록으로 된 간단한 페이지의 내용입니다 (Python 의 generic_body 와 같음).
+  function genericBody(content) {
+    var items = content.items || [];
+    var body = block(content.title, '<p class="pre">' + esc(content.body) + "</p>");
+    if (items.length) body += block(content.itemsTitle || "목록", projectArticles(items));
+    return body;
+  }
+
   function buildPages(files, data) {
     var site = data.site, nav = data.nav, theme = data.theme;
     var style = [themeCss(theme), backgroundCss(theme), files["src/styles/site.css"], files["config/custom.css"] || ""].join("\n");
@@ -424,20 +477,42 @@
       block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body, data.contact);
     GENERIC_PAGES.forEach(function (name) {
       var content = data[name];
-      var items = content.items || [];
-      var body = block(content.title, '<p class="pre">' + esc(content.body) + "</p>");
-      if (items.length) body += block(content.itemsTitle || "목록", projectArticles(items));
-      page(name + ".html", content.title, body, content.body, content);
+      page(name + ".html", content.title, genericBody(content), content.body, content);
+    });
+    (data.custom_pages || []).forEach(function (content) {
+      page(content.slug + ".html", content.title, genericBody(content), content.body, content);
     });
     return pages;
   }
 
   // 검사를 통과하면 페이지 파일 이름과 내용을 돌려줍니다. 틀리면 오류 목록만 돌려줍니다.
-  function build(files) {
+  // 날짜가 오늘보다 뒤인 항목은 뺍니다 (Python 의 drop_unpublished 와 같은 규칙).
+  function dropUnpublished(value, today) {
+    if (Array.isArray(value)) {
+      return value.filter(function (v) {
+        return !(isObject(v) && typeof v.publish === "string" && v.publish > today);
+      }).map(function (v) { return dropUnpublished(v, today); });
+    }
+    if (isObject(value)) {
+      var out = {};
+      Object.keys(value).forEach(function (k) { out[k] = dropUnpublished(value[k], today); });
+      return out;
+    }
+    return value;
+  }
+
+  function localToday() {
+    var d = new Date();
+    var pad = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  function build(files, today) {
     requireSchema();
     var checked = validate(files);
     if (checked.errors.length) return { ok: false, errors: checked.errors, pages: {} };
-    return { ok: true, errors: [], pages: buildPages(files, checked.data) };
+    var data = dropUnpublished(checked.data, today || localToday());
+    return { ok: true, errors: [], pages: buildPages(files, data) };
   }
 
   var api = { useSchema: useSchema, validate: validate, build: build, esc: esc, fill: fill };

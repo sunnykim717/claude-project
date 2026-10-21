@@ -29,6 +29,7 @@ FILE_FOR = {
     "site": "config/site.json", "nav": "config/navigation.json", "theme": "config/theme.json",
     "home": "content/home.json", "about": "content/about.json",
     "projects": "content/projects.json", "support": "content/support.json",
+    "custom_pages": "content/custom-pages.json",
     "transparency": "content/transparency.json", "volunteer": "content/volunteer.json",
     "privacy": "content/privacy.json", "news": "content/news.json", "contact": "content/contact.json",
 }
@@ -132,12 +133,52 @@ def _save_or_revert(root, path, original, message):
     return 0
 
 
+def _known_pages(root):
+    """기본 페이지와 직접 추가한 페이지의 주소 목록."""
+    pages = dict(json.loads((root / "schema.json").read_text(encoding="utf-8"))["pages"])
+    custom = json.loads((root / "content" / "custom-pages.json").read_text(encoding="utf-8"))
+    for page in custom:
+        pages.setdefault(f"/{page.get('slug')}", f"{page.get('slug')}.html")
+    return pages
+
+
+def cmd_add_page(args):
+    root = Path(args.root)
+    path = root / FILE_FOR["custom_pages"]
+    original = path.read_text(encoding="utf-8")
+    title = " ".join(args.title)
+    pages = json.loads(original)
+    pages.append({"slug": args.slug, "title": title, "body": ""})
+    path.write_text(json.dumps(pages, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return _save_or_revert(root, path, original, f"페이지 '{title}' 을 추가했습니다. 메뉴에 넣으려면 add-menu 를 쓰세요.")
+
+
+def cmd_remove_page(args):
+    root = Path(args.root)
+    path = root / FILE_FOR["custom_pages"]
+    original = path.read_text(encoding="utf-8")
+    nav_path = root / FILE_FOR["nav"]
+    nav_original = nav_path.read_text(encoding="utf-8")
+    pages = json.loads(original)
+    kept = [page for page in pages if page.get("slug") != args.slug]
+    if len(kept) == len(pages):
+        print(f"그런 주소의 페이지가 없습니다: {args.slug}")
+        return 1
+    nav = [entry for entry in json.loads(nav_original) if entry.get("path") != f"/{args.slug}"]
+    path.write_text(json.dumps(kept, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    nav_path.write_text(json.dumps(nav, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    code = _save_or_revert(root, path, original, f"페이지 '{args.slug}' 을 지웠습니다.")
+    if code:
+        nav_path.write_text(nav_original, encoding="utf-8")
+    return code
+
+
 def cmd_add_menu(args):
     root = Path(args.root)
     path = root / FILE_FOR["nav"]
     original = path.read_text(encoding="utf-8")
     label = " ".join(args.label)
-    pages = json.loads((root / "schema.json").read_text(encoding="utf-8"))["pages"]
+    pages = _known_pages(root)
     if args.path not in pages:
         print(f"주소는 {', '.join(pages)} 중 하나여야 합니다.")
         return 1
@@ -182,6 +223,13 @@ def build_parser():
     p.add_argument("path", help="예: site.name, theme.primaryColor, home.hero.title, projects.items.0.title")
     p.add_argument("value", nargs="+", help="새 값. 따옴표 없이 여러 단어를 써도 됩니다")
     p.set_defaults(func=cmd_set)
+    p = sub.add_parser("add-page", help="페이지 추가. 예: add-page 오시는 길 location2")
+    p.add_argument("title", nargs="+", help="페이지 제목 (여러 단어 가능)")
+    p.add_argument("slug", help="주소 이름: 영문 소문자로 시작 (예: location2)")
+    p.set_defaults(func=cmd_add_page)
+    p = sub.add_parser("remove-page", help="추가한 페이지 삭제. 그 페이지로 가는 메뉴도 지웁니다")
+    p.add_argument("slug", help="주소 이름")
+    p.set_defaults(func=cmd_remove_page)
     p = sub.add_parser("add-menu", help="메뉴 추가. 예: add-menu 오시는 길 /location")
     p.add_argument("label", nargs="+", help="메뉴 이름 (여러 단어 가능)")
     p.add_argument("path", help="주소: /, /about, /location 등 (schema.json 의 pages)")

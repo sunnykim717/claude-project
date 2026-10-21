@@ -15,6 +15,10 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 # 설정 항목 목록은 schema.json 에서만 관리합니다 (편집기와 도구가 같은 파일을 씁니다)
 SCHEMA = json.loads((ROOT_DIR / "schema.json").read_text(encoding="utf-8"))
 PAGE_FILES = SCHEMA["pages"]
+# 주소 목록: 기본 페이지 + 직접 추가한 페이지. validate() 가 채웁니다 (생성기와 함께 씀).
+ROUTES = dict(PAGE_FILES)
+SLUG = re.compile(r"^[a-z][a-z0-9-]{1,30}$")
+DATE_TEXT = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 FILES = SCHEMA["files"]
 ALLOWED_FONTS = set(SCHEMA["fonts"])
 SPACINGS = set(SCHEMA["spacings"])
@@ -41,7 +45,7 @@ def read_json(root, rel, errors):
 
 def is_link_ok(value):
     """외부 주소(https)이거나 이 사이트의 페이지 주소만 허용합니다."""
-    return value.startswith(("https://", "http://")) or value in PAGE_FILES
+    return value.startswith(("https://", "http://")) or value in ROUTES
 
 
 
@@ -110,15 +114,49 @@ def check_items(errors, rel, label, items):
             continue
         if item.get("date") and not DATE.match(item["date"]):
             errors.append(f"{rel} {i}번 {label}: date 는 YYYY-MM-DD 형식이어야 합니다.")
+        if "publish" in item and not (isinstance(item["publish"], str) and DATE_TEXT.match(item["publish"])):
+            errors.append(f"{rel} {i}번 {label}: publish 는 YYYY-MM-DD 형식이어야 합니다.")
         if "body" in item and not isinstance(item["body"], str):
             errors.append(f"{rel} {i}번 {label}: body 는 글자여야 합니다.")
         if item.get("url") and not item["url"].startswith(("https://", "http://")):
             errors.append(f"{rel} {i}번 {label}: url 은 https:// 로 시작해야 합니다.")
 
 
+def check_custom_pages(errors, root, custom):
+    """직접 추가한 페이지: 주소(slug)는 영문 소문자로 시작하고 기본 페이지와 겹치지 않아야 합니다."""
+    if not isinstance(custom, list):
+        errors.append("content/custom-pages.json: 목록이어야 합니다.")
+        return
+    seen = set()
+    for i, page in enumerate(custom, start=1):
+        rel = f"content/custom-pages.json {i}번"
+        if not isinstance(page, dict):
+            errors.append(f"{rel}: 페이지 칸이 올바르지 않습니다.")
+            continue
+        slug = page.get("slug")
+        if not isinstance(slug, str) or not SLUG.match(slug):
+            errors.append(f"{rel}: slug 는 영문 소문자로 시작하는 2~31자 (소문자, 숫자, -) 여야 합니다.")
+            continue
+        if f"/{slug}" in PAGE_FILES or slug in seen:
+            errors.append(f"{rel}: 주소 /{slug} 가 이미 있습니다.")
+            continue
+        seen.add(slug)
+        if not page.get("title"):
+            errors.append(f"{rel}: title 을 적어 주세요.")
+        check_items(errors, rel, "항목", page.get("items", []))
+        check_photo(errors, root, rel, page)
+
+
 def validate(root):
     """(데이터, 오류 목록)을 돌려줍니다. 오류가 없으면 목록이 비어 있습니다."""
     data, errors = load_all(root)
+    ROUTES.clear()
+    ROUTES.update(PAGE_FILES)
+    custom = data.get("custom_pages")
+    if isinstance(custom, list):
+        for page in custom:
+            if isinstance(page, dict) and isinstance(page.get("slug"), str) and SLUG.match(page["slug"]):
+                ROUTES.setdefault(f"/{page['slug']}", f"{page['slug']}.html")
     site, nav, theme = data["site"], data["nav"], data["theme"]
 
     if isinstance(site, dict):
@@ -134,7 +172,7 @@ def validate(root):
         for i, entry in enumerate(nav, start=1):
             if not isinstance(entry, dict) or not entry.get("label"):
                 errors.append(f"config/navigation.json {i}번: label 이 필요합니다.")
-            elif entry.get("path") not in PAGE_FILES:
+            elif entry.get("path") not in ROUTES:
                 errors.append(f"config/navigation.json {i}번: 알 수 없는 페이지 주소입니다 ({entry.get('path')}).")
     elif nav is not None:
         errors.append("config/navigation.json: 목록이어야 합니다.")
@@ -184,6 +222,7 @@ def validate(root):
             if not data[name].get("title"):
                 errors.append(f"content/{name}.json: title 을 적어 주세요.")
             check_items(errors, f"content/{name}.json", "항목", data[name].get("items", []))
+    check_custom_pages(errors, root, data["custom_pages"])
 
     projects = data["projects"]
     if isinstance(projects, dict):
