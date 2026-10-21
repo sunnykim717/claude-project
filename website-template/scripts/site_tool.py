@@ -9,6 +9,8 @@
     python scripts/site_tool.py set projects.items.0.title "새 사업"
     python scripts/site_tool.py check                            # 검사
     python scripts/site_tool.py build                            # dist/ 에 페이지 만들기
+    python scripts/site_tool.py sync                             # 승인된 GitHub 저장소로 보낼 내용 확인 (보내지 않음)
+    python scripts/site_tool.py sync --push                      # 실제로 커밋하고 올리기
 
 'set' 의 첫 단어는 파일을 가리킵니다: site, theme, nav, home, about, projects, support, transparency, volunteer, privacy, news, contact
 """
@@ -22,6 +24,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import generate  # noqa: E402
+import sync  # noqa: E402
 from validate import validate  # noqa: E402
 
 ROOT = HERE.parent
@@ -215,6 +218,18 @@ def cmd_check(args):
     return _finish(args.root, "설정과 콘텐츠가 맞습니다.")
 
 
+def cmd_sync(args):
+    """설정을 검사한 뒤 승인된 저장소로 보냅니다. --push 를 붙이기 전에는 아무것도 바꾸지 않습니다."""
+    _, errors = validate(args.root)
+    if errors:
+        return _finish(args.root, "")
+    try:
+        return sync.run_sync(args.root, push=args.push)
+    except sync.SyncError as error:
+        print(f"보내지 않았습니다: {error}")
+        return 1
+
+
 def cmd_build(args):
     return generate.main(["--root", str(args.root)] + (["--out", args.out] if args.out else []))
 
@@ -253,6 +268,9 @@ def build_parser():
     p.add_argument("--clear", action="store_true", help="연결 지우기")
     p.set_defaults(func=cmd_supabase)
     sub.add_parser("check", help="설정 검사").set_defaults(func=cmd_check)
+    p = sub.add_parser("sync", help="승인된 GitHub 저장소로 보내기. 기본은 확인만, --push 를 붙여야 보냅니다")
+    p.add_argument("--push", action="store_true", help="실제로 커밋하고 올리기")
+    p.set_defaults(func=cmd_sync)
     p = sub.add_parser("build", help="dist/ 에 페이지 만들기")
     p.add_argument("--out", default=None)
     p.set_defaults(func=cmd_build)
