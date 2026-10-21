@@ -1,6 +1,10 @@
 {
-  "title": "문의",
-  "body": "문의 방법과 후원 안내를 여기에 적어 주세요.",
+  "title": "문의 · 자원봉사 · 참여",
+  "body": "후원, 자원봉사, 협력 문의는 아래 이메일로 연락해 주세요.",
   "email": "hello@example.com",
-  "social": {"github": "", "instagram": "", "youtube": ""}
+  "social": {
+    "github": "",
+    "instagram": "",
+    "youtube": ""
+  }
 }

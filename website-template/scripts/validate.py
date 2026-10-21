@@ -12,7 +12,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 # 이 템플릿이 만드는 페이지: 주소 -> 파일 이름
-PAGE_FILES = {"/": "index.html", "/about": "about.html", "/projects": "projects.html", "/contact": "contact.html"}
+PAGE_FILES = {"/": "index.html", "/about": "about.html", "/projects": "projects.html",
+              "/support": "support.html", "/news": "news.html", "/contact": "contact.html"}
 ALLOWED_FONTS = {"system-ui", "serif", "mono"}
 SPACINGS = {"compact", "normal", "airy"}
 LAYOUTS = {"classic", "modern", "card", "minimal"}
@@ -40,7 +41,8 @@ def is_link_ok(value):
 FILES = {
     "site": "config/site.json", "nav": "config/navigation.json", "theme": "config/theme.json",
     "home": "content/home.json", "about": "content/about.json",
-    "projects": "content/projects.json", "contact": "content/contact.json",
+    "projects": "content/projects.json", "support": "content/support.json",
+    "news": "content/news.json", "contact": "content/contact.json",
 }
 
 
@@ -49,6 +51,21 @@ def load_all(root):
     errors = []
     data = {key: read_json(root, rel, errors) for key, rel in FILES.items()}
     return data, errors
+
+
+def check_items(errors, rel, label, items):
+    """사업, 소식, 후원 방법처럼 제목과 선택 항목이 있는 목록을 검사합니다."""
+    if not isinstance(items, list):
+        errors.append(f"{rel}: 목록이어야 합니다.")
+        return
+    for i, item in enumerate(items, start=1):
+        if not isinstance(item, dict) or not item.get("title"):
+            errors.append(f"{rel} {i}번 {label}: title 이 필요합니다.")
+            continue
+        if item.get("date") and not DATE.match(item["date"]):
+            errors.append(f"{rel} {i}번 {label}: date 는 YYYY-MM-DD 형식이어야 합니다.")
+        if item.get("url") and not item["url"].startswith(("https://", "http://")):
+            errors.append(f"{rel} {i}번 {label}: url 은 https:// 로 시작해야 합니다.")
 
 
 def validate(root):
@@ -98,14 +115,13 @@ def validate(root):
 
     projects = data["projects"]
     if isinstance(projects, dict):
-        for i, item in enumerate(projects.get("items", []), start=1):
-            if not isinstance(item, dict) or not item.get("title"):
-                errors.append(f"content/projects.json {i}번 사업: title 이 필요합니다.")
-                continue
-            if item.get("date") and not DATE.match(item["date"]):
-                errors.append(f"content/projects.json {i}번 사업: date 는 YYYY-MM-DD 형식이어야 합니다.")
-            if item.get("url") and not item["url"].startswith(("https://", "http://")):
-                errors.append(f"content/projects.json {i}번 사업: url 은 https:// 로 시작해야 합니다.")
+        check_items(errors, "content/projects.json", "사업", projects.get("items", []))
+    news = data["news"]
+    if isinstance(news, dict):
+        check_items(errors, "content/news.json", "소식", news.get("items", []))
+    support = data["support"]
+    if isinstance(support, dict):
+        check_items(errors, "content/support.json", "후원 방법", support.get("ways", []))
 
     contact = data["contact"]
     if isinstance(contact, dict):

@@ -89,7 +89,10 @@
 (function (root) {
   "use strict";
 
-  var PAGE_FILES = { "/": "index.html", "/about": "about.html", "/projects": "projects.html", "/contact": "contact.html" };
+  var PAGE_FILES = {
+    "/": "index.html", "/about": "about.html", "/projects": "projects.html",
+    "/support": "support.html", "/news": "news.html", "/contact": "contact.html"
+  };
   var ALLOWED_FONTS = ["system-ui", "serif", "mono"];
   var SPACINGS = ["compact", "normal", "airy"];
   var FONT_STACK = { "system-ui": "system-ui, sans-serif", "serif": "Georgia, serif", "mono": "ui-monospace, monospace" };
@@ -97,7 +100,8 @@
   var FILES = {
     site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
     home: "content/home.json", about: "content/about.json",
-    projects: "content/projects.json", contact: "content/contact.json"
+    projects: "content/projects.json", support: "content/support.json",
+    news: "content/news.json", contact: "content/contact.json"
   };
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -121,6 +125,24 @@
 
   function isLinkOk(value) {
     return startsWith(value, "https://") || startsWith(value, "http://") || Object.prototype.hasOwnProperty.call(PAGE_FILES, value);
+  }
+
+  function checkItems(errors, rel, label, items) {
+    if (!Array.isArray(items)) {
+      errors.push(rel + ": 목록이어야 합니다.");
+      return;
+    }
+    items.forEach(function (item, i) {
+      var n = i + 1;
+      if (!isObject(item) || !item.title) {
+        errors.push(rel + " " + n + "번 " + label + ": title 이 필요합니다.");
+        return;
+      }
+      if (item.date && !DATE.test(str(item.date))) errors.push(rel + " " + n + "번 " + label + ": date 는 YYYY-MM-DD 형식이어야 합니다.");
+      if (item.url && !(startsWith(str(item.url), "https://") || startsWith(str(item.url), "http://"))) {
+        errors.push(rel + " " + n + "번 " + label + ": url 은 https:// 로 시작해야 합니다.");
+      }
+    });
   }
 
   function validate(files) {
@@ -189,20 +211,11 @@
     }
 
     var projects = data.projects;
-    if (isObject(projects)) {
-      var items = Array.isArray(projects.items) ? projects.items : [];
-      items.forEach(function (item, i) {
-        var n = i + 1;
-        if (!isObject(item) || !item.title) {
-          errors.push("content/projects.json " + n + "번 사업: title 이 필요합니다.");
-          return;
-        }
-        if (item.date && !DATE.test(str(item.date))) errors.push("content/projects.json " + n + "번 사업: date 는 YYYY-MM-DD 형식이어야 합니다.");
-        if (item.url && !(startsWith(str(item.url), "https://") || startsWith(str(item.url), "http://"))) {
-          errors.push("content/projects.json " + n + "번 사업: url 은 https:// 로 시작해야 합니다.");
-        }
-      });
-    }
+    if (isObject(projects)) checkItems(errors, "content/projects.json", "사업", projects.items);
+    var news = data.news;
+    if (isObject(news)) checkItems(errors, "content/news.json", "소식", news.items);
+    var support = data.support;
+    if (isObject(support)) checkItems(errors, "content/support.json", "후원 방법", support.ways);
 
     var contact = data.contact;
     if (isObject(contact)) {
@@ -336,6 +349,13 @@
       block(data.about.title, '<p class="pre">' + esc(data.about.body) + "</p>"), data.about.body);
     page("projects.html", data.projects.title,
       block(data.projects.title, itemsHtml(data.projects.items || [], theme.layout)), data.projects.title);
+    var support = data.support;
+    var ways = projectArticles(support.ways || []);
+    var supportMain = block(support.title, '<p class="pre">' + esc(support.body) + "</p>");
+    if (ways) supportMain += block("후원 방법", ways);
+    if (support.notice) supportMain += block("안내", '<p class="pre">' + esc(support.notice) + "</p>");
+    page("support.html", support.title, supportMain, support.body);
+    page("news.html", data.news.title, block(data.news.title, projectArticles(data.news.items || [])), data.news.title);
     page("contact.html", data.contact.title,
       block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body);
     return pages;
@@ -359,13 +379,15 @@
 </script>
 <script>
 const DEFAULT_FILES = {
-  "config/site.json": "{\n  \"name\": \"새로운 기관\",\n  \"description\": \"기관 소개 홈페이지\",\n  \"language\": \"ko\",\n  \"domain\": \"\"\n}\n",
-  "config/navigation.json": "[\n  {\"label\": \"홈\", \"path\": \"/\"},\n  {\"label\": \"기관소개\", \"path\": \"/about\"},\n  {\"label\": \"주요사업\", \"path\": \"/projects\"},\n  {\"label\": \"문의\", \"path\": \"/contact\"}\n]\n",
-  "config/theme.json": "{\n  \"primaryColor\": \"#2563EB\",\n  \"backgroundColor\": \"#FFFFFF\",\n  \"textColor\": \"#0F172A\",\n  \"font\": \"system-ui\",\n  \"radius\": 8,\n  \"spacing\": \"normal\",\n  \"layout\": \"modern\"\n}\n",
-  "content/home.json": "{\n  \"hero\": {\n    \"title\": \"더 나은 내일을 만듭니다\",\n    \"subtitle\": \"사람과 지역사회를 연결합니다\",\n    \"buttonText\": \"자세히 보기\",\n    \"buttonLink\": \"/about\"\n  },\n  \"intro\": \"홈페이지 첫 화면에 들어갈 소개 문장을 여기에 적어 주세요.\"\n}\n",
-  "content/about.json": "{\n  \"title\": \"기관 소개\",\n  \"body\": \"기관의 목적과 활동을 여기에 적어 주세요.\"\n}\n",
-  "content/projects.json": "{\n  \"title\": \"주요 사업\",\n  \"items\": [\n    {\"title\": \"사업 이름\", \"date\": \"2026-01-15\", \"summary\": \"사업 내용을 한두 문장으로 적어 주세요.\", \"url\": \"\"}\n  ]\n}\n",
-  "content/contact.json": "{\n  \"title\": \"문의\",\n  \"body\": \"문의 방법과 후원 안내를 여기에 적어 주세요.\",\n  \"email\": \"hello@example.com\",\n  \"social\": {\"github\": \"\", \"instagram\": \"\", \"youtube\": \"\"}\n}\n",
+  "config/site.json": "{\n  \"name\": \"○○ 비영리 단체\",\n  \"description\": \"비영리 단체의 활동과 후원을 안내하는 홈페이지\",\n  \"language\": \"ko\",\n  \"domain\": \"\"\n}\n",
+  "config/navigation.json": "[\n  {\n    \"label\": \"홈\",\n    \"path\": \"/\"\n  },\n  {\n    \"label\": \"기관소개\",\n    \"path\": \"/about\"\n  },\n  {\n    \"label\": \"주요사업\",\n    \"path\": \"/projects\"\n  },\n  {\n    \"label\": \"후원안내\",\n    \"path\": \"/support\"\n  },\n  {\n    \"label\": \"소식\",\n    \"path\": \"/news\"\n  },\n  {\n    \"label\": \"문의\",\n    \"path\": \"/contact\"\n  }\n]\n",
+  "config/theme.json": "{\n  \"primaryColor\": \"#15803D\",\n  \"backgroundColor\": \"#F7FEF9\",\n  \"textColor\": \"#14532D\",\n  \"font\": \"system-ui\",\n  \"radius\": 10,\n  \"spacing\": \"normal\",\n  \"layout\": \"classic\"\n}\n",
+  "content/home.json": "{\n  \"hero\": {\n    \"title\": \"함께 만드는 더 나은 세상\",\n    \"subtitle\": \"○○ 비영리 단체는 필요한 곳에 따뜻한 손길을 전합니다\",\n    \"buttonText\": \"후원하기\",\n    \"buttonLink\": \"/support\"\n  },\n  \"intro\": \"우리 단체가 하는 일과 함께하는 방법을 소개합니다. 단체의 활동 소개를 여기에 적어 주세요.\"\n}\n",
+  "content/about.json": "{\n  \"title\": \"기관 소개\",\n  \"body\": \"단체의 설립 목적, 활동 대상, 주요 성과를 여기에 적어 주세요. 확인된 사실만 적어 주세요.\"\n}\n",
+  "content/projects.json": "{\n  \"title\": \"주요 사업\",\n  \"items\": [\n    {\n      \"title\": \"사업 이름\",\n      \"date\": \"2026-01-15\",\n      \"summary\": \"사업 대상과 내용을 한두 문장으로 적어 주세요.\",\n      \"url\": \"\"\n    }\n  ]\n}\n",
+  "content/support.json": "{\n  \"title\": \"후원 안내\",\n  \"body\": \"여러분의 후원이 우리 단체의 활동을 이어 가는 힘이 됩니다. 후원금이 어디에 쓰이는지 여기에 적어 주세요.\",\n  \"ways\": [\n    {\n      \"title\": \"정기 후원\",\n      \"summary\": \"매월 일정한 금액을 후원해 주세요. 신청 방법을 적어 주세요.\"\n    },\n    {\n      \"title\": \"일시 후원\",\n      \"summary\": \"원하실 때 한 번 후원하실 수 있습니다. 방법을 적어 주세요.\"\n    }\n  ],\n  \"notice\": \"기부금 영수증 발급 방법과 후원금 사용 내역 공개 방법을 여기에 적어 주세요. 확인된 내용만 적어 주세요.\"\n}\n",
+  "content/news.json": "{\n  \"title\": \"소식\",\n  \"items\": [\n    {\n      \"title\": \"새 소식 제목\",\n      \"date\": \"2026-01-15\",\n      \"summary\": \"소식 내용을 한두 문장으로 적어 주세요.\",\n      \"url\": \"\"\n    }\n  ]\n}\n",
+  "content/contact.json": "{\n  \"title\": \"문의 · 자원봉사 · 참여\",\n  \"body\": \"후원, 자원봉사, 협력 문의는 아래 이메일로 연락해 주세요.\",\n  \"email\": \"hello@example.com\",\n  \"social\": {\n    \"github\": \"\",\n    \"instagram\": \"\",\n    \"youtube\": \"\"\n  }\n}\n",
   "src/components/Header.html": "<header class=\"site-header\">\n  <a class=\"brand\" href=\"index.html\">{{brand}}<\/a>\n  <nav aria-label=\"페이지 메뉴\">\n    <ul>{{links}}<\/ul>\n  <\/nav>\n<\/header>\n",
   "src/components/Hero.html": "<section class=\"hero\" id=\"top\">\n  <h1>{{title}}<\/h1>\n  <p class=\"subtitle\">{{subtitle}}<\/p>\n  {{button}}\n<\/section>\n",
   "src/components/Footer.html": "<footer class=\"site-footer\">\n  <p>© {{name}}<\/p>\n  {{contact}}\n<\/footer>\n",
@@ -479,7 +501,8 @@ const DESIGNS = {
   var STORAGE_KEY = "website-editor:v1";
   var KEY_FILES = {
     site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
-    home: "content/home.json", about: "content/about.json", projects: "content/projects.json", contact: "content/contact.json"
+    home: "content/home.json", about: "content/about.json", projects: "content/projects.json",
+    support: "content/support.json", news: "content/news.json", contact: "content/contact.json"
   };
   var THEME_KEYS = ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout"];
   var PATH_HELP = [
@@ -487,12 +510,15 @@ const DESIGNS = {
     "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy), theme.layout (classic, modern, card, minimal)",
     "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
     "about.title / about.body",
+    "support.title / support.body / support.notice, support.ways.번호.title / .summary",
+    "news.title, news.items.번호.title / .date / .summary / .url",
     "projects.title, projects.items.번호.title / .date / .summary / .url",
     "contact.title / contact.body / contact.email, contact.social.github / .instagram / .youtube",
     "nav.번호.label / nav.번호.path (/, /about, /projects, /contact)"
   ];
   var EXAMPLES = [
     "set site.name 민수의 작업실",
+    "set support.notice 기부금 영수증 발급 방법을 적어 주세요.",
     "set home.hero.title 더 나은 내일을 만듭니다",
     "set about.body 기관의 목적과 활동을 적어 주세요.",
     "set contact.email hello@example.com",

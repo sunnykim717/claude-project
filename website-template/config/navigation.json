@@ -1,6 +1,26 @@
 [
-  {"label": "홈", "path": "/"},
-  {"label": "기관소개", "path": "/about"},
-  {"label": "주요사업", "path": "/projects"},
-  {"label": "문의", "path": "/contact"}
+  {
+    "label": "홈",
+    "path": "/"
+  },
+  {
+    "label": "기관소개",
+    "path": "/about"
+  },
+  {
+    "label": "주요사업",
+    "path": "/projects"
+  },
+  {
+    "label": "후원안내",
+    "path": "/support"
+  },
+  {
+    "label": "소식",
+    "path": "/news"
+  },
+  {
+    "label": "문의",
+    "path": "/contact"
+  }
 ]

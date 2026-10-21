@@ -3,7 +3,8 @@
   var STORAGE_KEY = "website-editor:v1";
   var KEY_FILES = {
     site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
-    home: "content/home.json", about: "content/about.json", projects: "content/projects.json", contact: "content/contact.json"
+    home: "content/home.json", about: "content/about.json", projects: "content/projects.json",
+    support: "content/support.json", news: "content/news.json", contact: "content/contact.json"
   };
   var THEME_KEYS = ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout"];
   var PATH_HELP = [
@@ -11,12 +12,15 @@
     "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy), theme.layout (classic, modern, card, minimal)",
     "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
     "about.title / about.body",
+    "support.title / support.body / support.notice, support.ways.번호.title / .summary",
+    "news.title, news.items.번호.title / .date / .summary / .url",
     "projects.title, projects.items.번호.title / .date / .summary / .url",
     "contact.title / contact.body / contact.email, contact.social.github / .instagram / .youtube",
     "nav.번호.label / nav.번호.path (/, /about, /projects, /contact)"
   ];
   var EXAMPLES = [
     "set site.name 민수의 작업실",
+    "set support.notice 기부금 영수증 발급 방법을 적어 주세요.",
     "set home.hero.title 더 나은 내일을 만듭니다",
     "set about.body 기관의 목적과 활동을 적어 주세요.",
     "set contact.email hello@example.com",

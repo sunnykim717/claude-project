@@ -16,7 +16,8 @@ import validate  # noqa: E402
 
 TEXT_FILES = [
     "config/site.json", "config/navigation.json", "config/theme.json",
-    "content/home.json", "content/about.json", "content/projects.json", "content/contact.json",
+    "content/home.json", "content/about.json", "content/projects.json", "content/support.json",
+    "content/news.json", "content/contact.json",
     "src/components/Header.html", "src/components/Hero.html", "src/components/Footer.html",
     "src/pages/page.html", "src/styles/site.css",
 ]

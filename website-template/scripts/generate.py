@@ -165,6 +165,17 @@ def build_pages(root, data):
          block(data["projects"]["title"], items_html(data["projects"].get("items", []), theme["layout"])),
          data["projects"]["title"])
     contact = data["contact"]
+    support = data["support"]
+    ways = project_articles(support.get("ways", []))
+    support_main = block(support["title"], f'<p class="pre">{esc(support["body"])}</p>')
+    if ways:
+        support_main += block("후원 방법", ways)
+    if support.get("notice"):
+        support_main += block("안내", f'<p class="pre">{esc(support["notice"])}</p>')
+    page("support.html", support["title"], support_main, support["body"])
+    news = data["news"]
+    page("news.html", news["title"],
+         block(news["title"], project_articles(news.get("items", []))), news["title"])
     page("contact.html", contact["title"],
          block(contact["title"], f'<p class="pre">{esc(contact["body"])}</p>'),
          contact["body"])

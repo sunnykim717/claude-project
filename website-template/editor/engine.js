@@ -7,7 +7,10 @@
 (function (root) {
   "use strict";
 
-  var PAGE_FILES = { "/": "index.html", "/about": "about.html", "/projects": "projects.html", "/contact": "contact.html" };
+  var PAGE_FILES = {
+    "/": "index.html", "/about": "about.html", "/projects": "projects.html",
+    "/support": "support.html", "/news": "news.html", "/contact": "contact.html"
+  };
   var ALLOWED_FONTS = ["system-ui", "serif", "mono"];
   var SPACINGS = ["compact", "normal", "airy"];
   var FONT_STACK = { "system-ui": "system-ui, sans-serif", "serif": "Georgia, serif", "mono": "ui-monospace, monospace" };
@@ -15,7 +18,8 @@
   var FILES = {
     site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
     home: "content/home.json", about: "content/about.json",
-    projects: "content/projects.json", contact: "content/contact.json"
+    projects: "content/projects.json", support: "content/support.json",
+    news: "content/news.json", contact: "content/contact.json"
   };
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,6 +43,24 @@
 
   function isLinkOk(value) {
     return startsWith(value, "https://") || startsWith(value, "http://") || Object.prototype.hasOwnProperty.call(PAGE_FILES, value);
+  }
+
+  function checkItems(errors, rel, label, items) {
+    if (!Array.isArray(items)) {
+      errors.push(rel + ": 목록이어야 합니다.");
+      return;
+    }
+    items.forEach(function (item, i) {
+      var n = i + 1;
+      if (!isObject(item) || !item.title) {
+        errors.push(rel + " " + n + "번 " + label + ": title 이 필요합니다.");
+        return;
+      }
+      if (item.date && !DATE.test(str(item.date))) errors.push(rel + " " + n + "번 " + label + ": date 는 YYYY-MM-DD 형식이어야 합니다.");
+      if (item.url && !(startsWith(str(item.url), "https://") || startsWith(str(item.url), "http://"))) {
+        errors.push(rel + " " + n + "번 " + label + ": url 은 https:// 로 시작해야 합니다.");
+      }
+    });
   }
 
   function validate(files) {
@@ -107,20 +129,11 @@
     }
 
     var projects = data.projects;
-    if (isObject(projects)) {
-      var items = Array.isArray(projects.items) ? projects.items : [];
-      items.forEach(function (item, i) {
-        var n = i + 1;
-        if (!isObject(item) || !item.title) {
-          errors.push("content/projects.json " + n + "번 사업: title 이 필요합니다.");
-          return;
-        }
-        if (item.date && !DATE.test(str(item.date))) errors.push("content/projects.json " + n + "번 사업: date 는 YYYY-MM-DD 형식이어야 합니다.");
-        if (item.url && !(startsWith(str(item.url), "https://") || startsWith(str(item.url), "http://"))) {
-          errors.push("content/projects.json " + n + "번 사업: url 은 https:// 로 시작해야 합니다.");
-        }
-      });
-    }
+    if (isObject(projects)) checkItems(errors, "content/projects.json", "사업", projects.items);
+    var news = data.news;
+    if (isObject(news)) checkItems(errors, "content/news.json", "소식", news.items);
+    var support = data.support;
+    if (isObject(support)) checkItems(errors, "content/support.json", "후원 방법", support.ways);
 
     var contact = data.contact;
     if (isObject(contact)) {
@@ -254,6 +267,13 @@
       block(data.about.title, '<p class="pre">' + esc(data.about.body) + "</p>"), data.about.body);
     page("projects.html", data.projects.title,
       block(data.projects.title, itemsHtml(data.projects.items || [], theme.layout)), data.projects.title);
+    var support = data.support;
+    var ways = projectArticles(support.ways || []);
+    var supportMain = block(support.title, '<p class="pre">' + esc(support.body) + "</p>");
+    if (ways) supportMain += block("후원 방법", ways);
+    if (support.notice) supportMain += block("안내", '<p class="pre">' + esc(support.notice) + "</p>");
+    page("support.html", support.title, supportMain, support.body);
+    page("news.html", data.news.title, block(data.news.title, projectArticles(data.news.items || [])), data.news.title);
     page("contact.html", data.contact.title,
       block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body);
     return pages;

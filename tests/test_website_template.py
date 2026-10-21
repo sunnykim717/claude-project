@@ -47,9 +47,9 @@ class ValidateTest(unittest.TestCase):
 
     def test_unknown_navigation_page_rejected(self):
         with _Copy() as root:
-            _edit(root, "config/navigation.json", lambda d: d.append({"label": "소식", "path": "/news"}))
+            _edit(root, "config/navigation.json", lambda d: d.append({"label": "블로그", "path": "/blog"}))
             _, errors = validate.validate(root)
-            self.assertTrue(any("/news" in e for e in errors))
+            self.assertTrue(any("/blog" in e for e in errors))
 
     def test_javascript_link_rejected(self):
         with _Copy() as root:
@@ -77,19 +77,19 @@ class GenerateTest(unittest.TestCase):
         with _Copy() as root:
             out = root / "dist"
             self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
-            for name in ("index.html", "about.html", "projects.html", "contact.html"):
+            for name in ("index.html", "about.html", "projects.html", "support.html", "news.html", "contact.html"):
                 self.assertTrue((out / name).exists(), name)
             about = (out / "about.html").read_text(encoding="utf-8")
             self.assertIn('href="projects.html"', about)
             self.assertIn('aria-current="page"', about)
-            self.assertIn("<title>기관 소개 | 새로운 기관</title>", about)
+            self.assertIn("<title>기관 소개 | ○○ 비영리 단체</title>", about)
 
     def test_hero_button_points_to_page_file(self):
         with _Copy() as root:
             out = root / "dist"
             generate.main(["--root", str(root), "--out", str(out)])
             index = (out / "index.html").read_text(encoding="utf-8")
-            self.assertIn('class="button" href="about.html"', index)
+            self.assertIn('class="button" href="support.html"', index)
 
     def test_user_text_is_escaped(self):
         with _Copy() as root:

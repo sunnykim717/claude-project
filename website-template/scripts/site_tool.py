@@ -10,7 +10,7 @@
     python scripts/site_tool.py check                            # 검사
     python scripts/site_tool.py build                            # dist/ 에 페이지 만들기
 
-'set' 의 첫 단어는 파일을 가리킵니다: site, theme, nav, home, about, projects, contact
+'set' 의 첫 단어는 파일을 가리킵니다: site, theme, nav, home, about, projects, support, news, contact
 """
 
 import argparse
@@ -28,7 +28,8 @@ ROOT = HERE.parent
 FILE_FOR = {
     "site": "config/site.json", "nav": "config/navigation.json", "theme": "config/theme.json",
     "home": "content/home.json", "about": "content/about.json",
-    "projects": "content/projects.json", "contact": "content/contact.json",
+    "projects": "content/projects.json", "support": "content/support.json",
+    "news": "content/news.json", "contact": "content/contact.json",
 }
 THEME_KEYS = ("primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout")
 IGNORE = shutil.ignore_patterns("dist", "__pycache__", ".git")

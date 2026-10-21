@@ -1,9 +1,9 @@
 {
-  "primaryColor": "#2563EB",
-  "backgroundColor": "#FFFFFF",
-  "textColor": "#0F172A",
+  "primaryColor": "#15803D",
+  "backgroundColor": "#F7FEF9",
+  "textColor": "#14532D",
   "font": "system-ui",
-  "radius": 8,
+  "radius": 10,
   "spacing": "normal",
-  "layout": "modern"
+  "layout": "classic"
 }
