@@ -21,8 +21,9 @@ sys.path.insert(0, str(HERE))
 from validate import PAGE_FILES, validate  # noqa: E402
 
 ROOT = HERE.parent
-FONT_STACK = {"system-ui": "system-ui, sans-serif", "serif": "Georgia, serif", "mono": "ui-monospace, monospace"}
-SPACING_PX = {"compact": 12, "normal": 24, "airy": 40}
+SCHEMA = json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))
+FONT_STACK = SCHEMA["fonts"]
+SPACING_PX = SCHEMA["spacings"]
 PLACEHOLDER = re.compile(r"\{\{(\w+)\}\}")
 
 

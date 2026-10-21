@@ -31,6 +31,7 @@ def _read_files(root):
 def _node(files):
     script = (
         "const e = require(process.argv[1]);"
+        "e.useSchema(JSON.parse(require('fs').readFileSync(process.argv[3], 'utf8')));"
         "const input = JSON.parse(require('fs').readFileSync(process.argv[2], 'utf8'));"
         "process.stdout.write(JSON.stringify(e.build(input)));"
     )
@@ -38,7 +39,8 @@ def _node(files):
         json.dump(files, f, ensure_ascii=False)
         path = f.name
     try:
-        result = subprocess.run(["node", "-e", script, str(ENGINE), path], capture_output=True, text=True, check=True)
+        result = subprocess.run(["node", "-e", script, str(ENGINE), path, str(ROOT / "schema.json")],
+                                capture_output=True, text=True, check=True)
     finally:
         Path(path).unlink()
     return json.loads(result.stdout)

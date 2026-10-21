@@ -1,0 +1,51 @@
+{
+  "files": {
+    "site": "config/site.json",
+    "nav": "config/navigation.json",
+    "theme": "config/theme.json",
+    "home": "content/home.json",
+    "about": "content/about.json",
+    "projects": "content/projects.json",
+    "support": "content/support.json",
+    "transparency": "content/transparency.json",
+    "volunteer": "content/volunteer.json",
+    "privacy": "content/privacy.json",
+    "news": "content/news.json",
+    "contact": "content/contact.json"
+  },
+  "pages": {
+    "/": "index.html",
+    "/about": "about.html",
+    "/projects": "projects.html",
+    "/support": "support.html",
+    "/transparency": "transparency.html",
+    "/news": "news.html",
+    "/volunteer": "volunteer.html",
+    "/contact": "contact.html",
+    "/privacy": "privacy.html"
+  },
+  "languages": ["ko", "en", "ja"],
+  "fonts": {
+    "system-ui": "system-ui, sans-serif",
+    "serif": "Georgia, serif",
+    "mono": "ui-monospace, monospace"
+  },
+  "spacings": {"compact": 12, "normal": 24, "airy": 40},
+  "layouts": ["classic", "modern", "card", "minimal"],
+  "theme_keys": ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout"],
+  "image_extensions": ["jpg", "jpeg", "png", "webp", "gif"],
+  "help": [
+    "site.name / site.description / site.language (ko, en, ja)",
+    "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy), theme.layout (classic, modern, card, minimal)",
+    "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
+    "about.title / about.body",
+    "projects.title, projects.items.번호.title / .date / .summary / .url",
+    "support.title / support.body / support.notice, support.ways.번호.title / .summary",
+    "transparency.title / transparency.body / transparency.costs / transparency.disclosure, transparency.reports.번호.title / .summary",
+    "volunteer.title / volunteer.body / volunteer.apply, volunteer.positions.번호.title / .summary",
+    "privacy.title / privacy.body, privacy.items.번호.title / .summary",
+    "news.title, news.items.번호.title / .date / .summary / .url",
+    "contact.title / contact.body / contact.email, contact.social.github / .instagram / .youtube",
+    "nav.번호.label / nav.번호.path (/, /about, /projects, /support, /transparency, /news, /volunteer, /contact)"
+  ]
+}

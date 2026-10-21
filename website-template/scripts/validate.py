@@ -11,15 +11,17 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-# 이 템플릿이 만드는 페이지: 주소 -> 파일 이름
-PAGE_FILES = {"/": "index.html", "/about": "about.html", "/projects": "projects.html",
-              "/support": "support.html", "/transparency": "transparency.html", "/news": "news.html",
-              "/volunteer": "volunteer.html", "/contact": "contact.html", "/privacy": "privacy.html"}
-ALLOWED_FONTS = {"system-ui", "serif", "mono"}
-SPACINGS = {"compact", "normal", "airy"}
-LAYOUTS = {"classic", "modern", "card", "minimal"}
+ROOT_DIR = Path(__file__).resolve().parent.parent
+# 설정 항목 목록은 schema.json 에서만 관리합니다 (편집기와 도구가 같은 파일을 씁니다)
+SCHEMA = json.loads((ROOT_DIR / "schema.json").read_text(encoding="utf-8"))
+PAGE_FILES = SCHEMA["pages"]
+FILES = SCHEMA["files"]
+ALLOWED_FONTS = set(SCHEMA["fonts"])
+SPACINGS = set(SCHEMA["spacings"])
+LAYOUTS = set(SCHEMA["layouts"])
+LANGUAGES = set(SCHEMA["languages"])
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
-IMAGE = re.compile(r"^/images/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp|gif)$")
+IMAGE = re.compile(r"^/images/[A-Za-z0-9._-]+\.(" + "|".join(SCHEMA["image_extensions"]) + ")$")
 EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -40,13 +42,6 @@ def is_link_ok(value):
     return value.startswith(("https://", "http://")) or value in PAGE_FILES
 
 
-FILES = {
-    "site": "config/site.json", "nav": "config/navigation.json", "theme": "config/theme.json",
-    "home": "content/home.json", "about": "content/about.json",
-    "projects": "content/projects.json", "support": "content/support.json",
-    "transparency": "content/transparency.json", "volunteer": "content/volunteer.json",
-    "privacy": "content/privacy.json", "news": "content/news.json", "contact": "content/contact.json",
-}
 
 
 def load_all(root):
@@ -80,7 +75,7 @@ def validate(root):
         for key in ("name", "language"):
             if not str(site.get(key, "")).strip():
                 errors.append(f"config/site.json: '{key}' 을 적어 주세요.")
-        if site.get("language") not in {"ko", "en", "ja"}:
+        if site.get("language") not in LANGUAGES:
             errors.append("config/site.json: language 은 ko, en, ja 중 하나여야 합니다.")
     elif site is not None:
         errors.append("config/site.json: 최상위 값은 { } 묶음이어야 합니다.")

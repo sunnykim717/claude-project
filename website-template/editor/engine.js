@@ -7,26 +7,29 @@
 (function (root) {
   "use strict";
 
-  var PAGE_FILES = {
-    "/": "index.html", "/about": "about.html", "/projects": "projects.html",
-    "/support": "support.html", "/transparency": "transparency.html", "/news": "news.html",
-    "/volunteer": "volunteer.html", "/contact": "contact.html", "/privacy": "privacy.html"
-  };
-  var ALLOWED_FONTS = ["system-ui", "serif", "mono"];
-  var SPACINGS = ["compact", "normal", "airy"];
-  var FONT_STACK = { "system-ui": "system-ui, sans-serif", "serif": "Georgia, serif", "mono": "ui-monospace, monospace" };
-  var SPACING_PX = { "compact": 12, "normal": 24, "airy": 40 };
-  var FILES = {
-    site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
-    home: "content/home.json", about: "content/about.json",
-    projects: "content/projects.json", support: "content/support.json",
-    transparency: "content/transparency.json", volunteer: "content/volunteer.json",
-    privacy: "content/privacy.json", news: "content/news.json", contact: "content/contact.json"
-  };
+  // 설정 항목 목록은 schema.json 에서만 옵니다. useSchema() 로 한 번 넣어 주세요.
+  var loaded = false;
+  var PAGE_FILES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, LANGUAGES, IMAGE;
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
-  var IMAGE = /^\/images\/[A-Za-z0-9._-]+\.(jpg|jpeg|png|webp|gif)$/;
+
+  function useSchema(schema) {
+    PAGE_FILES = schema.pages;
+    FILES = schema.files;
+    FONT_STACK = schema.fonts;
+    ALLOWED_FONTS = Object.keys(schema.fonts);
+    SPACING_PX = schema.spacings;
+    SPACINGS = Object.keys(schema.spacings);
+    LAYOUTS = schema.layouts;
+    LANGUAGES = schema.languages;
+    IMAGE = new RegExp("^/images/[A-Za-z0-9._-]+\\.(" + schema.image_extensions.join("|") + ")$");
+    loaded = true;
+  }
+
+  function requireSchema() {
+    if (!loaded) throw new Error("schema.json 을 먼저 useSchema() 로 넣어 주세요.");
+  }
 
   // Python html.escape(value, quote=True) 와 같은 규칙
   function esc(value) {
@@ -67,6 +70,7 @@
   }
 
   function validate(files) {
+    requireSchema();
     var errors = [];
     var data = {};
     Object.keys(FILES).forEach(function (key) {
@@ -90,7 +94,7 @@
       ["name", "language"].forEach(function (key) {
         if (!pyStrip(site[key])) errors.push("config/site.json: '" + key + "' 을 적어 주세요.");
       });
-      if (["ko", "en", "ja"].indexOf(site.language) === -1) {
+      if (LANGUAGES.indexOf(site.language) === -1) {
         errors.push("config/site.json: language 은 ko, en, ja 중 하나여야 합니다.");
       }
     } else if (site !== null) {
@@ -120,6 +124,7 @@
       var radius = theme.radius;
       if (!isInt(radius) || radius < 0 || radius > 32) errors.push("config/theme.json: radius 는 0~32 사이의 정수여야 합니다.");
       if (SPACINGS.indexOf(theme.spacing) === -1) errors.push("config/theme.json: spacing 은 compact, normal, airy 중 하나여야 합니다.");
+      if (LAYOUTS.indexOf(theme.layout) === -1) errors.push("config/theme.json: layout 은 classic, modern, card, minimal 중 하나여야 합니다.");
     }
 
     var home = data.home;
@@ -322,12 +327,13 @@
 
   // 검사를 통과하면 페이지 파일 이름과 내용을 돌려줍니다. 틀리면 오류 목록만 돌려줍니다.
   function build(files) {
+    requireSchema();
     var checked = validate(files);
     if (checked.errors.length) return { ok: false, errors: checked.errors, pages: {} };
     return { ok: true, errors: [], pages: buildPages(files, checked.data) };
   }
 
-  var api = { PAGE_FILES: PAGE_FILES, FILES: FILES, validate: validate, build: build, esc: esc, fill: fill };
+  var api = { useSchema: useSchema, validate: validate, build: build, esc: esc, fill: fill };
   if (typeof module !== "undefined" && module.exports) {
     module.exports = api;
   } else {

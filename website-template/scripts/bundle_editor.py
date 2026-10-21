@@ -25,7 +25,7 @@ TEXT_FILES = [
 
 # 프로젝트 zip 에만 들어가는 파일 (배포와 도구를 저장소에서 바로 쓰기 위해)
 PROJECT_EXTRA_FILES = [
-    "scripts/validate.py", "scripts/generate.py", "scripts/site_tool.py", "config/designs.json",
+    "scripts/validate.py", "scripts/generate.py", "scripts/site_tool.py", "schema.json", "config/designs.json",
     ".github/workflows/deploy.yml", "README.md", ".gitignore",
 ]
 
@@ -51,6 +51,7 @@ def build(root=ROOT):
         shell.replace("__ENGINE__", _script_safe((editor / "engine.js").read_text(encoding="utf-8")))
         .replace("__APP__", _script_safe((editor / "app.js").read_text(encoding="utf-8")))
         .replace("__DEFAULT_FILES__", _json_safe(files))
+        .replace("__SCHEMA__", _json_safe(json.loads((root / "schema.json").read_text(encoding="utf-8"))))
         .replace("__DESIGNS__", _json_safe(designs))
         .replace("__ZIP__", _script_safe((editor / "zip.js").read_text(encoding="utf-8")))
         .replace("__PROJECT_EXTRA__", _json_safe(extra))
