@@ -104,7 +104,7 @@
     <button type="button" id="importBtn" title="예전에 저장한 작업 파일을 열어 이어서 고칩니다.">📂 작업 불러오기</button>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
     <button id="exportSite" title="자동 갱신 기능(GitHub)을 쓰는 분만 필요합니다. 대부분은 필요 없습니다.">고급: site.json 내보내기</button>
-    <button id="reset" class="danger" title="모든 내용을 처음 상태로 지웁니다. 되돌릴 수 없습니다.">초기화</button>
+    <button id="reset" class="danger" title="모든 내용을 처음 상태로 지웁니다. 바로 전 상태는 ↩ 되돌리기로 되돌릴 수 있습니다.">초기화</button>
   </div>
 </header>
 <div class="howto">
@@ -205,7 +205,7 @@
         <select id="deco" data-bind="design.deco"></select>
         <details>
           <summary>도형으로 그림 만들기 (내 그림)</summary>
-          <p class="hint">도형을 더해서 위치(x, y), 크기(s), 색(c)을 정하세요. 0~100 사이 숫자입니다. 다 만들면 위의 장식 그림에서 "내 그림"을 고르세요.</p>
+          <p class="hint">도형을 더해서 위치(x, y), 크기, 색을 정하세요. 0~100 사이 숫자입니다. 다 만들면 위의 장식 그림에서 "내 그림"을 고르세요.</p>
           <div id="artList"></div>
           <div class="actions"><button type="button" id="addArt">+ 도형 추가</button></div>
         </details>
@@ -522,6 +522,12 @@
     }
     return "";
   }
+  // 날짜를 2026-09-30 형식으로 맞춥니다. 날짜가 없거나 잘못되면 빈 값(맨 뒤로 갑니다).
+  function dateKey(value) {
+    const m = /^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/.exec(String(value ?? "").trim());
+    if (!m) return "";
+    return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+  }
   // 카드 색: 밝은 바탕이면 흰색, 어두운 바탕이면 조금 밝은 색을 씁니다.
   function cardFor(bg) {
     const m = /^#([0-9a-f]{6})$/i.exec(String(bg));
@@ -642,7 +648,7 @@
   const FONTS = {
     basic:    { label: "기본 고딕",     css: "system-ui, sans-serif" },
     malgun:   { label: "맑은 고딕",     css: "'Malgun Gothic', 'Apple SD Gothic Neo', system-ui, sans-serif" },
-    nanum:    { label: "나눔고딕",      css: "'Nanum Gothic', 'NanumGothic', 'Malgun Gothic', system-ui, sans-serif" },
+    nanum:    { label: "나눔고딕",      css: "'Nanum Gothic', 'NanumGothic', 'Malgun Gothic', system-ui, sans-serif", google: "Nanum+Gothic:wght@400;700" },
     batang:   { label: "바탕 · 명조",   css: "Batang, 'Nanum Myeongjo', 'Noto Serif KR', Georgia, serif" },
     serif:    { label: "세리프 (영문)", css: "Georgia, 'Times New Roman', serif" },
     sans:     { label: "산세리프 (영문)", css: "'Helvetica Neue', Arial, sans-serif" },
@@ -1009,7 +1015,8 @@
     </section>`;
     }
     if (id === "news") {
-      const items = s.news.filter((n) => n.title.trim()).slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map((n) => {
+      const items = s.news.filter((n) => n.title.trim()).map((n, i) => ({ n, i, key: dateKey(n.date) }))
+        .sort((a, b) => (a.key === b.key ? a.i - b.i : a.key < b.key ? 1 : -1)).map(({ n }) => {
         const url = safeUrl(n.url);
         const name = url ? `<a href="${url}">${esc(n.title)}</a>` : esc(n.title);
         return `<article>
@@ -1550,6 +1557,10 @@ ${navHtml}
   $("makeLink").addEventListener("click", async () => {
     const base = location.href.split("?")[0].split("#")[0];
     const url = `${base}?spec=${textToBase64Url(JSON.stringify(state))}`;
+    if (url.length > 7000) {
+      $("specResult").textContent = "사진이 많아서 링크가 너무 깁니다. 대신 💾 작업 저장으로 파일을 받아 두세요.";
+      return;
+    }
     try {
       await navigator.clipboard.writeText(url);
       $("specResult").textContent = "링크를 복사했습니다. 이 링크를 열면 지금 내용이 채워집니다.";
@@ -1673,6 +1684,11 @@ ${navHtml}
       wizardMessage = "";
       renderWizard();
     } else if (action === "skip") {
+      if (step.required) {
+        wizardMessage = "이름은 꼭 적어 주셔야 다음으로 넘어갈 수 있습니다.";
+        renderWizard();
+        return;
+      }
       wizardMessage = "";
       advanceWizard();
     } else if (action === "next") {
@@ -1754,7 +1770,7 @@ ${navHtml}
       <div class="card">
         <div class="row">
           <select data-art="${i}" data-field="type">${Object.entries(SHAPES).map(([k, v]) => `<option value="${k}" ${item.type === k ? "selected" : ""}>${v}</option>`).join("")}</select>
-          <input type="color" data-art="${i}" data-field="c" value="${esc(item.c)}">
+          <input type="color" title="도형 색" data-art="${i}" data-field="c" value="${esc(item.c)}">
         </div>
         <div class="row">
           <label>x <input type="number" min="0" max="100" data-art="${i}" data-field="x" value="${item.x}"></label>
@@ -1795,7 +1811,12 @@ ${navHtml}
   function previewHtml() {
     return buildHtml().replace("</body>", PREVIEW_LINK_FIX + "\n</body>");
   }
+  let refreshTimer = null;
   function refresh() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(refreshNow, 180);
+  }
+  function refreshNow() {
     $("frame").srcdoc = previewHtml();
     $("frame").style.width = $("viewport").value;
     renderChecks();
@@ -1937,7 +1958,8 @@ ${navHtml}
   });
 
   $("reset").addEventListener("click", () => {
-    if (!confirm("모든 내용을 초기화할까요?")) return;
+    if (!confirm("모든 내용을 초기화할까요? 바로 전 상태는 ↩ 되돌리기로 되돌릴 수 있습니다.")) return;
+    undoSnapshot = clone(state);
     state = clone(DEFAULT_STATE);
     fullRender();
   });
@@ -2298,7 +2320,8 @@ ${navHtml}
   $("deco").innerHTML = Object.entries(DECOS).map(([key, item]) => `<option value="${key}">${esc(item.label)}</option>`).join("");
   $("pattern").innerHTML = Object.entries(PATTERNS).map(([key, item]) => `<option value="${key}">${esc(item.label)}</option>`).join("");
   $("look").innerHTML = Object.entries(LOOKS).map(([key, look]) => `<option value="${key}">${esc(look.label)}</option>`).join("");
-  $("font").innerHTML = Object.values(FONTS).map((f) => `<option value="${esc(f.css)}">${esc(f.label)}</option>`).join("");
+  $("font").innerHTML = [...new Map([...Object.values(FONTS).map((f) => [f.css, f.label]), ...Object.values(TEMPLATES).map((x) => [x.font, x.font.split(",")[0].replace(/'/g, "")])]).entries()]
+    .map(([css, label]) => `<option value="${esc(css)}">${esc(label)}</option>`).join("");
 
   applyFromAddress();
   renderWizard();
