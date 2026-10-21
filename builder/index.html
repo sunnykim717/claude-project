@@ -367,9 +367,10 @@
     soft:    { label: "둥근 상자 (그림자 있는 부드러운 카드)" },
     line:    { label: "얇은 선 (글만 깔끔하게)" },
     poster:  { label: "포스터 (큰 제목과 굵은 머리말)" },
+    frame:   { label: "액자 (각 섹션을 테두리로 감쌈)" },
     side:    { label: "옆줄 (제목 옆에 색 막대)" },
   };
-  const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center", 둥근: "soft", 선: "line", 포스터: "poster", 옆줄: "side" };
+  const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center", 둥근: "soft", 선: "line", 포스터: "poster", 옆줄: "side", 액자: "frame" };
   const GALLERY_MAX = 12;
   // 내 템플릿: 지금 디자인을 이름 붙여 저장합니다. 이 브라우저에만 저장되며, 저장 공간이 부족하면 알려 줍니다.
   const CUSTOM_KEY = "vibe-homepage-custom-templates:v1";
@@ -417,6 +418,8 @@
     grid:   { label: "격자" },
     checks: { label: "바둑판" },
     diagonal:{ label: "사선 물방울" },
+    hstripes:{ label: "가로줄" },
+    wavelines:{ label: "물결선" },
   };
   // 장식 그림: 첫 화면 오른쪽 위에 놓이는 작은 그림입니다. 강조색을 따라 그립니다.
   const DECOS = {
@@ -427,15 +430,23 @@
     heart: { label: "하트" },
     cloud: { label: "구름" },
     book: { label: "책" },
+    moon: { label: "달" },
+    flower: { label: "꽃" },
+    rainbow: { label: "무지개" },
+    speech: { label: "말풍선" },
     custom: { label: "내 그림 (도형으로 만든 것)" },
   };
   const DECO_PATHS = {
-    sun: "<circle cx='50' cy='50' r='20' fill='C'/><g stroke='C' stroke-width='6' stroke-linecap='round'><path d='M50 8v12M50 80v12M8 50h12M80 50h12M19 19l8 8M73 73l8 8M19 81l8-8M73 27l8-8'/></g>",
-    leaf: "<path d='M20 80 C20 40 45 15 85 15 C85 55 60 80 20 80 Z' fill='C'/><path d='M20 80 L60 40' stroke='#fff' stroke-opacity='0.6' stroke-width='3' fill='none'/>",
-    star: "<path d='M50 8 L61 38 L93 38 L67 57 L77 88 L50 70 L23 88 L33 57 L7 38 L39 38 Z' fill='C'/>",
-    heart: "<path d='M50 85 C15 60 8 40 22 26 C34 14 48 22 50 34 C52 22 66 14 78 26 C92 40 85 60 50 85 Z' fill='C'/>",
-    cloud: "<path d='M25 70 C8 70 8 46 26 44 C28 26 52 22 60 38 C68 30 88 36 86 54 C98 56 96 70 84 70 Z' fill='C'/>",
-    book: "<path d='M10 25 Q30 18 50 30 Q70 18 90 25 V80 Q70 73 50 85 Q30 73 10 80 Z' fill='C'/><path d='M50 30 V85' stroke='#fff' stroke-opacity='0.6' stroke-width='3'/>",
+    sun: "<circle cx='50' cy='50' r='20' fill='@@'/><g stroke='@@' stroke-width='6' stroke-linecap='round'><path d='M50 8v12M50 80v12M8 50h12M80 50h12M19 19l8 8M73 73l8 8M19 81l8-8M73 27l8-8'/></g>",
+    leaf: "<path d='M20 80 C20 40 45 15 85 15 C85 55 60 80 20 80 Z' fill='@@'/><path d='M20 80 L60 40' stroke='#fff' stroke-opacity='0.6' stroke-width='3' fill='none'/>",
+    star: "<path d='M50 8 L61 38 L93 38 L67 57 L77 88 L50 70 L23 88 L33 57 L7 38 L39 38 Z' fill='@@'/>",
+    heart: "<path d='M50 85 C15 60 8 40 22 26 C34 14 48 22 50 34 C52 22 66 14 78 26 C92 40 85 60 50 85 Z' fill='@@'/>",
+    cloud: "<path d='M25 70 C8 70 8 46 26 44 C28 26 52 22 60 38 C68 30 88 36 86 54 C98 56 96 70 84 70 Z' fill='@@'/>",
+    moon: "<path d='M60 10 A40 40 0 1 0 90 70 A32 32 0 1 1 60 10 Z' fill='@@'/>",
+    flower: "<g fill='@@'><circle cx='50' cy='28' r='16'/><circle cx='72' cy='44' r='16'/><circle cx='64' cy='70' r='16'/><circle cx='36' cy='70' r='16'/><circle cx='28' cy='44' r='16'/></g><circle cx='50' cy='50' r='9' fill='#fff' fill-opacity='0.85'/>",
+    rainbow: "<g fill='none' stroke-width='9'><path d='M12 80 A38 38 0 0 1 88 80' stroke='@@'/><path d='M22 80 A28 28 0 0 1 78 80' stroke='@@' stroke-opacity='0.6'/><path d='M32 80 A18 18 0 0 1 68 80' stroke='@@' stroke-opacity='0.35'/></g>",
+    speech: "<path d='M12 20 H88 Q94 20 94 26 V64 Q94 70 88 70 H44 L26 86 L28 70 H12 Q6 70 6 64 V26 Q6 20 12 20 Z' fill='@@'/>",
+    book: "<path d='M10 25 Q30 18 50 30 Q70 18 90 25 V80 Q70 73 50 85 Q30 73 10 80 Z' fill='@@'/><path d='M50 30 V85' stroke='#fff' stroke-opacity='0.6' stroke-width='3'/>",
   };
   // 도형으로 그림 만들기: 원, 사각형, 삼각형, 별, 고리를 위치와 크기, 색을 정해 겹쳐 놓습니다.
   const SHAPES = { circle: "원", square: "사각형", triangle: "삼각형", star: "별", ring: "고리" };
@@ -475,7 +486,7 @@
   function decoSvg(name, color) {
     const c = /^#[0-9a-f]{6}$/i.test(color) ? color : "#111827";
     if (!DECO_PATHS[name]) return "";
-    const shape = DECO_PATHS[name].split("C").join(c);
+    const shape = DECO_PATHS[name].split("@@").join(c);
     const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${shape}</svg>`;
     return "data:image/svg+xml," + encodeURIComponent(svg).replace(/[()']/g, (m) => "%" + m.charCodeAt(0).toString(16).toUpperCase());
   }
@@ -487,6 +498,8 @@
       stripes: `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16'><path d='M0 16 L16 0' stroke='${c}' stroke-opacity='0.2' stroke-width='3'/></svg>`,
       grid: `<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><path d='M32 0 H0 V32' fill='none' stroke='${c}' stroke-opacity='0.2'/></svg>`,
       checks: `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24'><rect width='12' height='12' fill='${c}' fill-opacity='0.12'/><rect x='12' y='12' width='12' height='12' fill='${c}' fill-opacity='0.12'/></svg>`,
+      hstripes: `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20'><rect width='20' height='8' fill='${c}' fill-opacity='0.12'/></svg>`,
+      wavelines: `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='24'><path d='M0 12 Q20 4 40 12 T80 12' fill='none' stroke='${c}' stroke-opacity='0.2' stroke-width='2'/></svg>`,
       diagonal: `<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28'><circle cx='6' cy='6' r='2.5' fill='${c}' fill-opacity='0.2'/><circle cx='20' cy='20' r='2.5' fill='${c}' fill-opacity='0.2'/></svg>`,
     };
     const svg = shapes[name];
@@ -1022,6 +1035,8 @@
     body.look-poster h2 { font-size: 2rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 0; padding-bottom: 0; }
     body.look-poster h2::after { content: ""; display: block; width: 56px; height: 6px; background: var(--accent); margin-top: 6px; }
     body.look-poster article h3 { font-size: 1.35rem; font-weight: 800; }
+    body.look-frame section { border: 2px solid var(--accent); border-radius: var(--radius); padding: calc(var(--gap) * 0.8) var(--gap); }
+    body.look-frame h2 { border-bottom: 0; }
     body.look-side h2 { border-bottom: 0; padding-left: 12px; border-left: 6px solid var(--accent); line-height: 1.2; }
     body.look-side article { border-left: 1px solid rgba(127, 127, 127, 0.3); background: none; }
     body.look-line h2 { border-bottom: 1px solid var(--accent); font-weight: 500; letter-spacing: 0.02em; }
@@ -1494,7 +1509,7 @@ ${navHtml}
     },
     {
       question: "화면 모양을 골라 주세요.", type: "choice",
-      options: [["기본", "화면 스타일: 기본"], ["색 띠 머리", "화면 스타일: 띠"], ["카드형", "화면 스타일: 카드"], ["가운데 정렬", "화면 스타일: 가운데"], ["둥근 상자", "화면 스타일: 둥근"], ["얇은 선", "화면 스타일: 선"], ["포스터", "화면 스타일: 포스터"], ["옆줄", "화면 스타일: 옆줄"]],
+      options: [["기본", "화면 스타일: 기본"], ["색 띠 머리", "화면 스타일: 띠"], ["카드형", "화면 스타일: 카드"], ["가운데 정렬", "화면 스타일: 가운데"], ["둥근 상자", "화면 스타일: 둥근"], ["얇은 선", "화면 스타일: 선"], ["포스터", "화면 스타일: 포스터"], ["옆줄", "화면 스타일: 옆줄"], ["액자", "화면 스타일: 액자"]],
     },
     {
       question: "소식을 하나 추가할까요? 제목 | 날짜 | 요약 | 링크 순서로 적으세요. 날짜와 링크는 빼도 됩니다.",
