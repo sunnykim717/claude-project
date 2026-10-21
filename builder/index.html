@@ -1411,8 +1411,13 @@ ${navHtml}
     $("checks").innerHTML = runChecks().map(([level, msg]) => `<li class="${level}">${esc(msg)}</li>`).join("");
   }
 
+  // 미리보기 안의 #섹션 링크는 빌더 화면을 다시 열지 않고 그 자리로 이동하게 합니다.
+  const PREVIEW_LINK_FIX = `<script>document.addEventListener("click",function(e){var a=e.target.closest('a[href^="#"]');if(!a)return;var el=document.getElementById(a.getAttribute("href").slice(1));if(!el)return;e.preventDefault();el.scrollIntoView({behavior:"smooth",block:"start"});});<\/script>`;
+  function previewHtml() {
+    return buildHtml().replace("</body>", PREVIEW_LINK_FIX + "\n</body>");
+  }
   function refresh() {
-    $("frame").srcdoc = buildHtml();
+    $("frame").srcdoc = previewHtml();
     $("frame").style.width = $("viewport").value;
     renderChecks();
     $("brief").value = buildBrief();
