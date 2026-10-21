@@ -195,6 +195,12 @@
     return fill(files["src/components/Footer.html"], { name: esc(site.name), contact: lines.join("") });
   }
 
+  function itemsHtml(items, layout) {
+    var body = projectArticles(items);
+    if (layout === "card" && body) return '<div class="cards">' + body + "</div>";
+    return body;
+  }
+
   function block(title, bodyHtml) {
     return '<section class="block"><h2>' + esc(title) + "</h2>" + bodyHtml + "</section>";
   }
@@ -231,13 +237,14 @@
         style: style,
         header: headerHtml(files, site, nav, fileName),
         main: mainHtml,
-        footer: footerHtml(files, site, data.contact)
+        footer: footerHtml(files, site, data.contact),
+        layout: esc(theme.layout)
       });
     }
 
     var home = data.home;
     var previewItems = (data.projects.items || []).slice(0, 3);
-    var preview = projectArticles(previewItems);
+    var preview = itemsHtml(previewItems, theme.layout);
     var homeMain = heroHtml(files, home) +
       block("소개", '<p class="pre">' + esc(home.intro) + "</p>") +
       (preview ? block(data.projects.title, preview) : "");
@@ -246,7 +253,7 @@
     page("about.html", data.about.title,
       block(data.about.title, '<p class="pre">' + esc(data.about.body) + "</p>"), data.about.body);
     page("projects.html", data.projects.title,
-      block(data.projects.title, projectArticles(data.projects.items || [])), data.projects.title);
+      block(data.projects.title, itemsHtml(data.projects.items || [], theme.layout)), data.projects.title);
     page("contact.html", data.contact.title,
       block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body);
     return pages;

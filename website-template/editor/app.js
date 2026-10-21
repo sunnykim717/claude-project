@@ -5,10 +5,10 @@
     site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
     home: "content/home.json", about: "content/about.json", projects: "content/projects.json", contact: "content/contact.json"
   };
-  var THEME_KEYS = ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing"];
+  var THEME_KEYS = ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout"];
   var PATH_HELP = [
     "site.name / site.description / site.language (ko, en, ja)",
-    "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy)",
+    "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy), theme.layout (classic, modern, card, minimal)",
     "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
     "about.title / about.body",
     "projects.title, projects.items.번호.title / .date / .summary / .url",

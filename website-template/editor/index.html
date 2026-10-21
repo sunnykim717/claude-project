@@ -277,6 +277,12 @@
     return fill(files["src/components/Footer.html"], { name: esc(site.name), contact: lines.join("") });
   }
 
+  function itemsHtml(items, layout) {
+    var body = projectArticles(items);
+    if (layout === "card" && body) return '<div class="cards">' + body + "</div>";
+    return body;
+  }
+
   function block(title, bodyHtml) {
     return '<section class="block"><h2>' + esc(title) + "</h2>" + bodyHtml + "</section>";
   }
@@ -313,13 +319,14 @@
         style: style,
         header: headerHtml(files, site, nav, fileName),
         main: mainHtml,
-        footer: footerHtml(files, site, data.contact)
+        footer: footerHtml(files, site, data.contact),
+        layout: esc(theme.layout)
       });
     }
 
     var home = data.home;
     var previewItems = (data.projects.items || []).slice(0, 3);
-    var preview = projectArticles(previewItems);
+    var preview = itemsHtml(previewItems, theme.layout);
     var homeMain = heroHtml(files, home) +
       block("소개", '<p class="pre">' + esc(home.intro) + "</p>") +
       (preview ? block(data.projects.title, preview) : "");
@@ -328,7 +335,7 @@
     page("about.html", data.about.title,
       block(data.about.title, '<p class="pre">' + esc(data.about.body) + "</p>"), data.about.body);
     page("projects.html", data.projects.title,
-      block(data.projects.title, projectArticles(data.projects.items || [])), data.projects.title);
+      block(data.projects.title, itemsHtml(data.projects.items || [], theme.layout)), data.projects.title);
     page("contact.html", data.contact.title,
       block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body);
     return pages;
@@ -354,7 +361,7 @@
 const DEFAULT_FILES = {
   "config/site.json": "{\n  \"name\": \"새로운 기관\",\n  \"description\": \"기관 소개 홈페이지\",\n  \"language\": \"ko\",\n  \"domain\": \"\"\n}\n",
   "config/navigation.json": "[\n  {\"label\": \"홈\", \"path\": \"/\"},\n  {\"label\": \"기관소개\", \"path\": \"/about\"},\n  {\"label\": \"주요사업\", \"path\": \"/projects\"},\n  {\"label\": \"문의\", \"path\": \"/contact\"}\n]\n",
-  "config/theme.json": "{\n  \"primaryColor\": \"#2563EB\",\n  \"backgroundColor\": \"#FFFFFF\",\n  \"textColor\": \"#0F172A\",\n  \"font\": \"system-ui\",\n  \"radius\": 8,\n  \"spacing\": \"normal\"\n}\n",
+  "config/theme.json": "{\n  \"primaryColor\": \"#2563EB\",\n  \"backgroundColor\": \"#FFFFFF\",\n  \"textColor\": \"#0F172A\",\n  \"font\": \"system-ui\",\n  \"radius\": 8,\n  \"spacing\": \"normal\",\n  \"layout\": \"modern\"\n}\n",
   "content/home.json": "{\n  \"hero\": {\n    \"title\": \"더 나은 내일을 만듭니다\",\n    \"subtitle\": \"사람과 지역사회를 연결합니다\",\n    \"buttonText\": \"자세히 보기\",\n    \"buttonLink\": \"/about\"\n  },\n  \"intro\": \"홈페이지 첫 화면에 들어갈 소개 문장을 여기에 적어 주세요.\"\n}\n",
   "content/about.json": "{\n  \"title\": \"기관 소개\",\n  \"body\": \"기관의 목적과 활동을 여기에 적어 주세요.\"\n}\n",
   "content/projects.json": "{\n  \"title\": \"주요 사업\",\n  \"items\": [\n    {\"title\": \"사업 이름\", \"date\": \"2026-01-15\", \"summary\": \"사업 내용을 한두 문장으로 적어 주세요.\", \"url\": \"\"}\n  ]\n}\n",
@@ -362,8 +369,8 @@ const DEFAULT_FILES = {
   "src/components/Header.html": "<header class=\"site-header\">\n  <a class=\"brand\" href=\"index.html\">{{brand}}<\/a>\n  <nav aria-label=\"페이지 메뉴\">\n    <ul>{{links}}<\/ul>\n  <\/nav>\n<\/header>\n",
   "src/components/Hero.html": "<section class=\"hero\" id=\"top\">\n  <h1>{{title}}<\/h1>\n  <p class=\"subtitle\">{{subtitle}}<\/p>\n  {{button}}\n<\/section>\n",
   "src/components/Footer.html": "<footer class=\"site-footer\">\n  <p>© {{name}}<\/p>\n  {{contact}}\n<\/footer>\n",
-  "src/pages/page.html": "<!doctype html>\n<html lang=\"{{lang}}\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>{{title}}<\/title>\n  <meta name=\"description\" content=\"{{description}}\">\n  <style>\n{{style}}\n  <\/style>\n<\/head>\n<body>\n<a class=\"skip\" href=\"#main\">본문으로 건너뛰기<\/a>\n{{header}}\n<main id=\"main\">\n{{main}}\n<\/main>\n{{footer}}\n<\/body>\n<\/html>\n",
-  "src/styles/site.css": ":root { color-scheme: light dark; }\n* { box-sizing: border-box; }\nbody { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; }\na { color: var(--primary); }\na:focus-visible, button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }\n.skip { position: absolute; left: -999px; }\n.skip:focus { left: 8px; top: 8px; background: var(--bg); padding: 4px 8px; }\n.site-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; max-width: var(--max); margin: 0 auto; padding: var(--gap) var(--gap) 8px; }\n.site-header .brand { font-weight: 700; color: var(--text); text-decoration: none; }\n.site-header ul { list-style: none; display: flex; gap: 16px; flex-wrap: wrap; margin: 0; padding: 0; }\n.site-header a { text-decoration: none; font-weight: 600; }\n.site-header a[aria-current=\"page\"] { text-decoration: underline; }\nmain { max-width: var(--max); margin: 0 auto; padding: var(--gap); }\n.hero { padding: calc(var(--gap) * 2) 0; border-bottom: 4px solid var(--primary); margin-bottom: var(--gap); }\n.hero h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.4rem); }\n.subtitle { margin: 8px 0 16px; opacity: 0.8; }\n.button { display: inline-block; padding: 10px 18px; border-radius: var(--radius); background: var(--primary); color: var(--bg); text-decoration: none; font-weight: 700; }\nsection.block { margin-top: calc(var(--gap) * 1.5); }\nh2 { color: var(--primary); font-size: 1.3rem; margin: 0 0 8px; }\n.pre { white-space: pre-line; }\narticle { border-left: 4px solid var(--primary); padding: 4px 14px; margin: 14px 0; border-radius: 0 var(--radius) var(--radius) 0; }\narticle h3 { margin: 0; font-size: 1.05rem; }\narticle time { font-size: 0.85rem; opacity: 0.7; }\n.links { list-style: none; display: flex; gap: 14px; flex-wrap: wrap; padding: 0; margin: 0; }\n.site-footer { max-width: var(--max); margin: calc(var(--gap) * 2) auto 0; padding: var(--gap); border-top: 1px solid var(--primary); font-size: 0.9rem; opacity: 0.85; }\n"
+  "src/pages/page.html": "<!doctype html>\n<html lang=\"{{lang}}\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>{{title}}<\/title>\n  <meta name=\"description\" content=\"{{description}}\">\n  <style>\n{{style}}\n  <\/style>\n<\/head>\n<body class=\"layout-{{layout}}\">\n<a class=\"skip\" href=\"#main\">본문으로 건너뛰기<\/a>\n{{header}}\n<main id=\"main\">\n{{main}}\n<\/main>\n{{footer}}\n<\/body>\n<\/html>\n",
+  "src/styles/site.css": ":root { color-scheme: light dark; }\n* { box-sizing: border-box; }\nbody { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.7; }\na { color: var(--primary); }\na:focus-visible, button:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }\n.skip { position: absolute; left: -999px; }\n.skip:focus { left: 8px; top: 8px; background: var(--bg); padding: 4px 8px; }\n.site-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; max-width: var(--max); margin: 0 auto; padding: var(--gap) var(--gap) 8px; }\n.site-header .brand { font-weight: 700; color: var(--text); text-decoration: none; }\n.site-header ul { list-style: none; display: flex; gap: 16px; flex-wrap: wrap; margin: 0; padding: 0; }\n.site-header a { text-decoration: none; font-weight: 600; }\n.site-header a[aria-current=\"page\"] { text-decoration: underline; }\nmain { max-width: var(--max); margin: 0 auto; padding: var(--gap); }\n.hero { padding: calc(var(--gap) * 2) 0; border-bottom: 4px solid var(--primary); margin-bottom: var(--gap); }\n.hero h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.4rem); }\n.subtitle { margin: 8px 0 16px; opacity: 0.8; }\n.button { display: inline-block; padding: 10px 18px; border-radius: var(--radius); background: var(--primary); color: var(--bg); text-decoration: none; font-weight: 700; }\nsection.block { margin-top: calc(var(--gap) * 1.5); }\nh2 { color: var(--primary); font-size: 1.3rem; margin: 0 0 8px; }\n.pre { white-space: pre-line; }\narticle { border-left: 4px solid var(--primary); padding: 4px 14px; margin: 14px 0; border-radius: 0 var(--radius) var(--radius) 0; }\narticle h3 { margin: 0; font-size: 1.05rem; }\narticle time { font-size: 0.85rem; opacity: 0.7; }\n.links { list-style: none; display: flex; gap: 14px; flex-wrap: wrap; padding: 0; margin: 0; }\n.site-footer { max-width: var(--max); margin: calc(var(--gap) * 2) auto 0; padding: var(--gap); border-top: 1px solid var(--primary); font-size: 0.9rem; opacity: 0.85; }\n\n/* 배치 방식: body 에 붙는 layout-이름 클래스로 골라 씁니다 */\nbody.layout-classic main { max-width: 640px; }\nbody.layout-classic h2 { border-bottom: 2px solid var(--primary); padding-bottom: 4px; }\nbody.layout-classic article { border-left: 0; border-bottom: 1px solid var(--primary); padding: 8px 0; border-radius: 0; }\nbody.layout-card .hero { background: var(--primary); color: var(--bg); border: 0; border-radius: var(--radius); padding: calc(var(--gap) * 2); }\nbody.layout-card .hero .subtitle { color: var(--bg); opacity: 0.9; }\nbody.layout-card .hero .button { background: var(--bg); color: var(--primary); }\nbody.layout-card .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--gap); }\nbody.layout-card .cards article { margin: 0; border: 1px solid var(--primary); border-left-width: 4px; padding: 14px; }\nbody.layout-minimal .hero { border-bottom: 0; padding-bottom: 0; }\nbody.layout-minimal h2 { color: var(--text); font-size: 1.1rem; text-transform: none; }\nbody.layout-minimal article { border-left: 0; padding: 0; margin: 10px 0; }\nbody.layout-minimal .site-header { border-bottom: 0; }\n"
 };
 const DESIGNS = {
   "modern-blue": {
@@ -373,7 +380,8 @@ const DESIGNS = {
     "textColor": "#0F172A",
     "font": "system-ui",
     "radius": 8,
-    "spacing": "normal"
+    "spacing": "normal",
+    "layout": "modern"
   },
   "warm-orange": {
     "label": "따뜻한 오렌지",
@@ -382,7 +390,8 @@ const DESIGNS = {
     "textColor": "#431407",
     "font": "serif",
     "radius": 4,
-    "spacing": "airy"
+    "spacing": "airy",
+    "layout": "classic"
   },
   "ocean-teal": {
     "label": "시원한 바다",
@@ -391,7 +400,8 @@ const DESIGNS = {
     "textColor": "#134E4A",
     "font": "system-ui",
     "radius": 14,
-    "spacing": "normal"
+    "spacing": "normal",
+    "layout": "card"
   },
   "minimal-mono": {
     "label": "미니멀 흑백",
@@ -400,7 +410,8 @@ const DESIGNS = {
     "textColor": "#111827",
     "font": "system-ui",
     "radius": 0,
-    "spacing": "compact"
+    "spacing": "compact",
+    "layout": "minimal"
   },
   "night-dark": {
     "label": "차분한 야간",
@@ -409,7 +420,58 @@ const DESIGNS = {
     "textColor": "#E2E8F0",
     "font": "system-ui",
     "radius": 12,
-    "spacing": "normal"
+    "spacing": "normal",
+    "layout": "modern"
+  },
+  "forest-green": {
+    "label": "숲속 초록",
+    "primaryColor": "#15803D",
+    "backgroundColor": "#F7FEF9",
+    "textColor": "#14532D",
+    "font": "system-ui",
+    "radius": 10,
+    "spacing": "normal",
+    "layout": "classic"
+  },
+  "sunset-pink": {
+    "label": "노을 분홍",
+    "primaryColor": "#BE185D",
+    "backgroundColor": "#FFF1F5",
+    "textColor": "#500724",
+    "font": "serif",
+    "radius": 16,
+    "spacing": "airy",
+    "layout": "card"
+  },
+  "royal-purple": {
+    "label": "왕실 보라",
+    "primaryColor": "#6D28D9",
+    "backgroundColor": "#FFFFFF",
+    "textColor": "#1E1B4B",
+    "font": "system-ui",
+    "radius": 12,
+    "spacing": "normal",
+    "layout": "modern"
+  },
+  "sand-beige": {
+    "label": "모래 베이지",
+    "primaryColor": "#92400E",
+    "backgroundColor": "#FAF5EB",
+    "textColor": "#422006",
+    "font": "serif",
+    "radius": 6,
+    "spacing": "airy",
+    "layout": "minimal"
+  },
+  "ocean-navy": {
+    "label": "깊은 바다 남색",
+    "primaryColor": "#1E3A8A",
+    "backgroundColor": "#EFF6FF",
+    "textColor": "#0F172A",
+    "font": "system-ui",
+    "radius": 4,
+    "spacing": "compact",
+    "layout": "classic"
   }
 };
 (function () {
@@ -419,10 +481,10 @@ const DESIGNS = {
     site: "config/site.json", nav: "config/navigation.json", theme: "config/theme.json",
     home: "content/home.json", about: "content/about.json", projects: "content/projects.json", contact: "content/contact.json"
   };
-  var THEME_KEYS = ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing"];
+  var THEME_KEYS = ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout"];
   var PATH_HELP = [
     "site.name / site.description / site.language (ko, en, ja)",
-    "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy)",
+    "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy), theme.layout (classic, modern, card, minimal)",
     "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
     "about.title / about.body",
     "projects.title, projects.items.번호.title / .date / .summary / .url",

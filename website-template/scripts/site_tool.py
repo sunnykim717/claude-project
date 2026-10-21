@@ -30,7 +30,7 @@ FILE_FOR = {
     "home": "content/home.json", "about": "content/about.json",
     "projects": "content/projects.json", "contact": "content/contact.json",
 }
-THEME_KEYS = ("primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing")
+THEME_KEYS = ("primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout")
 IGNORE = shutil.ignore_patterns("dist", "__pycache__", ".git")
 
 

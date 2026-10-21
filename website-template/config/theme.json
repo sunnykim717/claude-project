@@ -4,5 +4,6 @@
   "textColor": "#0F172A",
   "font": "system-ui",
   "radius": 8,
-  "spacing": "normal"
+  "spacing": "normal",
+  "layout": "modern"
 }

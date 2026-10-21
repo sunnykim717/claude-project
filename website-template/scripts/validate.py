@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PAGE_FILES = {"/": "index.html", "/about": "about.html", "/projects": "projects.html", "/contact": "contact.html"}
 ALLOWED_FONTS = {"system-ui", "serif", "mono"}
 SPACINGS = {"compact", "normal", "airy"}
+LAYOUTS = {"classic", "modern", "card", "minimal"}
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 EMAIL = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -84,6 +85,8 @@ def validate(root):
             errors.append("config/theme.json: radius 는 0~32 사이의 정수여야 합니다.")
         if theme.get("spacing") not in SPACINGS:
             errors.append("config/theme.json: spacing 은 compact, normal, airy 중 하나여야 합니다.")
+        if theme.get("layout") not in LAYOUTS:
+            errors.append("config/theme.json: layout 은 classic, modern, card, minimal 중 하나여야 합니다.")
 
     home = data["home"]
     if isinstance(home, dict):

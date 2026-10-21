@@ -23,3 +23,17 @@ article h3 { margin: 0; font-size: 1.05rem; }
 article time { font-size: 0.85rem; opacity: 0.7; }
 .links { list-style: none; display: flex; gap: 14px; flex-wrap: wrap; padding: 0; margin: 0; }
 .site-footer { max-width: var(--max); margin: calc(var(--gap) * 2) auto 0; padding: var(--gap); border-top: 1px solid var(--primary); font-size: 0.9rem; opacity: 0.85; }
+
+/* 배치 방식: body 에 붙는 layout-이름 클래스로 골라 씁니다 */
+body.layout-classic main { max-width: 640px; }
+body.layout-classic h2 { border-bottom: 2px solid var(--primary); padding-bottom: 4px; }
+body.layout-classic article { border-left: 0; border-bottom: 1px solid var(--primary); padding: 8px 0; border-radius: 0; }
+body.layout-card .hero { background: var(--primary); color: var(--bg); border: 0; border-radius: var(--radius); padding: calc(var(--gap) * 2); }
+body.layout-card .hero .subtitle { color: var(--bg); opacity: 0.9; }
+body.layout-card .hero .button { background: var(--bg); color: var(--primary); }
+body.layout-card .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--gap); }
+body.layout-card .cards article { margin: 0; border: 1px solid var(--primary); border-left-width: 4px; padding: 14px; }
+body.layout-minimal .hero { border-bottom: 0; padding-bottom: 0; }
+body.layout-minimal h2 { color: var(--text); font-size: 1.1rem; text-transform: none; }
+body.layout-minimal article { border-left: 0; padding: 0; margin: 10px 0; }
+body.layout-minimal .site-header { border-bottom: 0; }

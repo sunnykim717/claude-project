@@ -105,6 +105,14 @@ def footer_html(root, site, contact):
     })
 
 
+def items_html(items, layout):
+    """사업 목록. 카드형 배치에서는 격자로 감쌉니다."""
+    body = project_articles(items)
+    if layout == "card" and body:
+        return f'<div class="cards">{body}</div>'
+    return body
+
+
 def block(title, body_html):
     return f'<section class="block"><h2>{esc(title)}</h2>{body_html}</section>'
 
@@ -138,10 +146,11 @@ def build_pages(root, data):
             "header": header_html(root, site, nav, file_name),
             "main": main_html,
             "footer": footer_html(root, site, data["contact"]),
+            "layout": esc(theme["layout"]),
         })
 
     home = data["home"]
-    preview = project_articles(data["projects"].get("items", [])[:3])
+    preview = items_html(data["projects"].get("items", [])[:3], theme["layout"])
     home_main = (
         hero_html(root, home)
         + block("소개", f'<p class="pre">{esc(home.get("intro"))}</p>')
@@ -153,7 +162,7 @@ def build_pages(root, data):
          block(data["about"]["title"], f'<p class="pre">{esc(data["about"]["body"])}</p>'),
          data["about"]["body"])
     page("projects.html", data["projects"]["title"],
-         block(data["projects"]["title"], project_articles(data["projects"].get("items", []))),
+         block(data["projects"]["title"], items_html(data["projects"].get("items", []), theme["layout"])),
          data["projects"]["title"])
     contact = data["contact"]
     page("contact.html", contact["title"],
