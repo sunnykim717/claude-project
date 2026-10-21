@@ -9,7 +9,7 @@
 
   // 설정 항목 목록은 schema.json 에서만 옵니다. useSchema() 로 한 번 넣어 주세요.
   var loaded = false;
-  var PAGE_FILES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX;
+  var PAGE_FILES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, MENUS, LANGUAGES, IMAGE, PHOTO_PAGES, GALLERY_MAX, GENERIC_PAGES, HOME_SECTIONS;
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -27,6 +27,8 @@
     IMAGE = new RegExp("^/images/[A-Za-z0-9._-]+\\.(" + schema.image_extensions.join("|") + ")$");
     PHOTO_PAGES = schema.photo_pages;
     GALLERY_MAX = schema.gallery_max;
+    GENERIC_PAGES = schema.generic_pages;
+    HOME_SECTIONS = schema.home_sections;
     loaded = true;
   }
 
@@ -186,10 +188,24 @@
       if (hero.buttonLink && !isLinkOk(str(hero.buttonLink))) {
         errors.push("content/home.json: buttonLink 은 https:// 주소 또는 페이지 주소여야 합니다 (" + hero.buttonLink + ").");
       }
+      var sections = home.sections;
+      if (sections !== undefined && sections !== null) {
+        if (!Array.isArray(sections)) {
+          errors.push("content/home.json: sections 는 목록이어야 합니다.");
+        } else if (sections.some(function (s, i) { return HOME_SECTIONS.indexOf(s) === -1 || sections.indexOf(s) !== i; })) {
+          errors.push("content/home.json: sections 는 " + HOME_SECTIONS.join(", ") + " 중에서 한 번씩만 고를 수 있습니다.");
+        }
+      }
     }
 
     PHOTO_PAGES.forEach(function (name) {
       if (isObject(data[name])) checkPhoto(files, errors, "content/" + name + ".json", data[name]);
+    });
+
+    GENERIC_PAGES.forEach(function (name) {
+      if (!isObject(data[name])) return;
+      if (!data[name].title) errors.push("content/" + name + ".json: title 을 적어 주세요.");
+      checkItems(errors, "content/" + name + ".json", "항목", data[name].items || []);
     });
 
     var projects = data.projects;
@@ -362,9 +378,15 @@
     var home = data.home;
     var previewItems = (data.projects.items || []).slice(0, 3);
     var preview = itemsHtml(previewItems, theme.layout);
-    var homeMain = heroHtml(files, home) +
-      block("소개", '<p class="pre">' + esc(home.intro) + "</p>") +
-      (preview ? block(data.projects.title, preview) : "");
+    var news = data.news;
+    var newsItems = news.items || [];
+    var homeParts = {
+      intro: block("소개", '<p class="pre">' + esc(home.intro) + "</p>"),
+      projects: preview ? block(data.projects.title, preview) : "",
+      news: newsItems.length ? block(news.title, projectArticles(newsItems.slice(0, 3))) : ""
+    };
+    var order = home.sections && home.sections.length ? home.sections : ["intro", "projects"];
+    var homeMain = heroHtml(files, home) + order.map(function (name) { return homeParts[name]; }).join("");
     page("index.html", site.name, homeMain, site.description || "");
 
     page("about.html", data.about.title,
@@ -398,6 +420,13 @@
       privacy.body, privacy);
     page("contact.html", data.contact.title,
       block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body, data.contact);
+    GENERIC_PAGES.forEach(function (name) {
+      var content = data[name];
+      var items = content.items || [];
+      var body = block(content.title, '<p class="pre">' + esc(content.body) + "</p>");
+      if (items.length) body += block(content.itemsTitle || "목록", projectArticles(items));
+      page(name + ".html", content.title, body, content.body, content);
+    });
     return pages;
   }
 

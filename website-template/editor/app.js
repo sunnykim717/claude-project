@@ -154,6 +154,31 @@
     }, "");
   }
 
+  // 메뉴 추가: add-menu 이름 | /주소
+  function addMenu(text) {
+    var parts = text.split("|").map(function (p) { return p.trim(); }).filter(Boolean);
+    if (parts.length < 2) return say("사용법: add-menu 메뉴이름 | /주소   예: add-menu 오시는 길 | /location", false);
+    var path = parts[1];
+    if (!SCHEMA.pages[path]) return say("주소는 " + Object.keys(SCHEMA.pages).join(", ") + " 중 하나여야 합니다.", false);
+    commit(function (f) {
+      var nav = JSON.parse(f[KEY_FILES.nav]);
+      nav.push({ label: parts[0], path: path });
+      f[KEY_FILES.nav] = JSON.stringify(nav, null, 2) + "\n";
+    }, "메뉴 '" + parts[0] + "' 을 추가했습니다.");
+  }
+
+  // 메뉴 삭제: remove-menu 번호 (메뉴 순서대로 1부터)
+  function removeMenu(text) {
+    var index = Number(text.trim()) - 1;
+    commit(function (f) {
+      var nav = JSON.parse(f[KEY_FILES.nav]);
+      if (!Number.isInteger(index) || index < 0 || index >= nav.length) throw new Error("번호가 맞지 않습니다. 1부터 " + nav.length + " 사이여야 합니다.");
+      var removed = nav.splice(index, 1)[0];
+      f[KEY_FILES.nav] = JSON.stringify(nav, null, 2) + "\n";
+      say("메뉴 '" + removed.label + "' 을 뺐습니다.", true);
+    }, "");
+  }
+
   function runCommand(line) {
     var text = line.trim();
     if (!text) return say("명령을 적어 주세요. 도움말을 누르면 명령 목록을 볼 수 있습니다.", false);
@@ -169,6 +194,8 @@
     if (word === "designs") return say(Object.keys(DESIGNS).map(function (k) { return k + " : " + DESIGNS[k].label; }).join("\n"), true);
     if (word === "add-project") return addProject(rest);
     if (word === "remove-project") return removeProject(rest);
+    if (word === "add-menu") return addMenu(rest);
+    if (word === "remove-menu") return removeMenu(rest);
     if (word === "check") {
       var errors = validateCurrent();
       return errors.length ? say("다음을 고쳐 주세요:\n- " + errors.join("\n- "), false) : say("검사 통과: 설정과 콘텐츠가 맞습니다.", true);
@@ -179,6 +206,8 @@
       "designs      - 디자인 목록",
       "add-project 이름 | 날짜 | 요약 | 링크  - 사업 추가",
       "remove-project 번호  - 사업 삭제",
+      "add-menu 이름 | /주소  - 메뉴 추가 (예: add-menu 오시는 길 | /location)",
+      "remove-menu 번호  - 메뉴 삭제",
       "check        - 검사",
       "",
       "바꿀 수 있는 경로:",
@@ -242,10 +271,7 @@
   }
 
   // 사진을 넣을 곳. 로고와 배경은 설정 파일에, 첫 화면 사진은 home.hero 안에, 나머지 페이지 사진은 페이지 맨 위에 둡니다.
-  var PAGE_LABELS = {
-    home: "첫 화면", about: "소개", projects: "사업", support: "후원", transparency: "투명성",
-    volunteer: "자원봉사", news: "소식", contact: "문의", privacy: "개인정보"
-  };
+  var PAGE_LABELS = SCHEMA.page_labels;
   var PHOTO_TARGETS = {
     logo: { label: "로고", file: "site", field: "logo" },
     background: { label: "배경", file: "theme", field: "backgroundImage" },

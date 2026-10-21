@@ -201,11 +201,14 @@ def build_pages(root, data):
 
     home = data["home"]
     preview = items_html(data["projects"].get("items", [])[:3], theme["layout"])
-    home_main = (
-        hero_html(root, home)
-        + block("소개", f'<p class="pre">{esc(home.get("intro"))}</p>')
-        + (block(data["projects"]["title"], preview) if preview else "")
-    )
+    news = data["news"]
+    home_parts = {
+        "intro": block("소개", f'<p class="pre">{esc(home.get("intro"))}</p>'),
+        "projects": block(data["projects"]["title"], preview) if preview else "",
+        "news": block(news["title"], project_articles(news.get("items", [])[:3])) if news.get("items") else "",
+    }
+    order = home.get("sections") or ["intro", "projects"]
+    home_main = hero_html(root, home) + "".join(home_parts[name] for name in order)
     page("index.html", site["name"], home_main, site.get("description", ""))
 
     page("about.html", data["about"]["title"],
@@ -247,6 +250,13 @@ def build_pages(root, data):
     page("contact.html", contact["title"],
          block(contact["title"], f'<p class="pre">{esc(contact["body"])}</p>'),
          contact["body"], contact)
+    for name in SCHEMA["generic_pages"]:
+        content = data[name]
+        items = content.get("items") or []
+        body = block(content["title"], f'<p class="pre">{esc(content["body"])}</p>')
+        if items:
+            body += block(content.get("itemsTitle") or "목록", project_articles(items))
+        page(f"{name}.html", content["title"], body, content["body"], content)
     return pages
 
 

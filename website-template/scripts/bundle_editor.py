@@ -21,6 +21,9 @@ TEXT_FILES = [
     "src/components/Header.html", "src/components/Hero.html", "src/components/Footer.html",
     "src/pages/page.html", "src/styles/site.css", "config/custom.css",
 ]
+# 설정과 콘텐츠 파일은 schema.json 에서 가져옵니다 (목록을 두 곳에 적지 않도록)
+TEXT_FILES += [rel for rel in json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))["files"].values()
+               if rel not in TEXT_FILES]
 
 
 # 프로젝트 zip 에만 들어가는 파일 (배포와 도구를 저장소에서 바로 쓰기 위해)

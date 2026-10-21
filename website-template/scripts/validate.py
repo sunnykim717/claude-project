@@ -167,10 +167,21 @@ def validate(root):
         check_photo(errors, root, "content/home.json", hero)
         if hero.get("buttonLink") and not is_link_ok(hero["buttonLink"]):
             errors.append(f"content/home.json: buttonLink 은 https:// 주소 또는 페이지 주소여야 합니다 ({hero['buttonLink']}).")
+        sections = home.get("sections")
+        if sections is not None:
+            if not isinstance(sections, list):
+                errors.append("content/home.json: sections 는 목록이어야 합니다.")
+            elif len(set(map(str, sections))) != len(sections) or any(s not in SCHEMA["home_sections"] for s in sections):
+                errors.append(f"content/home.json: sections 는 {', '.join(SCHEMA['home_sections'])} 중에서 한 번씩만 고를 수 있습니다.")
 
     for name in SCHEMA["photo_pages"]:
         if isinstance(data[name], dict):
             check_photo(errors, root, f"content/{name}.json", data[name])
+    for name in SCHEMA["generic_pages"]:
+        if isinstance(data[name], dict):
+            if not data[name].get("title"):
+                errors.append(f"content/{name}.json: title 을 적어 주세요.")
+            check_items(errors, f"content/{name}.json", "항목", data[name].get("items", []))
 
     projects = data["projects"]
     if isinstance(projects, dict):

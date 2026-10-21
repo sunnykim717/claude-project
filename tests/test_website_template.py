@@ -151,6 +151,35 @@ class GenerateTest(unittest.TestCase):
             _, errors = validate.validate(root)
             self.assertTrue(any("about.json 1번 사진" in e for e in errors))
 
+    def test_new_pages_are_built_and_listed_in_schema(self):
+        with _Copy() as root:
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            for name in ("greetings", "history", "events", "stories", "library", "faq", "location"):
+                page = (out / f"{name}.html").read_text(encoding="utf-8")
+                self.assertIn("<h2>", page, name)
+            self.assertIn("<h2>연도별 기록</h2>", (out / "history.html").read_text(encoding="utf-8"))
+            self.assertNotIn("<h2>연도별 기록</h2>", (out / "greetings.html").read_text(encoding="utf-8"))
+
+    def test_home_sections_change_order_and_reject_unknown(self):
+        with _Copy() as root:
+            _edit(root, "content/home.json", lambda d: d.update(sections=["news", "intro"]))
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            index = (out / "index.html").read_text(encoding="utf-8")
+            self.assertLess(index.index("<h2>소식</h2>"), index.index("<h2>소개</h2>"))
+            self.assertNotIn("<h2>주요사업</h2>", index)
+        with _Copy() as root:
+            _edit(root, "content/home.json", lambda d: d.update(sections=["intro", "video"]))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("sections" in e for e in errors))
+
+    def test_generic_page_needs_a_title(self):
+        with _Copy() as root:
+            _edit(root, "content/faq.json", lambda d: d.update(title=""))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("faq.json" in e and "title" in e for e in errors))
+
     def test_page_photo_missing_file_is_rejected(self):
         with _Copy() as root:
             _edit(root, "content/news.json", lambda d: d.update(image="/images/missing.jpg"))
@@ -241,6 +270,17 @@ class SiteToolTest(unittest.TestCase):
         self.assertEqual(self.tool.main(["new", str(dest), "--name", "희망", "나눔", "복지재단"]), 0)
         site = json.loads((dest / "config" / "site.json").read_text(encoding="utf-8"))
         self.assertEqual(site["name"], "희망 나눔 복지재단")
+
+    def test_add_and_remove_menu(self):
+        self.assertEqual(self._run("add-menu", "오시는", "길", "/location"), 0)
+        nav = json.loads((self.target / "config" / "navigation.json").read_text(encoding="utf-8"))
+        self.assertEqual(nav[-1], {"label": "오시는 길", "path": "/location"})
+        self.assertEqual(self._run("remove-menu", str(len(nav))), 0)
+        self.assertEqual(len(json.loads((self.target / "config" / "navigation.json").read_text(encoding="utf-8"))), len(nav) - 1)
+
+    def test_add_menu_rejects_unknown_page_and_bad_number(self):
+        self.assertEqual(self._run("add-menu", "이상한", "/nope"), 1)
+        self.assertEqual(self._run("remove-menu", "99"), 1)
 
     def test_new_refuses_existing_folder_and_unknown_design(self):
         self.assertEqual(self.tool.main(["new", str(self.target)]), 1)

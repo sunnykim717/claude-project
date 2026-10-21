@@ -120,6 +120,46 @@ def cmd_set(args):
     return 0
 
 
+def _save_or_revert(root, path, original, message):
+    _, errors = validate(root)
+    if errors:
+        path.write_text(original, encoding="utf-8")  # 틀린 값은 저장하지 않고 되돌립니다
+        print("저장하지 않았습니다. 다음을 고쳐 주세요:")
+        for e in errors:
+            print(f"- {e}")
+        return 1
+    print(message)
+    return 0
+
+
+def cmd_add_menu(args):
+    root = Path(args.root)
+    path = root / FILE_FOR["nav"]
+    original = path.read_text(encoding="utf-8")
+    label = " ".join(args.label)
+    pages = json.loads((root / "schema.json").read_text(encoding="utf-8"))["pages"]
+    if args.path not in pages:
+        print(f"주소는 {', '.join(pages)} 중 하나여야 합니다.")
+        return 1
+    nav = json.loads(original)
+    nav.append({"label": label, "path": args.path})
+    path.write_text(json.dumps(nav, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return _save_or_revert(root, path, original, f"메뉴 '{label}' 을 추가했습니다.")
+
+
+def cmd_remove_menu(args):
+    root = Path(args.root)
+    path = root / FILE_FOR["nav"]
+    original = path.read_text(encoding="utf-8")
+    nav = json.loads(original)
+    if not 1 <= args.number <= len(nav):
+        print(f"번호가 맞지 않습니다. 1부터 {len(nav)} 사이여야 합니다.")
+        return 1
+    removed = nav.pop(args.number - 1)
+    path.write_text(json.dumps(nav, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return _save_or_revert(root, path, original, f"메뉴 '{removed['label']}' 을 뺐습니다.")
+
+
 def cmd_check(args):
     return _finish(args.root, "설정과 콘텐츠가 맞습니다.")
 
@@ -142,6 +182,13 @@ def build_parser():
     p.add_argument("path", help="예: site.name, theme.primaryColor, home.hero.title, projects.items.0.title")
     p.add_argument("value", nargs="+", help="새 값. 따옴표 없이 여러 단어를 써도 됩니다")
     p.set_defaults(func=cmd_set)
+    p = sub.add_parser("add-menu", help="메뉴 추가. 예: add-menu 오시는 길 /location")
+    p.add_argument("label", nargs="+", help="메뉴 이름 (여러 단어 가능)")
+    p.add_argument("path", help="주소: /, /about, /location 등 (schema.json 의 pages)")
+    p.set_defaults(func=cmd_add_menu)
+    p = sub.add_parser("remove-menu", help="메뉴 삭제. 번호는 메뉴 순서대로 1부터")
+    p.add_argument("number", type=int)
+    p.set_defaults(func=cmd_remove_menu)
     sub.add_parser("check", help="설정 검사").set_defaults(func=cmd_check)
     p = sub.add_parser("build", help="dist/ 에 페이지 만들기")
     p.add_argument("--out", default=None)
