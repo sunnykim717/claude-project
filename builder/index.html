@@ -189,6 +189,13 @@
         <input type="text" id="headContact" data-bind="headings.contact">
         <label for="contact">연락처 내용</label>
         <textarea id="contact" data-bind="contact" placeholder="예: hello@example.com"></textarea>
+        <label for="support">후원 안내 내용</label>
+        <textarea id="support" data-bind="support" placeholder="후원 방법과 계좌 안내를 적어 보세요. 비워 두면 메뉴에 나오지 않습니다."></textarea>
+        <label for="volunteer">자원봉사 내용</label>
+        <textarea id="volunteer" data-bind="volunteer" placeholder="봉사 활동 안내를 적어 보세요. 비워 두면 메뉴에 나오지 않습니다."></textarea>
+        <label for="location">오시는 길 내용</label>
+        <textarea id="location" data-bind="location" placeholder="주소, 교통, 운영 시간을 적어 보세요. 비워 두면 메뉴에 나오지 않습니다."></textarea>
+        <p class="hint">소식과 자주 묻는 질문은 말로 적기 칸에 한 줄씩 추가합니다. 예: <code>소식 추가: 행사 안내 | 2026-11-03 | 주민을 초대합니다 | https://example.com</code> 과 <code>질문: 이용료는 얼마인가요? | 무료입니다.</code></p>
       </details>
 
       <details>
@@ -254,6 +261,11 @@
     hero: "상단 소개",
     about: "소개",
     projects: "프로젝트",
+    news: "소식",
+    support: "후원 안내",
+    volunteer: "자원봉사",
+    location: "오시는 길",
+    faq: "자주 묻는 질문",
     cta: "버튼",
     social: "SNS",
     contact: "연락처",
@@ -317,13 +329,23 @@
       { id: "hero", enabled: true },
       { id: "about", enabled: true },
       { id: "projects", enabled: true },
+      { id: "news", enabled: true },
+      { id: "support", enabled: true },
+      { id: "volunteer", enabled: true },
+      { id: "location", enabled: true },
+      { id: "faq", enabled: true },
       { id: "cta", enabled: false },
       { id: "social", enabled: false },
       { id: "contact", enabled: true },
     ],
-    headings: { about: "소개", projects: "프로젝트", contact: "연락처" },
+    headings: { about: "소개", projects: "프로젝트", contact: "연락처", news: "소식", support: "후원 안내", volunteer: "자원봉사", location: "오시는 길", faq: "자주 묻는 질문" },
     about: "",
     contact: "",
+    support: "",
+    volunteer: "",
+    location: "",
+    news: [],
+    faq: [],
     projects: [
       { title: "첫 번째 프로젝트", summary: "", url: "", date: "", tag: "" },
     ],
@@ -346,6 +368,13 @@
     Object.assign(s.social, raw.social ?? {});
     if (typeof raw.about === "string") s.about = raw.about;
     if (typeof raw.contact === "string") s.contact = raw.contact;
+    ["support", "volunteer", "location"].forEach((k) => { if (typeof raw[k] === "string") s[k] = raw[k]; });
+    if (Array.isArray(raw.news)) {
+      s.news = raw.news.map((n) => ({ title: String(n?.title ?? ""), date: String(n?.date ?? ""), summary: String(n?.summary ?? ""), url: String(n?.url ?? "") }));
+    }
+    if (Array.isArray(raw.faq)) {
+      s.faq = raw.faq.map((f) => ({ q: String(f?.q ?? ""), a: String(f?.a ?? "") }));
+    }
     if (Array.isArray(raw.projects)) {
       s.projects = raw.projects.map((p) => ({
         title: String(p?.title ?? ""), summary: String(p?.summary ?? ""), url: String(p?.url ?? ""),
@@ -478,7 +507,7 @@
     if (id === "projects") return state.headings.projects;
     if (id === "contact") return state.headings.contact;
     if (id === "cta") return state.cta.label || "문의";
-    return SECTION_LABELS[id];
+    return state.headings[id] || SECTION_LABELS[id];
   }
 
   function renderSection(id) {
@@ -532,6 +561,40 @@
       return `<section id="social">
       <h2>SNS</h2>
       <ul class="links">${links.map(([name, href]) => `<li><a href="${href}">${name}</a></li>`).join("")}</ul>
+    </section>`;
+    }
+    if (id === "news") {
+      const items = s.news.filter((n) => n.title.trim()).slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map((n) => {
+        const url = safeUrl(n.url);
+        const name = url ? `<a href="${url}">${esc(n.title)}</a>` : esc(n.title);
+        return `<article>
+        <h3>${name}</h3>
+        ${n.date ? `<time datetime="${esc(n.date)}">${esc(n.date)}</time>` : ""}
+        ${n.summary ? `<p>${esc(n.summary)}</p>` : ""}
+      </article>`;
+      });
+      if (!items.length) return "";
+      return `<section id="news">
+      <h2>${esc(s.headings.news)}</h2>
+      ${items.join("\n      ")}
+    </section>`;
+    }
+    if (id === "support" || id === "volunteer" || id === "location") {
+      if (!s[id].trim()) return "";
+      return `<section id="${id}">
+      <h2>${esc(s.headings[id])}</h2>
+      <p class="pre">${esc(s[id])}</p>
+    </section>`;
+    }
+    if (id === "faq") {
+      const items = s.faq.filter((f) => f.q.trim()).map((f) => `<details>
+        <summary>${esc(f.q)}</summary>
+        <p>${esc(f.a)}</p>
+      </details>`);
+      if (!items.length) return "";
+      return `<section id="faq">
+      <h2>${esc(s.headings.faq)}</h2>
+      ${items.join("\n      ")}
     </section>`;
     }
     if (id === "contact") {
@@ -697,7 +760,10 @@ ${navHtml}
   ];
   // 소개, 연락처 같은 섹션을 "숨겨 줘", "보여 줘"로 켜고 끕니다.
   const SECTION_TOGGLE = /^(소개|연락처|SNS|버튼|프로젝트|소식)\s*(?:은|는|을|를|이|가)?\s*(숨겨|숨기|빼|안\s*보이|보여|보이게|넣어|표시|나타내|띄워)/;
-  const SECTION_BY_WORD = { 소개: "about", 연락처: "contact", SNS: "social", 버튼: "cta", 프로젝트: "projects", 소식: "projects" };
+  const SECTION_BY_WORD = {
+    소개: "about", 연락처: "contact", SNS: "social", 버튼: "cta", 프로젝트: "projects", 소식: "news",
+    후원: "support", 자원봉사: "volunteer", "오시는 길": "location", 질문: "faq",
+  };
   // 자주 나오는 요청에 대해 미리 준비한 답변입니다. 이해하지 못한 줄에 가장 먼저 맞는 답을 보여 줍니다.
   const SITUATION_ANSWERS = [
     [/예쁘|멋지|귀엽|세련|디자인/, "디자인은 템플릿과 색으로 고를 수 있습니다. 예: 템플릿: 오션 / 강조색: 파랑"],
@@ -805,7 +871,31 @@ ${navHtml}
       } else if ((m = line.match(/^연락처\s*[:은는을를]?\s*(.+)$/))) {
         state.contact = m[1].trim();
         applied.push(`연락처 → ${state.contact}`);
-      } else if ((m = line.match(/^(?:소식|프로젝트|항목)\s*(?:추가)?\s*[:：]\s*(.+)$/))) {
+      } else if ((m = line.match(/^(?:질문|자주\s*묻는\s*질문)\s*(?:추가)?\s*[:：]\s*(.+)$/))) {
+        const [q, ...rest] = m[1].split("|").map((p) => p.trim());
+        if (q) {
+          state.faq.push({ q, a: rest.join(" ") });
+          applied.push(`질문 추가 → ${q}`);
+        } else {
+          notUnderstood.push(line);
+        }
+      } else if ((m = line.match(/^(?:소식)\s*(?:추가)?\s*[:：]\s*(.+)$/))) {
+        const item = { title: "", summary: "", url: "", date: "" };
+        const extra = [];
+        for (const part of m[1].split("|").map((p) => p.trim()).filter(Boolean)) {
+          if (/^https?:\/\/\S+$/.test(part)) item.url = part;
+          else if (/^\d{4}-\d{2}-\d{2}$/.test(part)) item.date = part;
+          else if (!item.title) item.title = part;
+          else extra.push(part);
+        }
+        item.summary = extra.join(" ");
+        if (item.title) {
+          state.news.push(item);
+          applied.push(`소식 추가 → ${item.title}${item.date ? ` (${item.date})` : ""}`);
+        } else {
+          notUnderstood.push(line);
+        }
+      } else if ((m = line.match(/^(?:프로젝트|항목)\s*(?:추가)?\s*[:：]\s*(.+)$/))) {
         const item = { title: "", summary: "", url: "", date: "", tag: "" };
         const extra = [];
         for (const part of m[1].split("|").map((p) => p.trim()).filter(Boolean)) {
@@ -823,10 +913,11 @@ ${navHtml}
         }
       } else if ((m = line.match(/^(?:소식|프로젝트|항목)\s*(?:삭제|지워|빼)\s*[:：]?\s*(.+)$/))) {
         const title = cleanValue(m[1]);
-        const before = state.projects.length;
-        state.projects = state.projects.filter((p) => p.title.trim() !== title);
-        if (state.projects.length < before) applied.push(`소식 삭제 → ${title}`);
-        else notUnderstood.push(`${line} (같은 제목의 소식을 찾지 못했습니다)`);
+        const key = /소식/.test(line) ? "news" : "projects";
+        const before = state[key].length;
+        state[key] = state[key].filter((p) => p.title.trim() !== title);
+        if (state[key].length < before) applied.push(`${key === "news" ? "소식" : "프로젝트"} 삭제 → ${title}`);
+        else notUnderstood.push(`${line} (같은 제목의 항목을 찾지 못했습니다)`);
       } else if ((m = line.match(/^(?:버튼|CTA)\s*[:：]\s*(.+)$/))) {
         const parts = m[1].split("|").map((p) => p.trim()).filter(Boolean);
         const url = parts.find((p) => /^https?:\/\/\S+$/.test(p)) || "";
