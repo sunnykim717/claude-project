@@ -9,7 +9,7 @@
 
   // 설정 항목 목록은 schema.json 에서만 옵니다. useSchema() 로 한 번 넣어 주세요.
   var loaded = false;
-  var PAGE_FILES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, LANGUAGES, IMAGE;
+  var PAGE_FILES, FILES, ALLOWED_FONTS, FONT_STACK, SPACINGS, SPACING_PX, LAYOUTS, LANGUAGES, IMAGE, PHOTO_PAGES;
   var HEX = /^#[0-9a-fA-F]{6}$/;
   var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   var DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -24,6 +24,7 @@
     LAYOUTS = schema.layouts;
     LANGUAGES = schema.languages;
     IMAGE = new RegExp("^/images/[A-Za-z0-9._-]+\\.(" + schema.image_extensions.join("|") + ")$");
+    PHOTO_PAGES = schema.photo_pages;
     loaded = true;
   }
 
@@ -49,6 +50,17 @@
 
   function isLinkOk(value) {
     return startsWith(value, "https://") || startsWith(value, "http://") || Object.prototype.hasOwnProperty.call(PAGE_FILES, value);
+  }
+
+  // 사진 칸이 비어 있으면 아무것도 하지 않습니다. 있으면 형식과 파일 존재를 봅니다.
+  function checkPhoto(files, errors, rel, content) {
+    if (!content.image) return;
+    var image = str(content.image);
+    if (!IMAGE.test(image)) {
+      errors.push(rel + ": image 는 /images/파일이름.jpg (png, webp, gif) 형식이어야 합니다.");
+    } else if (!(("public/" + image.replace(/^\/+/, "")) in files)) {
+      errors.push(rel + ": 사진 파일이 public 폴더에 없습니다 (" + image + ").");
+    }
   }
 
   function checkItems(errors, rel, label, items) {
@@ -131,18 +143,15 @@
     if (isObject(home)) {
       var hero = isObject(home.hero) ? home.hero : {};
       if (!hero.title) errors.push("content/home.json: hero.title 을 적어 주세요.");
-      if (hero.image) {
-        var image = str(hero.image);
-        if (!IMAGE.test(image)) {
-          errors.push("content/home.json: image 는 /images/파일이름.jpg (png, webp, gif) 형식이어야 합니다.");
-        } else if (!(("public/" + image.replace(/^\/+/, "")) in files)) {
-          errors.push("content/home.json: 사진 파일이 public 폴더에 없습니다 (" + image + ").");
-        }
-      }
+      checkPhoto(files, errors, "content/home.json", hero);
       if (hero.buttonLink && !isLinkOk(str(hero.buttonLink))) {
         errors.push("content/home.json: buttonLink 은 https:// 주소 또는 페이지 주소여야 합니다 (" + hero.buttonLink + ").");
       }
     }
+
+    PHOTO_PAGES.forEach(function (name) {
+      if (isObject(data[name])) checkPhoto(files, errors, "content/" + name + ".json", data[name]);
+    });
 
     var projects = data.projects;
     if (isObject(projects)) checkItems(errors, "content/projects.json", "사업", projects.items);
@@ -264,12 +273,18 @@
     }).join("");
   }
 
+  function photoHtml(content) {
+    if (!content.image) return "";
+    var src = "public/" + String(content.image).replace(/^\/+/, "");
+    return '<figure class="page-photo"><img src="' + esc(src) + '" alt="' + esc(content.imageAlt) + '"></figure>';
+  }
+
   function buildPages(files, data) {
     var site = data.site, nav = data.nav, theme = data.theme;
     var style = themeCss(theme) + "\n" + files["src/styles/site.css"];
     var pages = {};
 
-    function page(fileName, title, mainHtml, description) {
+    function page(fileName, title, mainHtml, description, photo) {
       var fullTitle = fileName === "index.html" ? site.name : title + " | " + site.name;
       pages[fileName] = fill(files["src/pages/page.html"], {
         lang: esc(site.language || "ko"),
@@ -277,7 +292,7 @@
         description: esc(site.description),
         style: style,
         header: headerHtml(files, site, nav, fileName),
-        main: mainHtml,
+        main: (photo || "") + mainHtml,
         footer: footerHtml(files, site, data.contact),
         layout: esc(theme.layout)
       });
@@ -292,36 +307,36 @@
     page("index.html", site.name, homeMain, site.description || "");
 
     page("about.html", data.about.title,
-      block(data.about.title, '<p class="pre">' + esc(data.about.body) + "</p>"), data.about.body);
+      block(data.about.title, '<p class="pre">' + esc(data.about.body) + "</p>"), data.about.body, photoHtml(data.about));
     page("projects.html", data.projects.title,
-      block(data.projects.title, itemsHtml(data.projects.items || [], theme.layout)), data.projects.title);
+      block(data.projects.title, itemsHtml(data.projects.items || [], theme.layout)), data.projects.title, photoHtml(data.projects));
     var support = data.support;
     var ways = projectArticles(support.ways || []);
     var supportMain = block(support.title, '<p class="pre">' + esc(support.body) + "</p>");
     if (ways) supportMain += block("후원 방법", ways);
     if (support.notice) supportMain += block("안내", '<p class="pre">' + esc(support.notice) + "</p>");
-    page("support.html", support.title, supportMain, support.body);
-    page("news.html", data.news.title, block(data.news.title, projectArticles(data.news.items || [])), data.news.title);
+    page("support.html", support.title, supportMain, support.body, photoHtml(support));
+    page("news.html", data.news.title, block(data.news.title, projectArticles(data.news.items || [])), data.news.title, photoHtml(data.news));
     var transparency = data.transparency;
     page("transparency.html", transparency.title,
       block(transparency.title, '<p class="pre">' + esc(transparency.body) + "</p>") +
       block("사업 · 재무 자료", projectArticles(transparency.reports || [])) +
       block("사업비 구성", '<p class="pre">' + esc(transparency.costs) + "</p>") +
       block("외부 확인", '<p class="pre">' + esc(transparency.disclosure) + "</p>"),
-      transparency.body);
+      transparency.body, photoHtml(transparency));
     var volunteer = data.volunteer;
     page("volunteer.html", volunteer.title,
       block(volunteer.title, '<p class="pre">' + esc(volunteer.body) + "</p>") +
       block("활동 종류", projectArticles(volunteer.positions || [])) +
       block("신청 방법", '<p class="pre">' + esc(volunteer.apply) + "</p>"),
-      volunteer.body);
+      volunteer.body, photoHtml(volunteer));
     var privacy = data.privacy;
     page("privacy.html", privacy.title,
       block(privacy.title, '<p class="pre">' + esc(privacy.body) + "</p>") +
       block("처리 항목", projectArticles(privacy.items || [])),
-      privacy.body);
+      privacy.body, photoHtml(privacy));
     page("contact.html", data.contact.title,
-      block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body);
+      block(data.contact.title, '<p class="pre">' + esc(data.contact.body) + "</p>"), data.contact.body, photoHtml(data.contact));
     return pages;
   }
 

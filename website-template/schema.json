@@ -34,11 +34,13 @@
   "layouts": ["classic", "modern", "card", "minimal"],
   "theme_keys": ["primaryColor", "backgroundColor", "textColor", "font", "radius", "spacing", "layout"],
   "image_extensions": ["jpg", "jpeg", "png", "webp", "gif"],
+  "photo_pages": ["about", "projects", "support", "transparency", "volunteer", "news", "contact", "privacy"],
   "help": [
     "site.name / site.description / site.language (ko, en, ja)",
     "theme.primaryColor / theme.backgroundColor / theme.textColor (#RRGGBB), theme.font (system-ui, serif, mono), theme.radius (0~32), theme.spacing (compact, normal, airy), theme.layout (classic, modern, card, minimal)",
     "home.hero.title / home.hero.subtitle / home.hero.buttonText / home.hero.buttonLink, home.intro",
     "about.title / about.body",
+    "사진 (첫 화면은 home.hero.image): 페이지이름.image 에 /images/파일이름.jpg, 페이지이름.imageAlt 에 설명. 페이지이름은 about, projects, support, transparency, volunteer, news, contact, privacy",
     "projects.title, projects.items.번호.title / .date / .summary / .url",
     "support.title / support.body / support.notice, support.ways.번호.title / .summary",
     "transparency.title / transparency.body / transparency.costs / transparency.disclosure, transparency.reports.번호.title / .summary",

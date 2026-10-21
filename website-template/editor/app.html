@@ -38,7 +38,10 @@
     <input type="file" id="file-import" accept="application/json,.json" hidden>
     <button type="button" class="secondary" id="btn-export">설정 저장 (파일)</button>
     <button type="button" id="btn-project">프로젝트 내려받기 (zip)</button>
-    <button type="button" class="secondary" id="btn-photo">첫 화면 사진 올리기</button>
+    <select id="photo-page" aria-label="사진을 넣을 페이지"></select>
+    <button type="button" class="secondary" id="btn-photo">사진 올리기</button>
+    <button type="button" class="secondary" id="btn-photo-remove">사진 빼기</button>
+    <span id="photo-status" class="hint"></span>
     <input type="file" id="file-photo" accept="image/*" hidden>
     <button type="button" class="secondary" id="btn-reset">처음 상태로</button>
   </div>

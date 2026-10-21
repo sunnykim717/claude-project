@@ -55,7 +55,7 @@ python scripts/site_tool.py build --out dist
 | `content/volunteer.json` | 자원봉사 안내: 활동 종류, 신청 방법 |
 | `content/privacy.json` | 개인정보 처리방침 (바닥글에 자동으로 링크됩니다) |
 | `content/contact.json` | 문의 글, 이메일, SNS 링크 |
-| `public/images/` | 그림 파일 (아직 페이지에 넣는 설정은 없습니다) |
+| `public/images/` | 사진 파일. 편집기 또는 `image` 설정으로 페이지에 넣습니다 |
 | `src/components/` | 머리글, 첫 화면, 바닥글의 모양 (`{{이름}}` 자리에 값이 들어갑니다) |
 | `src/pages/page.html` | 모든 페이지의 뼈대 |
 | `src/styles/site.css` | 페이지 모양 |
@@ -87,5 +87,6 @@ python scripts/generate.py     # dist/ 에 페이지 만들기
 
 - 링크는 `https://` 주소 또는 이 템플릿의 페이지 주소(`/about` 등)만 쓸 수 있습니다.
 - 날짜는 `2026-01-15` 형식으로 적습니다.
-- 그림은 `public/images/` 에 넣고, 설정에서는 `/images/파일이름` 으로 적습니다.
+- 사진은 `public/images/` 에 넣고, 설정에서는 `/images/파일이름.jpg` 로 적습니다. 첫 화면은 `home.hero.image`, 다른 페이지는 `페이지이름.image` 와 `페이지이름.imageAlt`(사진 설명)를 씁니다.
+- 편집기에서는 페이지를 고르고 **사진 올리기** 로 넣고, **사진 빼기** 로 뺍니다. 빼면 그 사진 파일도 지워집니다.
 - 배포하면 `dist/` 의 파일이 공개됩니다. 개인정보는 넣지 마세요.

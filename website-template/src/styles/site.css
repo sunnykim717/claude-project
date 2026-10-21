@@ -39,3 +39,5 @@ body.layout-minimal article { border-left: 0; padding: 0; margin: 10px 0; }
 body.layout-minimal .site-header { border-bottom: 0; }
 
 .hero-photo { display: block; width: 100%; height: auto; border-radius: var(--radius); margin-bottom: var(--gap); }
+.page-photo { margin: 0 0 var(--gap); }
+.page-photo img { display: block; width: 100%; max-height: 360px; object-fit: cover; border-radius: var(--radius); }

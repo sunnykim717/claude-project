@@ -115,6 +115,29 @@ class GenerateTest(unittest.TestCase):
             generate.main(["--root", str(root), "--out", str(out)])
             self.assertTrue((out / "public" / "images" / "logo.png").exists())
 
+    def test_page_photo_is_shown_at_top_of_page(self):
+        with _Copy() as root:
+            (root / "public" / "images" / "about.jpg").write_bytes(b"jpg")
+            _edit(root, "content/about.json", lambda d: d.update(image="/images/about.jpg", imageAlt="사무실 사진"))
+            out = root / "dist"
+            self.assertEqual(generate.main(["--root", str(root), "--out", str(out)]), 0)
+            about = (out / "about.html").read_text(encoding="utf-8")
+            self.assertIn('<figure class="page-photo"><img src="public/images/about.jpg" alt="사무실 사진">', about)
+            self.assertLess(about.index("page-photo"), about.index('<section class="block">'))
+            self.assertNotIn('class="page-photo"', (out / "news.html").read_text(encoding="utf-8"))
+
+    def test_page_photo_missing_file_is_rejected(self):
+        with _Copy() as root:
+            _edit(root, "content/news.json", lambda d: d.update(image="/images/missing.jpg"))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("news.json" in e and "public" in e for e in errors))
+
+    def test_page_photo_bad_path_is_rejected(self):
+        with _Copy() as root:
+            _edit(root, "content/privacy.json", lambda d: d.update(image="../secret.jpg"))
+            _, errors = validate.validate(root)
+            self.assertTrue(any("privacy.json" in e and "image" in e for e in errors))
+
     def test_theme_values_become_css_variables(self):
         with _Copy() as root:
             _edit(root, "config/theme.json", lambda d: d.update(primaryColor="#0F766E", font="serif", radius=14))

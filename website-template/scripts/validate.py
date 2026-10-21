@@ -51,6 +51,17 @@ def load_all(root):
     return data, errors
 
 
+def check_photo(errors, root, rel, content):
+    """사진 칸이 비어 있으면 아무것도 하지 않습니다. 있으면 형식과 파일 존재를 봅니다."""
+    if not content.get("image"):
+        return
+    image = str(content["image"])
+    if not IMAGE.match(image):
+        errors.append(f"{rel}: image 는 /images/파일이름.jpg (png, webp, gif) 형식이어야 합니다.")
+    elif not (Path(root) / "public" / image.lstrip("/")).exists():
+        errors.append(f"{rel}: 사진 파일이 public 폴더에 없습니다 ({image}).")
+
+
 def check_items(errors, rel, label, items):
     """사업, 소식, 후원 방법처럼 제목과 선택 항목이 있는 목록을 검사합니다."""
     if not isinstance(items, list):
@@ -108,14 +119,13 @@ def validate(root):
         hero = home.get("hero") or {}
         if not hero.get("title"):
             errors.append("content/home.json: hero.title 을 적어 주세요.")
-        if hero.get("image"):
-            image = str(hero["image"])
-            if not IMAGE.match(image):
-                errors.append("content/home.json: image 는 /images/파일이름.jpg (png, webp, gif) 형식이어야 합니다.")
-            elif not (Path(root) / "public" / image.lstrip("/")).exists():
-                errors.append(f"content/home.json: 사진 파일이 public 폴더에 없습니다 ({image}).")
+        check_photo(errors, root, "content/home.json", hero)
         if hero.get("buttonLink") and not is_link_ok(hero["buttonLink"]):
             errors.append(f"content/home.json: buttonLink 은 https:// 주소 또는 페이지 주소여야 합니다 ({hero['buttonLink']}).")
+
+    for name in SCHEMA["photo_pages"]:
+        if isinstance(data[name], dict):
+            check_photo(errors, root, f"content/{name}.json", data[name])
 
     projects = data["projects"]
     if isinstance(projects, dict):
