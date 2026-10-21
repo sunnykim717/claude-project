@@ -80,5 +80,51 @@ class RenderPageTest(unittest.TestCase):
             self.assertIn("<title>홈</title>", out.read_text(encoding="utf-8"))
 
 
+class ThemeAndSectionsTest(unittest.TestCase):
+    def _write(self, data):
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".json", encoding="utf-8", delete=False)
+        json.dump(data, tmp, ensure_ascii=False)
+        tmp.close()
+        return Path(tmp.name)
+
+    def test_bad_theme_color_raises(self):
+        path = self._write({"title": "t", "theme": {"accent": "red"}})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+
+    def test_unknown_font_raises(self):
+        path = self._write({"title": "t", "theme": {"font": "Comic Sans MS"}})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+
+    def test_unknown_theme_key_raises(self):
+        path = self._write({"title": "t", "theme": {"shadow": "#000000"}})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+
+    def test_about_must_be_string(self):
+        path = self._write({"title": "t", "about": ["목록"]})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+
+    def test_theme_colors_applied(self):
+        site = {"title": "t", "theme": {"accent": "#0369a1", "bg": "#f0f9ff", "text": "#0c4a6e", "font": "Georgia, serif"}}
+        page = uh.render_page(site, FIXED_NOW)
+        self.assertIn("--accent: #0369a1;", page)
+        self.assertIn("background: #f0f9ff;", page)
+        self.assertIn("font-family: Georgia, serif;", page)
+
+    def test_about_and_contact_rendered_and_escaped(self):
+        site = {"title": "t", "about": "첫 줄\n<b>둘째</b>", "contact": "hello@example.com"}
+        page = uh.render_page(site, FIXED_NOW)
+        self.assertIn("<h2>소개</h2>", page)
+        self.assertIn("&lt;b&gt;둘째&lt;/b&gt;", page)
+        self.assertIn("<h2>연락처</h2>", page)
+
+    def test_empty_about_is_omitted(self):
+        page = uh.render_page({"title": "t", "about": "   "}, FIXED_NOW)
+        self.assertNotIn("<h2>소개</h2>", page)
+
+
 if __name__ == "__main__":
     unittest.main()

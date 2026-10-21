@@ -70,6 +70,7 @@
 <header>
   <h1>바이브 홈페이지 빌더</h1>
   <div class="toolbar">
+    <button id="exportSite" class="primary">홈페이지 데이터(site.json) 내보내기</button>
     <button id="exportSpec">명세(JSON) 저장</button>
     <button type="button" id="importBtn">명세 불러오기</button>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
@@ -85,7 +86,7 @@
       <label for="title">사이트 제목 (필수, 60자 이내 권장)</label>
       <input type="text" id="title" data-bind="site.title">
       <label for="subtitle">한 줄 소개</label>
-      <input type="text" id="subtitle" data-bind="site.subtitle">
+      <input type="text" id="subtitle" data-bind="site.subtitle" placeholder="예: 만들고 기록하는 공간">
       <label for="description">검색용 설명 (meta description, 160자 이내 권장)</label>
       <textarea id="description" data-bind="site.description"></textarea>
       <label for="heroImage">대표 이미지 URL (https:// 로 시작)</label>
@@ -136,13 +137,13 @@
       <label for="headAbout">소개 제목</label>
       <input type="text" id="headAbout" data-bind="headings.about">
       <label for="about">소개 글 (줄바꿈 가능)</label>
-      <textarea id="about" data-bind="about"></textarea>
+      <textarea id="about" data-bind="about" placeholder="나를 소개하는 글을 적어 보세요. 줄바꿈도 그대로 반영됩니다."></textarea>
       <label for="headProjects">프로젝트 제목</label>
       <input type="text" id="headProjects" data-bind="headings.projects">
       <label for="headContact">연락처 제목</label>
       <input type="text" id="headContact" data-bind="headings.contact">
       <label for="contact">연락처 내용</label>
-      <textarea id="contact" data-bind="contact"></textarea>
+      <textarea id="contact" data-bind="contact" placeholder="예: hello@example.com"></textarea>
     </details>
 
     <details>
@@ -219,7 +220,7 @@
   const DEFAULT_STATE = {
     site: {
       title: "나의 홈페이지",
-      subtitle: "여기에 한 줄 소개를 적어 보세요.",
+      subtitle: "",
       description: "",
       heroImage: "",
       lang: "ko",
@@ -243,10 +244,10 @@
       { id: "contact", enabled: true },
     ],
     headings: { about: "소개", projects: "프로젝트", contact: "연락처" },
-    about: "이곳에 나를 소개하는 글을 적어 보세요.",
-    contact: "hello@example.com",
+    about: "",
+    contact: "",
     projects: [
-      { title: "첫 번째 프로젝트", summary: "진행한 작업이나 소식을 짧게 적어 보세요.", url: "", date: "", tag: "" },
+      { title: "첫 번째 프로젝트", summary: "", url: "", date: "", tag: "" },
     ],
     cta: { label: "문의하기", url: "" },
     social: { github: "", instagram: "", youtube: "", email: "" },
@@ -627,7 +628,7 @@ ${navHtml}
         <label>제목</label>
         <input type="text" data-project="${i}" data-field="title" value="${esc(p.title)}">
         <label>설명</label>
-        <textarea data-project="${i}" data-field="summary">${esc(p.summary)}</textarea>
+        <textarea data-project="${i}" data-field="summary" placeholder="진행한 작업이나 소식을 짧게 적어 보세요.">${esc(p.summary)}</textarea>
         <div class="row">
           <div class="grow"><label>날짜 (YYYY-MM-DD)</label><input type="text" data-project="${i}" data-field="date" value="${esc(p.date)}"></div>
           <div class="grow"><label>태그</label><input type="text" data-project="${i}" data-field="tag" value="${esc(p.tag)}"></div>
@@ -750,6 +751,42 @@ ${navHtml}
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
     link.download = "homepage-spec.json";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+
+  // 자동화 파이프라인(update_homepage.py)이 읽는 data/site.json 형식으로 바꿉니다.
+  function buildSiteData() {
+    const s = state;
+    const enabled = (id) => s.sections.some((x) => x.id === id && x.enabled);
+    const data = {
+      title: s.site.title.trim(),
+      lang: s.site.lang,
+      theme: { accent: s.design.accent, text: s.design.text, bg: s.design.bg, font: s.design.font },
+    };
+    if (s.site.subtitle.trim()) data.subtitle = s.site.subtitle.trim();
+    if (enabled("about") && s.about.trim()) data.about = s.about.trim();
+    if (enabled("contact") && s.contact.trim()) data.contact = s.contact.trim();
+    data.items = s.projects.filter((p) => p.title.trim()).map((p) => {
+      const item = { title: p.title.trim() };
+      if (p.date.trim()) item.date = p.date.trim();
+      if (p.summary.trim()) item.summary = p.summary.trim();
+      if (p.url.trim()) item.url = p.url.trim();
+      return item;
+    });
+    return data;
+  }
+
+  $("exportSite").addEventListener("click", () => {
+    const errors = runChecks().filter(([level]) => level === "err");
+    if (errors.length) {
+      alert("아래 오류를 먼저 고쳐 주세요.\n\n" + errors.map(([, msg]) => "- " + msg).join("\n"));
+      return;
+    }
+    const blob = new Blob([JSON.stringify(buildSiteData(), null, 2) + "\n"], { type: "application/json;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "site.json";
     link.click();
     URL.revokeObjectURL(link.href);
   });
