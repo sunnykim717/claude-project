@@ -180,5 +180,41 @@ class SiteToolTest(unittest.TestCase):
         self.assertEqual((ROOT / "content" / "home.json").read_text(encoding="utf-8"), before)
 
 
+class DesignAndSchemaTest(unittest.TestCase):
+    """디자인 프리셋과 설정 목록(schema.json)이 서로 맞는지 확인합니다."""
+
+    @staticmethod
+    def _luminance(hex_color):
+        n = int(hex_color[1:], 16)
+        channels = []
+        for shift in (16, 8, 0):
+            c = ((n >> shift) & 255) / 255
+            channels.append(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4)
+        return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+
+    def _contrast(self, a, b):
+        hi, lo = sorted([self._luminance(a), self._luminance(b)], reverse=True)
+        return (hi + 0.05) / (lo + 0.05)
+
+    def test_every_design_is_readable_and_uses_known_values(self):
+        schema = json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))
+        designs = json.loads((ROOT / "config" / "designs.json").read_text(encoding="utf-8"))
+        for name, d in designs.items():
+            with self.subTest(design=name):
+                self.assertGreaterEqual(self._contrast(d["textColor"], d["backgroundColor"]), 4.5)
+                self.assertGreaterEqual(self._contrast(d["backgroundColor"], d["primaryColor"]), 4.5)
+                self.assertIn(d["font"], schema["fonts"])
+                self.assertIn(d["spacing"], schema["spacings"])
+                self.assertIn(d["layout"], schema["layouts"])
+
+    def test_schema_pages_match_files_and_navigation(self):
+        schema = json.loads((ROOT / "schema.json").read_text(encoding="utf-8"))
+        nav = json.loads((ROOT / "config" / "navigation.json").read_text(encoding="utf-8"))
+        for entry in nav:
+            self.assertIn(entry["path"], schema["pages"])
+        for rel in schema["files"].values():
+            self.assertTrue((ROOT / rel).exists(), rel)
+
+
 if __name__ == "__main__":
     unittest.main()
