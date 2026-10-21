@@ -126,5 +126,79 @@ class ThemeAndSectionsTest(unittest.TestCase):
         self.assertNotIn("<h2>소개</h2>", page)
 
 
+class FullSpecTest(unittest.TestCase):
+    def _write(self, data):
+        tmp = tempfile.NamedTemporaryFile("w", suffix=".json", encoding="utf-8", delete=False)
+        json.dump(data, tmp, ensure_ascii=False)
+        tmp.close()
+        return Path(tmp.name)
+
+    def test_sections_order_is_respected(self):
+        site = {
+            "title": "t", "about": "소개 글", "contact": "연락처", "items": [{"title": "소식"}],
+            "sections": ["contact", "items", "about"],
+        }
+        page = uh.render_page(site, FIXED_NOW)
+        self.assertLess(page.index("<h2>연락처</h2>"), page.index("<article>"))
+        self.assertLess(page.index("<article>"), page.index("<h2>소개</h2>"))
+
+    def test_hidden_section_not_rendered(self):
+        site = {"title": "t", "about": "소개 글", "sections": ["items"], "items": [{"title": "소식"}]}
+        page = uh.render_page(site, FIXED_NOW)
+        self.assertNotIn("<h2>소개</h2>", page)
+
+    def test_default_order_when_sections_missing(self):
+        site = {"title": "t", "about": "소개 글", "contact": "연락처", "items": [{"title": "소식"}]}
+        page = uh.render_page(site, FIXED_NOW)
+        self.assertLess(page.index("<h2>소개</h2>"), page.index("<article>"))
+        self.assertLess(page.index("<article>"), page.index("<h2>연락처</h2>"))
+
+    def test_cta_rendered_only_with_safe_url(self):
+        ok = uh.render_page({"title": "t", "sections": ["cta"], "cta": {"label": "문의", "url": "https://x.test"}}, FIXED_NOW)
+        self.assertIn('class="btn" href="https://x.test"', ok)
+        empty = uh.render_page({"title": "t", "sections": ["cta"], "cta": {"label": "문의", "url": ""}}, FIXED_NOW)
+        self.assertNotIn('class="btn"', empty)
+
+    def test_cta_javascript_url_rejected(self):
+        path = self._write({"title": "t", "cta": {"label": "x", "url": "javascript:alert(1)"}})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+
+    def test_social_links_and_email(self):
+        site = {"title": "t", "sections": ["social"], "social": {"github": "https://github.com/x", "email": "a@b.co"}}
+        page = uh.render_page(site, FIXED_NOW)
+        self.assertIn('href="https://github.com/x"', page)
+        self.assertIn('href="mailto:a@b.co"', page)
+        self.assertNotIn("Instagram", page)
+
+    def test_bad_social_rejected(self):
+        path = self._write({"title": "t", "social": {"email": "not-an-email"}})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+        path = self._write({"title": "t", "social": {"github": "javascript:x"}})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+
+    def test_unknown_section_rejected(self):
+        path = self._write({"title": "t", "sections": ["about", "video"]})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+
+    def test_radius_spacing_and_width_applied(self):
+        site = {"title": "t", "theme": {"radius": 14, "spacing": "airy", "maxWidth": 900, "accent": "#0369a1"}}
+        page = uh.render_page(site, FIXED_NOW)
+        self.assertIn("--radius: 14px;", page)
+        self.assertIn("--gap: 40px;", page)
+        self.assertIn("max-width: 900px;", page)
+
+    def test_bad_radius_and_width_rejected(self):
+        path = self._write({"title": "t", "theme": {"radius": 99}})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+        path = self._write({"title": "t", "theme": {"maxWidth": 300}})
+        with self.assertRaises(ValueError):
+            uh.load_site(path)
+
+
 if __name__ == "__main__":
     unittest.main()

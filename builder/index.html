@@ -612,6 +612,8 @@ ${navHtml}
   const COLOR_NAMES = {
     파란색: "#2563eb", 하늘색: "#0ea5e9", 빨간색: "#dc2626", 주황색: "#ea580c", 노란색: "#eab308",
     초록색: "#16a34a", 보라색: "#7c3aed", 분홍색: "#db2777", 회색: "#6b7280", 검은색: "#111827", 흰색: "#ffffff",
+    파랑: "#2563eb", 빨강: "#dc2626", 초록: "#16a34a", 노랑: "#eab308", 주황: "#ea580c", 보라: "#7c3aed",
+    핑크: "#db2777", 검정: "#111827", 하양: "#ffffff", 하늘: "#0ea5e9",
   };
   const FONT_RULES = [
     [/명조|세리프/, "Georgia, serif"],
@@ -619,6 +621,17 @@ ${navHtml}
     [/고딕|산세리프|기본/, "system-ui, sans-serif"],
   ];
   const TEMPLATE_WORDS = { 미니멀: "minimal", 오션: "ocean", 웜: "warm", 나이트: "night", 다크: "night" };
+  // "깔끔하게", "시원하게" 같은 느낌의 말로 템플릿을 추천합니다.
+  const STYLE_HINTS = [
+    [/깔끔|심플|단순/, "minimal", "깔끔한 느낌"],
+    [/시원|바다|청량/, "ocean", "시원한 느낌"],
+    [/따뜻|포근|아늑/, "warm", "따뜻한 느낌"],
+    [/어둡|밤|다크|야간/, "night", "어두운 느낌"],
+  ];
+  // 소개, 연락처 같은 섹션을 "숨겨 줘", "보여 줘"로 켜고 끕니다.
+  const SECTION_TOGGLE = /^(소개|연락처|SNS|버튼|프로젝트|소식)\s*(?:은|는)?\s*(숨겨|숨기|빼|안\s*보이|보여|보이게|넣어|표시)/;
+  const SECTION_BY_WORD = { 소개: "about", 연락처: "contact", SNS: "social", 버튼: "cta", 프로젝트: "projects", 소식: "projects" };
+  const SOCIAL_BY_WORD = { 깃허브: "github", 깃헙: "github", github: "github", 인스타: "instagram", 인스타그램: "instagram", 유튜브: "youtube", youtube: "youtube", 이메일: "email" };
   let undoSnapshot = null;
 
   // "나의 작업실로 바꿔 줘" → "나의 작업실"
@@ -632,6 +645,8 @@ ${navHtml}
     const applied = [];
     const notUnderstood = [];
 
+    // 직접 고른 디자인 값이 있으면 "깔끔하게" 같은 느낌 추천은 덮어쓰지 않습니다.
+    const hasExplicitDesign = /색|강조|배경|글자|글씨|글꼴|폰트|템플릿|테마|모서리|여백/.test(text);
     // 소개 글 바로 다음 줄들은 소개 글의 이어지는 내용으로 붙입니다.
     let aboutOpen = false;
     for (const line of text.split("\n").map((l) => l.trim()).filter(Boolean)) {
@@ -642,6 +657,12 @@ ${navHtml}
         state.about = m[1].trim();
         aboutOpen = true;
         applied.push(`소개 글 → ${state.about}`);
+      } else if ((m = line.match(SECTION_TOGGLE))) {
+        const [, word, verb] = m;
+        const hide = /숨겨|숨기|빼|안\s*보이/.test(verb);
+        const section = state.sections.find((x) => x.id === SECTION_BY_WORD[word]);
+        if (section) section.enabled = !hide;
+        applied.push(`${word} ${hide ? "숨김" : "표시"}`);
       } else if ((m = line.match(/^(?:한\s*줄\s*소개|부제목|소개)\s*[:은는을를]?\s*(.+)$/))) {
         state.site.subtitle = cleanValue(m[1]);
         applied.push(`한 줄 소개 → ${state.site.subtitle}`);
@@ -673,7 +694,36 @@ ${navHtml}
         state.projects = state.projects.filter((p) => p.title.trim() !== title);
         if (state.projects.length < before) applied.push(`소식 삭제 → ${title}`);
         else notUnderstood.push(`${line} (같은 제목의 소식을 찾지 못했습니다)`);
-      } else if (/색/.test(line) && findColorName(line)) {
+      } else if ((m = line.match(/^(?:버튼|CTA)\s*[:：]\s*(.+)$/))) {
+        const parts = m[1].split("|").map((p) => p.trim()).filter(Boolean);
+        const url = parts.find((p) => /^https?:\/\/\S+$/.test(p)) || "";
+        const label = parts.find((p) => p !== url) || "";
+        if (!url) {
+          notUnderstood.push(`${line} (버튼 링크는 https:// 로 시작해야 합니다)`);
+        } else {
+          state.cta = { label: label || "문의하기", url };
+          setSection("cta", true);
+          applied.push(`버튼 → ${state.cta.label} (${url})`);
+        }
+      } else if ((m = line.match(/^(SNS|인스타그램|인스타|유튜브|youtube|깃허브|깃헙|github|GitHub|이메일)\s*(?:주소)?\s*[:：]\s*(.+)$/i))) {
+        const key = SOCIAL_BY_WORD[m[1].toLowerCase()] || SOCIAL_BY_WORD[m[1]];
+        const value = m[2].trim();
+        const valid = key === "email" ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) : /^https?:\/\/\S+$/.test(value);
+        if (key && valid) {
+          state.social[key] = value;
+          setSection("social", true);
+          applied.push(`${m[1]} → ${value}`);
+        } else {
+          notUnderstood.push(`${line} (주소나 이메일 형식을 확인해 주세요)`);
+        }
+      } else if ((m = line.match(/^모서리\s*[:은는을를]?\s*(\d+|둥글게|각지게)/))) {
+        const radius = m[1] === "둥글게" ? 12 : m[1] === "각지게" ? 0 : Math.min(32, Number(m[1]));
+        state.design.radius = radius;
+        applied.push(`모서리 → ${radius}px`);
+      } else if ((m = line.match(/^여백\s*[:은는을를]?\s*(촘촘|보통|넉넉)/))) {
+        state.design.spacing = { 촘촘: "compact", 보통: "normal", 넉넉: "airy" }[m[1]];
+        applied.push(`여백 → ${m[1]}`);
+      } else if (/색|강조|배경|글자|글씨/.test(line) && findColorName(line)) {
         const target = /배경/.test(line) ? "bg" : /글자|글씨|텍스트/.test(line) ? "text" : "accent";
         const name = findColorName(line);
         state.design[target] = COLOR_NAMES[name];
@@ -689,11 +739,29 @@ ${navHtml}
         applied.push(`템플릿 → ${t.label}`);
       } else if (isAboutContinuation) {
         state.about += "\n" + line;
+      } else if (STYLE_HINTS.some(([re]) => re.test(line))) {
+        const [, key, feel] = STYLE_HINTS.find(([re]) => re.test(line));
+        if (hasExplicitDesign) {
+          applied.push(`스타일 추천(${feel})은 직접 고른 디자인 값을 우선해 건너뜀`);
+        } else {
+          applyTemplateKey(key);
+          applied.push(`스타일 추천 → ${TEMPLATES[key].label} (${feel})`);
+        }
       } else {
         notUnderstood.push(line);
       }
     }
     return { applied, notUnderstood };
+  }
+
+  function setSection(id, visible) {
+    const section = state.sections.find((x) => x.id === id);
+    if (section) section.enabled = visible;
+  }
+
+  function applyTemplateKey(key) {
+    const t = TEMPLATES[key];
+    Object.assign(state.design, { template: key, accent: t.accent, text: t.text, bg: t.bg, font: t.font, radius: t.radius });
   }
 
   function findColorName(line) {
@@ -709,6 +777,9 @@ ${navHtml}
     const lines = [];
     if (applied.length) lines.push("<strong>적용됨</strong>", ...applied.map((x) => `✓ ${esc(x)}`));
     if (notUnderstood.length) lines.push("<strong>이해하지 못한 줄</strong>", ...notUnderstood.map((x) => `! ${esc(x)}`));
+    if (notUnderstood.length) {
+      lines.push("예: 제목:, 소개:, 소개글:, 연락처:, 강조색:, 글꼴:, 템플릿:, 소식 추가:, 버튼:, 인스타:, 모서리:, 여백:, 연락처 빼 줘");
+    }
     if (!applied.length && !notUnderstood.length) lines.push("적용할 내용이 없습니다.");
     $("nlResult").innerHTML = lines.join("<br>");
   });
@@ -882,6 +953,9 @@ ${navHtml}
     URL.revokeObjectURL(link.href);
   });
 
+  // 빌더의 섹션 이름을 자동화(update_homepage.py)의 섹션 이름으로 바꿉니다.
+  const SECTION_EXPORT = { about: "about", projects: "items", cta: "cta", social: "social", contact: "contact" };
+
   // 자동화 파이프라인(update_homepage.py)이 읽는 data/site.json 형식으로 바꿉니다.
   function buildSiteData() {
     const s = state;
@@ -889,11 +963,25 @@ ${navHtml}
     const data = {
       title: s.site.title.trim(),
       lang: s.site.lang,
-      theme: { accent: s.design.accent, text: s.design.text, bg: s.design.bg, font: s.design.font },
+      theme: {
+        accent: s.design.accent, text: s.design.text, bg: s.design.bg, font: s.design.font,
+        radius: s.design.radius, spacing: s.design.spacing, maxWidth: s.design.maxWidth,
+      },
     };
     if (s.site.subtitle.trim()) data.subtitle = s.site.subtitle.trim();
     if (enabled("about") && s.about.trim()) data.about = s.about.trim();
     if (enabled("contact") && s.contact.trim()) data.contact = s.contact.trim();
+    // 화면에 보이는 섹션만, 빌더에서 정한 순서대로 내보냅니다.
+    data.sections = s.sections.filter((x) => x.enabled && SECTION_EXPORT[x.id]).map((x) => SECTION_EXPORT[x.id]);
+    if (enabled("cta") && /^https?:\/\/\S+$/.test(s.cta.url.trim())) {
+      data.cta = { label: s.cta.label.trim() || "문의하기", url: s.cta.url.trim() };
+    }
+    if (enabled("social")) {
+      const social = Object.fromEntries(
+        Object.entries(s.social).map(([k, v]) => [k, v.trim()]).filter(([, v]) => v)
+      );
+      if (Object.keys(social).length) data.social = social;
+    }
     data.items = s.projects.filter((p) => p.title.trim()).map((p) => {
       const item = { title: p.title.trim() };
       if (p.date.trim()) item.date = p.date.trim();
