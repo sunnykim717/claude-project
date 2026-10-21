@@ -98,6 +98,7 @@
 <header>
   <h1>바이브 홈페이지 빌더</h1>
   <div class="toolbar">
+    <button id="headUndo" title="방금 한 작업을 되돌립니다.">↩ 되돌리기</button>
     <button id="download" class="primary" title="완성된 홈페이지 파일(index.html)을 내 컴퓨터에 저장합니다. 더블클릭하면 바로 열립니다.">📄 홈페이지 파일 받기</button>
     <button id="exportSpec" title="지금까지 적은 내용을 파일 하나(명세)로 저장합니다. 나중에 다시 불러와 이어서 고칠 수 있습니다.">💾 작업 저장</button>
     <button type="button" id="importBtn" title="예전에 저장한 작업 파일을 열어 이어서 고칩니다.">📂 작업 불러오기</button>
@@ -513,9 +514,7 @@
     news: [],
     faq: [],
     gallery: [],
-    projects: [
-      { title: "첫 번째 프로젝트", summary: "", url: "", date: "", tag: "", body: "", photo: "" },
-    ],
+    projects: [],
     cta: { label: "문의하기", url: "" },
     social: { github: "", instagram: "", youtube: "", email: "" },
   };
@@ -684,6 +683,7 @@
 
     if (!s.sections.some((x) => x.enabled)) out.push(["warn", "켜진 섹션이 하나도 없습니다."]);
     const typed = [s.about, s.support, s.volunteer, s.location, s.contact, ...s.projects.flatMap((p) => [p.title, p.summary, p.body]), ...s.news.flatMap((n) => [n.title, n.summary, n.body]), ...s.faq.flatMap((f) => [f.q, f.a])].join("\n");
+    if (JSON.stringify(s).length > 4000000) out.push(["warn", "저장 공간이 거의 찼습니다. 사진을 몇 장 빼 주세요. 작업 저장 파일을 받아 두면 안전합니다."]);
     if (/\[[^\]\n]+\]/.test(typed)) out.push(["warn", "[ ] 안내 문구가 남아 있습니다. 실제 내용으로 바꿔 주세요."]);
     if (out.every((x) => x[0] === "ok")) out.unshift(["ok", "모든 검수 항목을 통과했습니다."]);
     return out;
@@ -1893,6 +1893,8 @@ ${navHtml}
   $("ghUser").addEventListener("input", renderGithubHelper);
   $("ghRepo").addEventListener("input", renderGithubHelper);
   renderGithubHelper();
+
+  $("headUndo").addEventListener("click", () => $("nlUndo").click());
 
   $("fillStarter").addEventListener("click", () => {
     if (!confirm("지금 적은 내용을 기본 구성으로 바꿉니다. 계속할까요? (되돌리기로 되돌릴 수 있습니다)")) return;
