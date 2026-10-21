@@ -75,6 +75,10 @@
     .brief-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px; }
     .brief { width: 100%; min-height: 320px; font-family: ui-monospace, monospace; font-size: 0.8rem; white-space: pre; }
     .hint { font-size: 0.8rem; color: var(--muted); margin: 4px 0 0; }
+    .gh-steps { margin: 6px 0; padding-left: 20px; } .gh-steps li { margin: 14px 0; font-size: 1rem; }
+    .gh-steps strong { display: block; margin-bottom: 4px; }
+    .gh-button { display: inline-block; margin: 6px 0; padding: 8px 14px; border-radius: 8px; background: var(--accent); color: #fff; text-decoration: none; font-weight: 700; }
+    .gh-done { display: block; margin-top: 4px; font-size: 0.9rem; }
     .gallery-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
     .gallery-list figure { margin: 0; font-size: 0.75rem; }
     .gallery-list img { width: 100%; height: 70px; object-fit: cover; border-radius: 6px; display: block; }
@@ -127,6 +131,16 @@
       <input type="file" id="galleryFileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
       <p class="hint" id="galleryState"></p>
       <div id="galleryList" class="gallery-list"></div>
+    </details>
+
+    <details open>
+      <summary>GitHub에 올리기 도우미 (선택)</summary>
+      <p class="hint">GitHub 계정이 있을 때만 필요합니다. 아이디와 비밀번호는 이 화면에 적지 않습니다. 아래 단계 버튼을 차례로 누르세요.</p>
+      <label for="ghUser">GitHub 아이디</label>
+      <input type="text" id="ghUser" placeholder="예: minsu-kim" autocomplete="off">
+      <label for="ghRepo">저장소 이름</label>
+      <input type="text" id="ghRepo" value="my-homepage" autocomplete="off">
+      <div id="ghLinks"></div>
     </details>
 
     <details class="advanced">
@@ -307,11 +321,11 @@
     </details>
 
     <details>
-      <summary>고급 · AI 요청용 상세 명세서</summary>
+      <summary>고급 · 설정 내용 글로 보기 (필요할 때만)</summary>
       <div class="brief-head">
         <button id="copyBrief" class="primary">명세서 복사</button>
       </div>
-      <p class="hint">이 내용을 AI에게 그대로 붙여 넣으면, 설정한 값과 똑같은 홈페이지 코드를 요청할 수 있습니다.</p>
+      <p class="hint">지금 설정한 내용을 글로 모아 둔 것입니다. 기록용으로 복사해 두세요. 홈페이지를 만드는 데는 필요 없습니다.</p>
       <textarea class="brief" id="brief" readonly></textarea>
     </details>
   </section>
@@ -1833,6 +1847,48 @@ ${navHtml}
   $("logoFileInput").addEventListener("change", (e) => pickImageFile(e.target, "logo"));
   $("heroFileClear").addEventListener("click", () => { state.site.heroFile = ""; fullRender(); updateImageStatus(); });
   $("logoClear").addEventListener("click", () => { state.site.logo = ""; fullRender(); updateImageStatus(); });
+
+  function renderGithubHelper() {
+    const user = $("ghUser").value.trim();
+    const repo = $("ghRepo").value.trim();
+    const okUser = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(user);
+    const okRepo = /^[A-Za-z0-9._-]{1,100}$/.test(repo) && !/^\.+$/.test(repo);
+    if (!user && !repo) { $("ghLinks").innerHTML = ""; return; }
+    if (!okUser || !okRepo) {
+      $("ghLinks").innerHTML = '<p class="hint">아이디는 영문, 숫자, 하이픈(-)만 쓸 수 있습니다. 저장소 이름은 영문, 숫자, 점(.), 밑줄(_), 하이픈(-)만 쓸 수 있습니다.</p>';
+      return;
+    }
+    const base = `https://github.com/${user}/${repo}`;
+    $("ghLinks").innerHTML = `
+      <ol class="gh-steps">
+        <li>
+          <strong>1단계: 저장소(폴더) 만들기</strong>
+          <p class="hint">아래 버튼을 누르면 GitHub 화면이 열립니다. 이름 칸은 이미 채워져 있습니다.<br>
+          <b>Public</b>(공개)을 고르고, 초록색 <b>Create repository</b> 버튼을 누르세요.</p>
+          <a class="gh-button" href="https://github.com/new?name=${repo}" target="_blank" rel="noopener">1단계 열기</a>
+          <label class="gh-done"><input type="checkbox"> 저장소를 만들었어요</label>
+        </li>
+        <li>
+          <strong>2단계: 홈페이지 파일 올리기</strong>
+          <p class="hint">빌더에서 받은 <b>index.html</b> 파일을 GitHub 화면 가운데로 끌어다 놓으세요.<br>
+          화면 아래 초록색 <b>Commit changes</b> 버튼을 누르면 끝입니다.</p>
+          <a class="gh-button" href="${base}/upload/main" target="_blank" rel="noopener">2단계 열기</a>
+          <label class="gh-done"><input type="checkbox"> 파일을 올렸어요</label>
+        </li>
+        <li>
+          <strong>3단계: 홈페이지 주소 켜기</strong>
+          <p class="hint">Source(출처)에서 <b>Deploy from a branch</b>를 고르세요.<br>
+          Branch는 <b>main</b>, 폴더는 <b>/ (root)</b> 로 고르고 <b>Save</b>를 누릅니다.</p>
+          <a class="gh-button" href="${base}/settings/pages" target="_blank" rel="noopener">3단계 열기</a>
+          <label class="gh-done"><input type="checkbox"> 주소를 켰어요</label>
+        </li>
+      </ol>
+      <p class="hint">모두 끝나면 몇 분 뒤에 내 홈페이지 주소가 생깁니다:<br>
+      <code>https://${user}.github.io/${repo}/</code></p>`;
+  }
+  $("ghUser").addEventListener("input", renderGithubHelper);
+  $("ghRepo").addEventListener("input", renderGithubHelper);
+  renderGithubHelper();
 
   $("fillStarter").addEventListener("click", () => {
     if (!confirm("지금 적은 내용을 기본 구성으로 바꿉니다. 계속할까요? (되돌리기로 되돌릴 수 있습니다)")) return;
