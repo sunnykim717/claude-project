@@ -82,6 +82,17 @@
 <div class="layout">
   <aside>
     <details open>
+      <summary>0. 말로 적기 (회원가입 없이)</summary>
+      <p class="hint">한 줄에 하나씩 적으면 아래 칸이 채워집니다. 입력한 내용은 이 브라우저 안에서만 처리되고, 어디로도 보내지 않습니다.</p>
+      <textarea id="nlInput" placeholder="제목: 민수의 작업실&#10;소개: 만들고 기록하는 공간&#10;소개글: 안녕하세요. 작업 기록을 남깁니다.&#10;연락처: hello@example.com&#10;강조색: 파란색&#10;배경색: 흰색&#10;글꼴: 명조&#10;템플릿: 오션&#10;소식 추가: 행사 안내 | 2026-11-03 | 주민 여러분을 초대합니다 | https://example.com&#10;소식 삭제: 지난 행사"></textarea>
+      <div class="actions">
+        <button type="button" id="nlApply" class="primary">적용</button>
+        <button type="button" id="nlUndo">되돌리기</button>
+      </div>
+      <div id="nlResult" class="hint"></div>
+    </details>
+
+    <details open>
       <summary>1. 사이트 정보</summary>
       <label for="title">사이트 제목 (필수, 60자 이내 권장)</label>
       <input type="text" id="title" data-bind="site.title">
@@ -596,6 +607,122 @@ ${navHtml}
       "",
     ].join("\n");
   }
+
+  // ---------- 말로 적기 (브라우저 안에서만 처리, 외부 전송 없음) ----------
+  const COLOR_NAMES = {
+    파란색: "#2563eb", 하늘색: "#0ea5e9", 빨간색: "#dc2626", 주황색: "#ea580c", 노란색: "#eab308",
+    초록색: "#16a34a", 보라색: "#7c3aed", 분홍색: "#db2777", 회색: "#6b7280", 검은색: "#111827", 흰색: "#ffffff",
+  };
+  const FONT_RULES = [
+    [/명조|세리프/, "Georgia, serif"],
+    [/모노|코드/, "ui-monospace, monospace"],
+    [/고딕|산세리프|기본/, "system-ui, sans-serif"],
+  ];
+  const TEMPLATE_WORDS = { 미니멀: "minimal", 오션: "ocean", 웜: "warm", 나이트: "night", 다크: "night" };
+  let undoSnapshot = null;
+
+  // "나의 작업실로 바꿔 줘" → "나의 작업실"
+  function cleanValue(value) {
+    return value.trim()
+      .replace(/\s*(으로|로)?\s*(바꿔\s*줘|바꿔줘|바꿔\s*주세요|해\s*줘|해줘|입니다|이에요|예요|이야)?\s*[.!]?$/, "")
+      .trim();
+  }
+
+  function parseNaturalText(text) {
+    const applied = [];
+    const notUnderstood = [];
+
+    // 소개 글 바로 다음 줄들은 소개 글의 이어지는 내용으로 붙입니다.
+    let aboutOpen = false;
+    for (const line of text.split("\n").map((l) => l.trim()).filter(Boolean)) {
+      const isAboutContinuation = aboutOpen;
+      aboutOpen = false;
+      let m;
+      if ((m = line.match(/^소개\s*글\s*[:은는을를]?\s*(.+)$/))) {
+        state.about = m[1].trim();
+        aboutOpen = true;
+        applied.push(`소개 글 → ${state.about}`);
+      } else if ((m = line.match(/^(?:한\s*줄\s*소개|부제목|소개)\s*[:은는을를]?\s*(.+)$/))) {
+        state.site.subtitle = cleanValue(m[1]);
+        applied.push(`한 줄 소개 → ${state.site.subtitle}`);
+      } else if ((m = line.match(/^제목\s*[:은는을를]?\s*(.+)$/))) {
+        state.site.title = cleanValue(m[1]);
+        applied.push(`제목 → ${state.site.title}`);
+      } else if ((m = line.match(/^연락처\s*[:은는을를]?\s*(.+)$/))) {
+        state.contact = m[1].trim();
+        applied.push(`연락처 → ${state.contact}`);
+      } else if ((m = line.match(/^(?:소식|프로젝트|항목)\s*(?:추가)?\s*[:：]\s*(.+)$/))) {
+        const item = { title: "", summary: "", url: "", date: "", tag: "" };
+        const extra = [];
+        for (const part of m[1].split("|").map((p) => p.trim()).filter(Boolean)) {
+          if (/^https?:\/\/\S+$/.test(part)) item.url = part;
+          else if (/^\d{4}-\d{2}-\d{2}$/.test(part)) item.date = part;
+          else if (!item.title) item.title = part;
+          else extra.push(part);
+        }
+        item.summary = extra.join(" ");
+        if (item.title) {
+          state.projects.push(item);
+          applied.push(`소식 추가 → ${item.title}${item.date ? ` (${item.date})` : ""}`);
+        } else {
+          notUnderstood.push(line);
+        }
+      } else if ((m = line.match(/^(?:소식|프로젝트|항목)\s*(?:삭제|지워|빼)\s*[:：]?\s*(.+)$/))) {
+        const title = cleanValue(m[1]);
+        const before = state.projects.length;
+        state.projects = state.projects.filter((p) => p.title.trim() !== title);
+        if (state.projects.length < before) applied.push(`소식 삭제 → ${title}`);
+        else notUnderstood.push(`${line} (같은 제목의 소식을 찾지 못했습니다)`);
+      } else if (/색/.test(line) && findColorName(line)) {
+        const target = /배경/.test(line) ? "bg" : /글자|글씨|텍스트/.test(line) ? "text" : "accent";
+        const name = findColorName(line);
+        state.design[target] = COLOR_NAMES[name];
+        applied.push(`${{ accent: "강조색", bg: "배경색", text: "글자색" }[target]} → ${name}`);
+      } else if (/글꼴|폰트|글씨체/.test(line) && FONT_RULES.some(([re]) => re.test(line))) {
+        const [, font] = FONT_RULES.find(([re]) => re.test(line));
+        state.design.font = font;
+        applied.push(`글꼴 → ${font}`);
+      } else if (/템플릿|스타일|테마/.test(line) && Object.keys(TEMPLATE_WORDS).some((w) => line.includes(w))) {
+        const word = Object.keys(TEMPLATE_WORDS).find((w) => line.includes(w));
+        const t = TEMPLATES[TEMPLATE_WORDS[word]];
+        Object.assign(state.design, { template: TEMPLATE_WORDS[word], accent: t.accent, text: t.text, bg: t.bg, font: t.font, radius: t.radius });
+        applied.push(`템플릿 → ${t.label}`);
+      } else if (isAboutContinuation) {
+        state.about += "\n" + line;
+      } else {
+        notUnderstood.push(line);
+      }
+    }
+    return { applied, notUnderstood };
+  }
+
+  function findColorName(line) {
+    return Object.keys(COLOR_NAMES).find((name) => line.includes(name));
+  }
+
+  $("nlApply").addEventListener("click", () => {
+    const text = $("nlInput").value;
+    if (!text.trim()) return;
+    undoSnapshot = clone(state);
+    const { applied, notUnderstood } = parseNaturalText(text);
+    fullRender();
+    const lines = [];
+    if (applied.length) lines.push("<strong>적용됨</strong>", ...applied.map((x) => `✓ ${esc(x)}`));
+    if (notUnderstood.length) lines.push("<strong>이해하지 못한 줄</strong>", ...notUnderstood.map((x) => `! ${esc(x)}`));
+    if (!applied.length && !notUnderstood.length) lines.push("적용할 내용이 없습니다.");
+    $("nlResult").innerHTML = lines.join("<br>");
+  });
+
+  $("nlUndo").addEventListener("click", () => {
+    if (!undoSnapshot) {
+      $("nlResult").textContent = "되돌릴 내용이 없습니다.";
+      return;
+    }
+    state = undoSnapshot;
+    undoSnapshot = null;
+    fullRender();
+    $("nlResult").textContent = "직전 상태로 되돌렸습니다.";
+  });
 
   // ---------- 화면 갱신 ----------
   function syncBindings() {
