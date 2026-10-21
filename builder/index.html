@@ -8,44 +8,60 @@
     :root {
       color-scheme: light dark;
       --bg: #f8fafc; --panel: #ffffff; --text: #0f172a; --muted: #64748b; --line: #e2e8f0; --accent: #3b82f6;
+      --ok: #15803d; --warn: #b45309; --err: #b91c1c;
     }
     @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) { --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --line: #334155; }
+      :root:not([data-theme="light"]) { --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --line: #334155; --ok: #4ade80; --warn: #fbbf24; --err: #f87171; }
     }
-    :root[data-theme="dark"] { --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --line: #334155; }
+    :root[data-theme="dark"] { --bg: #0f172a; --panel: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --line: #334155; --ok: #4ade80; --warn: #fbbf24; --err: #f87171; }
     * { box-sizing: border-box; }
     body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
-    header { padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-    header h1 { font-size: 1.1rem; margin: 0; }
-    .layout { display: grid; grid-template-columns: 340px 1fr; min-height: calc(100vh - 60px); }
-    aside { padding: 16px; border-right: 1px solid var(--line); background: var(--panel); overflow-y: auto; }
-    aside h2 { font-size: 0.95rem; margin: 18px 0 8px; color: var(--muted); }
-    aside h2:first-child { margin-top: 0; }
-    label { display: block; font-size: 0.85rem; margin: 8px 0 4px; }
-    input[type="text"], textarea, select {
-      width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 6px;
+    header { padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    header h1 { font-size: 1.05rem; margin: 0; }
+    .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
+    .layout { display: grid; grid-template-columns: 360px 1fr; min-height: calc(100vh - 56px); }
+    aside { padding: 12px; border-right: 1px solid var(--line); background: var(--panel); overflow-y: auto; max-height: calc(100vh - 56px); position: sticky; top: 0; }
+    details { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 10px; padding: 0 10px; }
+    summary { cursor: pointer; font-weight: 600; padding: 10px 0; }
+    details[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+    label { display: block; font-size: 0.82rem; margin: 8px 0 3px; color: var(--muted); }
+    input[type="text"], input[type="number"], input[type="url"], textarea, select {
+      width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px;
       background: var(--bg); color: var(--text); font: inherit;
     }
-    textarea { min-height: 64px; resize: vertical; }
-    .item { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
-    .item button { margin-top: 6px; }
+    input[type="color"] { width: 48px; height: 34px; padding: 0; border: none; background: none; }
+    input[type="checkbox"] { margin-right: 6px; }
+    textarea { min-height: 60px; resize: vertical; }
     .row { display: flex; gap: 8px; align-items: center; }
-    .row input[type="color"] { width: 44px; height: 36px; padding: 0; border: none; background: none; }
+    .grow { flex: 1; }
+    .check { display: flex; align-items: center; color: var(--text); margin: 6px 0; font-size: 0.9rem; }
+    .card { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin: 8px 0; }
+    .sec-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+    .sec-row .grow { font-size: 0.9rem; }
     button {
-      padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
-      background: var(--bg); color: var(--text); font: inherit;
+      padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+      background: var(--bg); color: var(--text); font: inherit; font-size: 0.85rem;
     }
     button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-    button.danger { color: #dc2626; }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-    .check { display: flex; align-items: center; gap: 6px; margin: 6px 0; font-size: 0.9rem; }
-    .templates { display: flex; gap: 6px; flex-wrap: wrap; }
-    .preview { padding: 16px; }
-    .preview-frame { width: 100%; height: calc(100vh - 110px); min-height: 480px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
-    .hint { font-size: 0.8rem; color: var(--muted); margin: 6px 0 0; }
-    @media (max-width: 800px) {
+    button.danger { color: var(--err); }
+    button:disabled { opacity: 0.4; cursor: default; }
+    .templates { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+    .preview { padding: 16px; min-width: 0; }
+    .preview-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .frame-wrap { display: flex; justify-content: center; }
+    .preview-frame { width: 100%; height: 62vh; min-height: 420px; border: 1px solid var(--line); border-radius: 10px; background: #fff; transition: width 0.2s; }
+    .checks { list-style: none; padding: 0; margin: 12px 0; font-size: 0.9rem; }
+    .checks li { padding: 4px 0 4px 22px; position: relative; }
+    .checks li::before { position: absolute; left: 0; font-weight: 700; }
+    .checks .err::before { content: "✕"; color: var(--err); }
+    .checks .warn::before { content: "!"; color: var(--warn); }
+    .checks .ok::before { content: "✓"; color: var(--ok); }
+    .brief-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px; }
+    .brief { width: 100%; min-height: 320px; font-family: ui-monospace, monospace; font-size: 0.8rem; white-space: pre; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin: 4px 0 0; }
+    @media (max-width: 860px) {
       .layout { grid-template-columns: 1fr; }
-      aside { border-right: none; border-bottom: 1px solid var(--line); }
+      aside { position: static; max-height: none; border-right: none; border-bottom: 1px solid var(--line); }
       .preview-frame { height: 70vh; }
     }
   </style>
@@ -53,8 +69,10 @@
 <body>
 <header>
   <h1>바이브 홈페이지 빌더</h1>
-  <div class="actions" style="margin-top:0">
-    <button id="save">저장</button>
+  <div class="toolbar">
+    <button id="exportSpec">명세(JSON) 저장</button>
+    <button type="button" id="importBtn">명세 불러오기</button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
     <button id="reset" class="danger">초기화</button>
     <button id="download" class="primary">index.html 다운로드</button>
   </div>
@@ -62,266 +80,662 @@
 
 <div class="layout">
   <aside>
-    <h2>1. 기본 정보</h2>
-    <label for="title">사이트 제목</label>
-    <input type="text" id="title">
-    <label for="subtitle">한 줄 소개</label>
-    <input type="text" id="subtitle">
+    <details open>
+      <summary>1. 사이트 정보</summary>
+      <label for="title">사이트 제목 (필수, 60자 이내 권장)</label>
+      <input type="text" id="title" data-bind="site.title">
+      <label for="subtitle">한 줄 소개</label>
+      <input type="text" id="subtitle" data-bind="site.subtitle">
+      <label for="description">검색용 설명 (meta description, 160자 이내 권장)</label>
+      <textarea id="description" data-bind="site.description"></textarea>
+      <label for="heroImage">대표 이미지 URL (https:// 로 시작)</label>
+      <input type="url" id="heroImage" data-bind="site.heroImage" placeholder="https://">
+      <label for="lang">페이지 언어</label>
+      <select id="lang" data-bind="site.lang">
+        <option value="ko">한국어 (ko)</option>
+        <option value="en">영어 (en)</option>
+        <option value="ja">일본어 (ja)</option>
+      </select>
+    </details>
 
-    <h2>2. 디자인</h2>
-    <label>템플릿</label>
-    <div class="templates" id="templates"></div>
-    <label>강조 색상</label>
-    <div class="row">
-      <input type="color" id="accent">
-      <span class="hint" id="accentHex"></span>
-    </div>
-    <label for="font">글꼴</label>
-    <select id="font">
-      <option value="system-ui, sans-serif">기본 고딕</option>
-      <option value="Georgia, serif">세리프</option>
-      <option value="ui-monospace, monospace">모노스페이스</option>
-    </select>
+    <details open>
+      <summary>2. 디자인</summary>
+      <label>템플릿 (선택 시 아래 값이 채워집니다)</label>
+      <div class="templates" id="templates"></div>
+      <div class="row">
+        <div><label>강조색</label><input type="color" data-bind="design.accent"></div>
+        <div><label>글자색</label><input type="color" data-bind="design.text"></div>
+        <div><label>배경색</label><input type="color" data-bind="design.bg"></div>
+      </div>
+      <label for="font">글꼴</label>
+      <select id="font" data-bind="design.font">
+        <option value="system-ui, sans-serif">기본 고딕</option>
+        <option value="Georgia, serif">세리프</option>
+        <option value="ui-monospace, monospace">모노스페이스</option>
+      </select>
+      <label for="radius">모서리 반경 (0–32px)</label>
+      <input type="number" id="radius" min="0" max="32" data-bind="design.radius">
+      <label for="maxWidth">본문 최대 너비 (560–960px)</label>
+      <input type="number" id="maxWidth" min="560" max="960" step="20" data-bind="design.maxWidth">
+      <label for="spacing">여백 밀도</label>
+      <select id="spacing" data-bind="design.spacing">
+        <option value="compact">촘촘하게</option>
+        <option value="normal">보통</option>
+        <option value="airy">넉넉하게</option>
+      </select>
+    </details>
 
-    <h2>3. 섹션</h2>
-    <label class="check"><input type="checkbox" id="showHero"> 상단 소개(Hero) 표시</label>
-    <label class="check"><input type="checkbox" id="showAbout"> 소개 글 표시</label>
-    <label for="about">소개 글</label>
-    <textarea id="about"></textarea>
-    <label class="check"><input type="checkbox" id="showContact"> 연락처 표시</label>
-    <label for="contact">이메일 또는 연락처</label>
-    <input type="text" id="contact">
+    <details open>
+      <summary>3. 섹션 순서와 표시</summary>
+      <p class="hint">체크하면 표시되고, ▲▼ 로 위아래 순서를 바꿉니다.</p>
+      <div id="sections"></div>
+    </details>
 
-    <h2>4. 콘텐츠 목록</h2>
-    <div id="items"></div>
-    <button id="addItem">+ 항목 추가</button>
+    <details>
+      <summary>4. 섹션 제목과 내용</summary>
+      <label for="headAbout">소개 제목</label>
+      <input type="text" id="headAbout" data-bind="headings.about">
+      <label for="about">소개 글 (줄바꿈 가능)</label>
+      <textarea id="about" data-bind="about"></textarea>
+      <label for="headProjects">프로젝트 제목</label>
+      <input type="text" id="headProjects" data-bind="headings.projects">
+      <label for="headContact">연락처 제목</label>
+      <input type="text" id="headContact" data-bind="headings.contact">
+      <label for="contact">연락처 내용</label>
+      <textarea id="contact" data-bind="contact"></textarea>
+    </details>
+
+    <details>
+      <summary>5. 프로젝트 목록</summary>
+      <div id="projects"></div>
+      <button id="addProject">+ 항목 추가</button>
+    </details>
+
+    <details>
+      <summary>6. 버튼과 SNS 링크</summary>
+      <label for="ctaLabel">버튼 문구</label>
+      <input type="text" id="ctaLabel" data-bind="cta.label">
+      <label for="ctaUrl">버튼 링크 (https:// 로 시작)</label>
+      <input type="url" id="ctaUrl" data-bind="cta.url" placeholder="https://">
+      <label for="github">GitHub</label>
+      <input type="url" id="github" data-bind="social.github" placeholder="https://">
+      <label for="instagram">Instagram</label>
+      <input type="url" id="instagram" data-bind="social.instagram" placeholder="https://">
+      <label for="youtube">YouTube</label>
+      <input type="url" id="youtube" data-bind="social.youtube" placeholder="https://">
+      <label for="email">이메일</label>
+      <input type="text" id="email" data-bind="social.email" placeholder="name@example.com">
+    </details>
   </aside>
 
   <section class="preview">
-    <iframe class="preview-frame" id="frame" title="미리보기"></iframe>
+    <div class="preview-bar">
+      <div class="row">
+        <label for="viewport" style="margin:0">미리보기 너비</label>
+        <select id="viewport">
+          <option value="100%">데스크톱 (전체)</option>
+          <option value="768px">태블릿 768px</option>
+          <option value="390px">모바일 390px</option>
+        </select>
+      </div>
+      <span class="hint" id="saveState"></span>
+    </div>
+    <div class="frame-wrap">
+      <iframe class="preview-frame" id="frame" title="미리보기"></iframe>
+    </div>
+
+    <h2 style="font-size:1rem">검수 결과</h2>
+    <ul class="checks" id="checks"></ul>
+
+    <div class="brief-head">
+      <h2 style="font-size:1rem;margin:0">AI 요청용 상세 명세서</h2>
+      <button id="copyBrief" class="primary">명세서 복사</button>
+    </div>
+    <p class="hint">이 내용을 AI에게 그대로 붙여 넣으면, 설정한 값과 똑같은 홈페이지 코드를 요청할 수 있습니다.</p>
+    <textarea class="brief" id="brief" readonly></textarea>
   </section>
 </div>
 
 <script>
-  const STORAGE_KEY = "vibe-homepage-builder:v1";
+  const STORAGE_KEY = "vibe-homepage-builder:v2";
+
+  const SECTION_LABELS = {
+    hero: "상단 소개",
+    about: "소개",
+    projects: "프로젝트",
+    cta: "버튼",
+    social: "SNS",
+    contact: "연락처",
+  };
+  const SPACING = { compact: 12, normal: 24, airy: 40 };
 
   const TEMPLATES = {
-    minimal: { label: "미니멀", accent: "#111827", font: "system-ui, sans-serif", bg: "#ffffff", text: "#111827" },
-    ocean:   { label: "오션",   accent: "#0ea5e9", font: "system-ui, sans-serif", bg: "#f0f9ff", text: "#0c4a6e" },
-    warm:    { label: "웜",     accent: "#f97316", font: "Georgia, serif",        bg: "#fffbeb", text: "#431407" },
-    night:   { label: "나이트", accent: "#a78bfa", font: "system-ui, sans-serif", bg: "#0f172a", text: "#e2e8f0" },
+    minimal: { label: "미니멀", accent: "#111827", text: "#111827", bg: "#ffffff", font: "system-ui, sans-serif", radius: 8 },
+    ocean:   { label: "오션",   accent: "#0369a1", text: "#0c4a6e", bg: "#f0f9ff", font: "system-ui, sans-serif", radius: 14 },
+    warm:    { label: "웜",     accent: "#c2410c", text: "#431407", bg: "#fffbeb", font: "Georgia, serif",        radius: 4 },
+    night:   { label: "나이트", accent: "#a78bfa", text: "#e2e8f0", bg: "#0f172a", font: "system-ui, sans-serif", radius: 12 },
   };
 
   const DEFAULT_STATE = {
-    title: "나의 홈페이지",
-    subtitle: "여기에 한 줄 소개를 적어 보세요.",
-    template: "minimal",
-    accent: "#111827",
-    font: "system-ui, sans-serif",
-    showHero: true,
-    showAbout: true,
-    about: "이곳에 나를 소개하는 글을 적어 보세요.",
-    showContact: true,
-    contact: "hello@example.com",
-    items: [
-      { title: "첫 번째 프로젝트", summary: "진행한 작업이나 소식을 짧게 적어 보세요.", url: "" },
+    site: {
+      title: "나의 홈페이지",
+      subtitle: "여기에 한 줄 소개를 적어 보세요.",
+      description: "",
+      heroImage: "",
+      lang: "ko",
+    },
+    design: {
+      template: "minimal",
+      accent: "#111827",
+      text: "#111827",
+      bg: "#ffffff",
+      font: "system-ui, sans-serif",
+      radius: 8,
+      maxWidth: 760,
+      spacing: "normal",
+    },
+    sections: [
+      { id: "hero", enabled: true },
+      { id: "about", enabled: true },
+      { id: "projects", enabled: true },
+      { id: "cta", enabled: false },
+      { id: "social", enabled: false },
+      { id: "contact", enabled: true },
     ],
+    headings: { about: "소개", projects: "프로젝트", contact: "연락처" },
+    about: "이곳에 나를 소개하는 글을 적어 보세요.",
+    contact: "hello@example.com",
+    projects: [
+      { title: "첫 번째 프로젝트", summary: "진행한 작업이나 소식을 짧게 적어 보세요.", url: "", date: "", tag: "" },
+    ],
+    cta: { label: "문의하기", url: "" },
+    social: { github: "", instagram: "", youtube: "", email: "" },
   };
 
-  let state = load();
-
   const $ = (id) => document.getElementById(id);
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+
+  // ---------- 상태 로드/정규화 ----------
+  function normalize(raw) {
+    const s = clone(DEFAULT_STATE);
+    if (!raw || typeof raw !== "object") return s;
+
+    Object.assign(s.site, raw.site ?? {});
+    Object.assign(s.design, raw.design ?? {});
+    Object.assign(s.headings, raw.headings ?? {});
+    Object.assign(s.cta, raw.cta ?? {});
+    Object.assign(s.social, raw.social ?? {});
+    if (typeof raw.about === "string") s.about = raw.about;
+    if (typeof raw.contact === "string") s.contact = raw.contact;
+    if (Array.isArray(raw.projects)) {
+      s.projects = raw.projects.map((p) => ({
+        title: String(p?.title ?? ""), summary: String(p?.summary ?? ""), url: String(p?.url ?? ""),
+        date: String(p?.date ?? ""), tag: String(p?.tag ?? ""),
+      }));
+    }
+    if (Array.isArray(raw.sections)) {
+      const seen = new Set();
+      const sections = raw.sections
+        .filter((x) => SECTION_LABELS[x?.id] && !seen.has(x.id) && seen.add(x.id))
+        .map((x) => ({ id: x.id, enabled: !!x.enabled }));
+      DEFAULT_STATE.sections.forEach((x) => { if (!seen.has(x.id)) sections.push({ ...x, enabled: false }); });
+      s.sections = sections;
+    }
+
+    const d = s.design;
+    ["accent", "text", "bg"].forEach((k) => { if (!/^#[0-9a-f]{6}$/i.test(d[k])) d[k] = DEFAULT_STATE.design[k]; });
+    if (!TEMPLATES[d.template]) d.template = "minimal";
+    if (!SPACING[d.spacing]) d.spacing = "normal";
+    d.radius = clamp(Number(d.radius), 0, 32, DEFAULT_STATE.design.radius);
+    d.maxWidth = clamp(Number(d.maxWidth), 560, 960, DEFAULT_STATE.design.maxWidth);
+    return s;
+  }
+
+  function clamp(v, min, max, fallback) {
+    if (Number.isNaN(v)) return fallback;
+    return Math.min(max, Math.max(min, v));
+  }
+
+  let state = load();
 
   function load() {
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (saved) return { ...structuredClone(DEFAULT_STATE), ...saved };
+      if (saved) return normalize(saved);
     } catch (e) { /* 저장소를 쓸 수 없으면 기본값 사용 */ }
-    return structuredClone(DEFAULT_STATE);
+    return clone(DEFAULT_STATE);
   }
 
   function persist() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* 무시 */ }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      $("saveState").textContent = "브라우저에 자동 저장됨";
+    } catch (e) {
+      $("saveState").textContent = "저장소를 쓸 수 없어 자동 저장이 꺼져 있습니다";
+    }
   }
 
-  function escapeHtml(value) {
+  // ---------- 보안/유틸 ----------
+  function esc(value) {
     return String(value ?? "")
       .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;").replaceAll("'", "&#39;");
   }
 
+  // http(s) 주소만 허용해서 javascript: 같은 주소를 막습니다.
   function safeUrl(value) {
-    // javascript: 같은 위험한 주소는 막고 http(s) 만 허용
-    return /^https?:\/\//i.test(value) ? escapeHtml(value) : "";
+    const s = String(value ?? "").trim();
+    return /^https:\/\/[^\s]+$/i.test(s) || /^http:\/\/[^\s]+$/i.test(s) ? esc(s) : "";
+  }
+
+  function emailHref(value) {
+    const s = String(value ?? "").trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? esc("mailto:" + s) : "";
+  }
+
+  // WCAG 대비율 계산
+  function luminance(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+      const c = v / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  }
+  function contrast(a, b) {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  // ---------- 검수 규칙 ----------
+  function runChecks() {
+    const s = state;
+    const out = [];
+    const enabled = new Set(s.sections.filter((x) => x.enabled).map((x) => x.id));
+
+    if (!s.site.title.trim()) out.push(["err", "사이트 제목이 비어 있습니다."]);
+    else if (s.site.title.length > 60) out.push(["warn", `사이트 제목이 ${s.site.title.length}자입니다. 60자 이내를 권장합니다.`]);
+
+    if (!s.site.description.trim()) out.push(["warn", "검색용 설명(meta description)이 없습니다. 검색 결과 노출에 불리합니다."]);
+    else if (s.site.description.length > 160) out.push(["warn", `검색용 설명이 ${s.site.description.length}자입니다. 160자 이내를 권장합니다.`]);
+
+    if (s.site.heroImage && !safeUrl(s.site.heroImage)) out.push(["err", "대표 이미지 URL 형식이 올바르지 않습니다 (https:// 필요)."]);
+
+    const textRatio = contrast(s.design.text, s.design.bg);
+    if (textRatio < 4.5) out.push(["err", `글자색과 배경색의 대비가 ${textRatio.toFixed(2)}:1 입니다. WCAG AA 기준 4.5:1 이상이 필요합니다.`]);
+    else out.push(["ok", `글자색과 배경색 대비 ${textRatio.toFixed(2)}:1 (기준 충족)`]);
+
+    const accentRatio = contrast(s.design.accent, s.design.bg);
+    if (accentRatio < 3) out.push(["warn", `강조색과 배경색의 대비가 ${accentRatio.toFixed(2)}:1 입니다. 제목과 링크가 흐리게 보일 수 있습니다.`]);
+
+    const btnRatio = contrast(s.design.bg, s.design.accent);
+    if (enabled.has("cta") && btnRatio < 4.5) out.push(["err", `버튼 글자(배경색)와 버튼 배경(강조색)의 대비가 ${btnRatio.toFixed(2)}:1 입니다. 강조색을 더 진하게 바꾸세요.`]);
+
+    if (enabled.has("about") && !s.about.trim()) out.push(["warn", "소개 섹션이 켜져 있지만 소개 글이 비어 있습니다."]);
+
+    const validProjects = s.projects.filter((p) => p.title.trim());
+    if (enabled.has("projects") && validProjects.length === 0) out.push(["warn", "프로젝트 섹션이 켜져 있지만 제목이 있는 항목이 없습니다."]);
+    s.projects.forEach((p, i) => {
+      if (!p.title.trim() && (p.summary || p.url || p.date || p.tag)) out.push(["err", `프로젝트 ${i + 1}: 제목이 없어서 화면에 나오지 않습니다.`]);
+      if (p.url && !safeUrl(p.url)) out.push(["err", `프로젝트 ${i + 1}: 링크 형식이 올바르지 않습니다 (https:// 필요).`]);
+      if (p.date && !/^\d{4}-\d{2}-\d{2}$/.test(p.date)) out.push(["err", `프로젝트 ${i + 1}: 날짜는 YYYY-MM-DD 형식이어야 합니다.`]);
+    });
+
+    if (enabled.has("cta") && !safeUrl(s.cta.url)) out.push(["warn", "버튼 섹션이 켜져 있지만 링크가 없어 숨겨집니다."]);
+    if (s.cta.url && !safeUrl(s.cta.url)) out.push(["err", "버튼 링크 형식이 올바르지 않습니다 (https:// 필요)."]);
+    ["github", "instagram", "youtube"].forEach((k) => {
+      if (s.social[k] && !safeUrl(s.social[k])) out.push(["err", `${k} 링크 형식이 올바르지 않습니다 (https:// 필요).`]);
+    });
+    if (s.social.email && !emailHref(s.social.email)) out.push(["err", "이메일 형식이 올바르지 않습니다."]);
+
+    if (!s.sections.some((x) => x.enabled)) out.push(["warn", "켜진 섹션이 하나도 없습니다."]);
+    if (out.every((x) => x[0] === "ok")) out.unshift(["ok", "모든 검수 항목을 통과했습니다."]);
+    return out;
+  }
+
+  // ---------- HTML 생성 ----------
+  function navLabel(id) {
+    if (id === "about") return state.headings.about;
+    if (id === "projects") return state.headings.projects;
+    if (id === "contact") return state.headings.contact;
+    if (id === "cta") return state.cta.label || "문의";
+    return SECTION_LABELS[id];
+  }
+
+  function renderSection(id) {
+    const s = state;
+    const title = esc(s.site.title);
+    if (id === "hero") {
+      const img = safeUrl(s.site.heroImage);
+      return `<header class="hero" id="hero">
+      ${img ? `<img src="${img}" alt="${title} 대표 이미지">` : ""}
+      <h1>${title}</h1>${s.site.subtitle ? `\n      <p class="subtitle">${esc(s.site.subtitle)}</p>` : ""}
+    </header>`;
+    }
+    if (id === "about") {
+      if (!s.about.trim()) return "";
+      return `<section id="about">
+      <h2>${esc(s.headings.about)}</h2>
+      <p class="pre">${esc(s.about)}</p>
+    </section>`;
+    }
+    if (id === "projects") {
+      const items = s.projects.filter((p) => p.title.trim()).map((p) => {
+        const url = safeUrl(p.url);
+        const name = url ? `<a href="${url}">${esc(p.title)}</a>` : esc(p.title);
+        return `<article>
+        <h3>${name}${p.tag ? ` <span class="tag">${esc(p.tag)}</span>` : ""}</h3>
+        ${p.date ? `<time datetime="${esc(p.date)}">${esc(p.date)}</time>` : ""}
+        ${p.summary ? `<p>${esc(p.summary)}</p>` : ""}
+      </article>`;
+      });
+      if (!items.length) return "";
+      return `<section id="projects">
+      <h2>${esc(s.headings.projects)}</h2>
+      ${items.join("\n      ")}
+    </section>`;
+    }
+    if (id === "cta") {
+      const url = safeUrl(s.cta.url);
+      if (!url) return "";
+      return `<section id="cta" class="cta">
+      <a class="btn" href="${url}">${esc(s.cta.label || "문의하기")}</a>
+    </section>`;
+    }
+    if (id === "social") {
+      const links = [
+        ["GitHub", safeUrl(s.social.github)],
+        ["Instagram", safeUrl(s.social.instagram)],
+        ["YouTube", safeUrl(s.social.youtube)],
+        ["이메일", emailHref(s.social.email)],
+      ].filter(([, href]) => href);
+      if (!links.length) return "";
+      return `<section id="social">
+      <h2>SNS</h2>
+      <ul class="links">${links.map(([name, href]) => `<li><a href="${href}">${name}</a></li>`).join("")}</ul>
+    </section>`;
+    }
+    if (id === "contact") {
+      if (!s.contact.trim()) return "";
+      return `<section id="contact">
+      <h2>${esc(s.headings.contact)}</h2>
+      <p class="pre">${esc(s.contact)}</p>
+    </section>`;
+    }
+    return "";
   }
 
   function buildHtml() {
-    const t = TEMPLATES[state.template] ?? TEMPLATES.minimal;
-    const { bg, text } = t;
-    const accent = state.accent;
+    const s = state;
+    const d = s.design;
+    const title = esc(s.site.title);
+    const desc = esc(s.site.description);
+    const img = safeUrl(s.site.heroImage);
 
-    const itemsHtml = state.items
-      .filter((item) => item.title)
-      .map((item) => {
-        const title = safeUrl(item.url)
-          ? `<a href="${safeUrl(item.url)}">${escapeHtml(item.title)}</a>`
-          : escapeHtml(item.title);
-        return `<article><h3>${title}</h3>${item.summary ? `<p>${escapeHtml(item.summary)}</p>` : ""}</article>`;
-      })
-      .join("\n    ");
+    const rendered = s.sections.filter((x) => x.enabled)
+      .map((x) => ({ id: x.id, html: renderSection(x.id) }))
+      .filter((x) => x.html);
 
-    const hero = state.showHero
-      ? `<header class="hero"><h1>${escapeHtml(state.title)}</h1><p class="subtitle">${escapeHtml(state.subtitle)}</p></header>`
-      : "";
-    const about = state.showAbout && state.about
-      ? `<section><h2>소개</h2><p>${escapeHtml(state.about)}</p></section>`
-      : "";
-    const contact = state.showContact && state.contact
-      ? `<footer><h2>연락처</h2><p>${escapeHtml(state.contact)}</p></footer>`
+    const nav = rendered.filter((x) => x.id !== "hero");
+    const navHtml = nav.length
+      ? `<nav aria-label="페이지 메뉴"><ul>${nav.map((x) => `<li><a href="#${x.id}">${esc(navLabel(x.id))}</a></li>`).join("")}</ul></nav>`
       : "";
 
     return `<!doctype html>
-<html lang="ko">
+<html lang="${esc(s.site.lang)}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(state.title)}</title>
+  <title>${title}</title>${desc ? `\n  <meta name="description" content="${desc}">` : ""}
+  <meta property="og:title" content="${title}">
+  <meta property="og:type" content="website">${desc ? `\n  <meta property="og:description" content="${desc}">` : ""}${img ? `\n  <meta property="og:image" content="${img}">` : ""}
   <style>
-    body { margin: 0; font-family: ${state.font}; background: ${bg}; color: ${text}; line-height: 1.7; }
-    main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
-    .hero { padding: 48px 0 24px; border-bottom: 4px solid ${accent}; margin-bottom: 24px; }
-    .hero h1 { margin: 0; font-size: 2.2rem; }
-    .subtitle { margin: 8px 0 0; opacity: 0.75; }
-    h2 { color: ${accent}; font-size: 1.2rem; margin-top: 32px; }
-    article { border-left: 4px solid ${accent}; padding: 4px 14px; margin: 16px 0; }
-    article h3 { margin: 0; }
-    article h3 a { color: inherit; }
-    footer { margin-top: 40px; border-top: 1px solid ${accent}; padding-top: 8px; }
+    :root { --accent: ${d.accent}; --text: ${d.text}; --bg: ${d.bg}; --radius: ${d.radius}px; --max: ${d.maxWidth}px; --gap: ${SPACING[d.spacing]}px; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ${d.font}; background: var(--bg); color: var(--text); line-height: 1.7; }
+    nav { border-bottom: 1px solid var(--accent); padding: 10px var(--gap); }
+    nav ul { list-style: none; display: flex; gap: 16px; flex-wrap: wrap; margin: 0 auto; padding: 0; max-width: var(--max); }
+    nav a { color: var(--accent); text-decoration: none; font-weight: 600; }
+    main { max-width: var(--max); margin: 0 auto; padding: var(--gap); }
+    .hero { padding: calc(var(--gap) * 2) 0 var(--gap); border-bottom: 4px solid var(--accent); }
+    .hero img { display: block; width: 100%; height: auto; border-radius: var(--radius); margin-bottom: 16px; }
+    .hero h1 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.4rem); }
+    .subtitle { margin: 8px 0 0; opacity: 0.8; }
+    section { margin-top: calc(var(--gap) * 1.5); }
+    h2 { color: var(--accent); font-size: 1.2rem; margin: 0 0 8px; }
+    h3 { margin: 0; font-size: 1.05rem; }
+    h3 a { color: inherit; }
+    .pre { white-space: pre-line; }
+    article { border-left: 4px solid var(--accent); padding: 4px 14px; margin: 14px 0; border-radius: 0 var(--radius) var(--radius) 0; }
+    article time { font-size: 0.85rem; opacity: 0.7; }
+    .tag { display: inline-block; font-size: 0.75rem; font-weight: 400; border: 1px solid var(--accent); border-radius: 999px; padding: 0 8px; margin-left: 6px; vertical-align: middle; }
+    .btn { display: inline-block; padding: 10px 18px; border-radius: var(--radius); background: var(--accent); color: var(--bg); text-decoration: none; font-weight: 700; }
+    .links { list-style: none; display: flex; gap: 14px; flex-wrap: wrap; padding: 0; margin: 0; }
+    .links a { color: var(--accent); }
+    footer { margin-top: calc(var(--gap) * 2); padding: var(--gap) var(--gap) calc(var(--gap) * 2); border-top: 1px solid var(--accent); text-align: center; font-size: 0.85rem; opacity: 0.75; }
+    a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+    @media (max-width: 600px) { main, nav { padding-left: 16px; padding-right: 16px; } }
   </style>
 </head>
 <body>
-<main>
-  ${hero}
-  ${about}
-  <section>
-    ${itemsHtml}
-  </section>
-  ${contact}
+${navHtml}
+<main id="main">
+  ${rendered.map((x) => x.html).join("\n  ")}
 </main>
+<footer>© ${title}</footer>
 </body>
 </html>
 `;
   }
 
-  function renderItems() {
-    const container = $("items");
-    container.innerHTML = "";
-    state.items.forEach((item, index) => {
-      const box = document.createElement("div");
-      box.className = "item";
-      box.innerHTML = `
-        <label>제목</label>
-        <input type="text" data-field="title" data-index="${index}" value="${escapeHtml(item.title)}">
-        <label>설명</label>
-        <input type="text" data-field="summary" data-index="${index}" value="${escapeHtml(item.summary)}">
-        <label>링크 (선택, http:// 로 시작)</label>
-        <input type="text" data-field="url" data-index="${index}" value="${escapeHtml(item.url)}">
-        <button class="danger" data-remove="${index}">삭제</button>`;
-      container.appendChild(box);
+  // ---------- AI용 상세 명세서 ----------
+  function buildBrief() {
+    const s = state;
+    const d = s.design;
+    const checks = runChecks().map(([level, msg]) => `- [${level === "ok" ? "통과" : level === "warn" ? "주의" : "오류"}] ${msg}`);
+    const order = s.sections.map((x, i) => `${i + 1}. ${SECTION_LABELS[x.id]} : ${x.enabled ? "표시" : "숨김"}`);
+    const projects = s.projects.filter((p) => p.title.trim()).map((p, i) =>
+      `${i + 1}) 제목: ${p.title} | 날짜: ${p.date || "없음"} | 태그: ${p.tag || "없음"} | 링크: ${p.url || "없음"}\n   설명: ${p.summary || "없음"}`);
+    const socials = Object.entries(s.social).filter(([, v]) => v).map(([k, v]) => `- ${k}: ${v}`);
+
+    const spec = JSON.stringify(s, null, 2);
+
+    return [
+      "# 홈페이지 제작 명세",
+      "",
+      "아래 명세를 정확히 따라 단일 index.html 파일 하나로 작성하세요.",
+      "명세에 없는 문구, 이미지, 외부 스크립트는 추가하지 마세요.",
+      "",
+      "## 1. 사이트 정보",
+      `- 제목: ${s.site.title}`,
+      `- 한 줄 소개: ${s.site.subtitle || "없음"}`,
+      `- 검색용 설명(meta description): ${s.site.description || "없음"}`,
+      `- 대표 이미지 URL: ${s.site.heroImage || "없음"}`,
+      `- 페이지 언어(lang): ${s.site.lang}`,
+      "",
+      "## 2. 디자인 값 (반드시 이 값을 사용)",
+      `- 템플릿: ${TEMPLATES[d.template]?.label ?? "사용자 지정"}`,
+      `- 강조색: ${d.accent}`,
+      `- 글자색: ${d.text}`,
+      `- 배경색: ${d.bg}`,
+      `- 글꼴: ${d.font}`,
+      `- 모서리 반경: ${d.radius}px`,
+      `- 본문 최대 너비: ${d.maxWidth}px`,
+      `- 여백 기준: ${SPACING[d.spacing]}px (${d.spacing})`,
+      "",
+      "## 3. 섹션 순서 (위에서 아래로, 표시 여부 포함)",
+      ...order,
+      "",
+      "## 4. 섹션 내용",
+      `- 소개 제목: ${s.headings.about}`,
+      `- 소개 글:\n${s.about || "(없음)"}`,
+      `- 프로젝트 제목: ${s.headings.projects}`,
+      ...(projects.length ? projects : ["(프로젝트 없음)"]),
+      `- 버튼: "${s.cta.label}" → ${s.cta.url || "없음"}`,
+      "- SNS 링크:", ...(socials.length ? socials : ["(없음)"]),
+      `- 연락처 제목: ${s.headings.contact}`,
+      `- 연락처 내용: ${s.contact || "(없음)"}`,
+      "",
+      "## 5. 현재 검수 결과",
+      ...checks,
+      "",
+      "## 6. 구현 규칙",
+      "- 시맨틱 태그(header, nav, main, section, article, footer)를 사용하고 h1 은 한 번만 씁니다.",
+      "- 섹션 id 와 상단 메뉴 링크(#id)를 일치시킵니다. 메뉴는 표시되는 섹션만 포함합니다.",
+      "- 이미지에는 alt 를 넣고, 링크는 명세의 주소를 그대로 씁니다.",
+      "- 390px 폭에서 가로 스크롤이 생기지 않아야 합니다.",
+      "- 글자와 배경 대비는 WCAG AA(4.5:1) 이상을 유지합니다.",
+      "- 외부 JavaScript 와 외부 CSS 프레임워크는 사용하지 않습니다. CSS 는 <style> 안에 씁니다.",
+      "- 모든 링크 포커스가 보이도록 :focus-visible 스타일을 둡니다.",
+      "",
+      "## 7. 원본 명세 (JSON)",
+      "```json",
+      spec,
+      "```",
+      "",
+    ].join("\n");
+  }
+
+  // ---------- 화면 갱신 ----------
+  function syncBindings() {
+    document.querySelectorAll("[data-bind]").forEach((el) => {
+      const v = getPath(state, el.dataset.bind);
+      if (el.type === "checkbox") el.checked = !!v;
+      else el.value = v ?? "";
     });
   }
 
   function renderTemplates() {
-    const container = $("templates");
-    container.innerHTML = "";
-    Object.entries(TEMPLATES).forEach(([key, t]) => {
-      const button = document.createElement("button");
-      button.textContent = t.label;
-      button.dataset.template = key;
-      if (key === state.template) button.className = "primary";
-      container.appendChild(button);
-    });
+    $("templates").innerHTML = Object.entries(TEMPLATES).map(([key, t]) =>
+      `<button type="button" data-template="${key}" class="${key === state.design.template ? "primary" : ""}">${t.label}</button>`
+    ).join("");
   }
 
-  function syncInputs() {
-    $("title").value = state.title;
-    $("subtitle").value = state.subtitle;
-    $("accent").value = state.accent;
-    $("accentHex").textContent = state.accent;
-    $("font").value = state.font;
-    $("showHero").checked = state.showHero;
-    $("showAbout").checked = state.showAbout;
-    $("about").value = state.about;
-    $("showContact").checked = state.showContact;
-    $("contact").value = state.contact;
-    renderTemplates();
-    renderItems();
+  function renderSections() {
+    $("sections").innerHTML = state.sections.map((x, i) => `
+      <div class="sec-row">
+        <input type="checkbox" data-section-toggle="${i}" ${x.enabled ? "checked" : ""}>
+        <span class="grow">${SECTION_LABELS[x.id]}</span>
+        <button type="button" data-move="${i}:-1" ${i === 0 ? "disabled" : ""} aria-label="위로">▲</button>
+        <button type="button" data-move="${i}:1" ${i === state.sections.length - 1 ? "disabled" : ""} aria-label="아래로">▼</button>
+      </div>`).join("");
+  }
+
+  function renderProjects() {
+    $("projects").innerHTML = state.projects.map((p, i) => `
+      <div class="card">
+        <label>제목</label>
+        <input type="text" data-project="${i}" data-field="title" value="${esc(p.title)}">
+        <label>설명</label>
+        <textarea data-project="${i}" data-field="summary">${esc(p.summary)}</textarea>
+        <div class="row">
+          <div class="grow"><label>날짜 (YYYY-MM-DD)</label><input type="text" data-project="${i}" data-field="date" value="${esc(p.date)}"></div>
+          <div class="grow"><label>태그</label><input type="text" data-project="${i}" data-field="tag" value="${esc(p.tag)}"></div>
+        </div>
+        <label>링크 (https:// 로 시작)</label>
+        <input type="text" data-project="${i}" data-field="url" value="${esc(p.url)}">
+        <div style="margin-top:6px;display:flex;gap:6px">
+          <button type="button" data-project-move="${i}:-1" ${i === 0 ? "disabled" : ""}>▲ 위로</button>
+          <button type="button" data-project-move="${i}:1" ${i === state.projects.length - 1 ? "disabled" : ""}>▼ 아래로</button>
+          <button type="button" class="danger" data-remove="${i}">삭제</button>
+        </div>
+      </div>`).join("") || `<p class="hint">항목이 없습니다.</p>`;
+  }
+
+  function renderChecks() {
+    $("checks").innerHTML = runChecks().map(([level, msg]) => `<li class="${level}">${esc(msg)}</li>`).join("");
   }
 
   function refresh() {
     $("frame").srcdoc = buildHtml();
-    $("accentHex").textContent = state.accent;
+    $("frame").style.width = $("viewport").value;
+    renderChecks();
+    $("brief").value = buildBrief();
     persist();
+  }
+
+  // 구조가 바뀌는 조작 뒤에는 목록까지 다시 그립니다.
+  function fullRender() {
+    syncBindings();
+    renderTemplates();
+    renderSections();
+    renderProjects();
+    refresh();
+  }
+
+  function getPath(obj, path) {
+    return path.split(".").reduce((o, k) => o?.[k], obj);
+  }
+  function setPath(obj, path, value) {
+    const keys = path.split(".");
+    const last = keys.pop();
+    keys.reduce((o, k) => o[k], obj)[last] = value;
   }
 
   function applyTemplate(key) {
     const t = TEMPLATES[key];
-    state.template = key;
-    state.accent = t.accent;
-    state.font = t.font;
-    syncInputs();
-    refresh();
+    Object.assign(state.design, { template: key, accent: t.accent, text: t.text, bg: t.bg, font: t.font, radius: t.radius });
+    fullRender();
   }
 
-  // 입력 이벤트: 일반 필드
-  ["title", "subtitle", "font", "about", "contact", "accent"].forEach((id) => {
-    $(id).addEventListener("input", (e) => {
-      state[id] = e.target.value;
+  // ---------- 이벤트 ----------
+  document.addEventListener("input", (e) => {
+    const el = e.target;
+    if (el.dataset.bind) {
+      const v = el.type === "number" ? clamp(Number(el.value), Number(el.min), Number(el.max), 0) : el.value;
+      setPath(state, el.dataset.bind, v);
       refresh();
-    });
-  });
-  ["showHero", "showAbout", "showContact"].forEach((id) => {
-    $(id).addEventListener("change", (e) => {
-      state[id] = e.target.checked;
+    } else if (el.dataset.project !== undefined) {
+      state.projects[Number(el.dataset.project)][el.dataset.field] = el.value;
       refresh();
-    });
+    }
   });
 
-  // 콘텐츠 항목 편집 (이벤트 위임)
-  $("items").addEventListener("input", (e) => {
-    const { field, index } = e.target.dataset;
-    if (!field) return;
-    state.items[Number(index)][field] = e.target.value;
-    refresh();
-  });
-  $("items").addEventListener("click", (e) => {
-    const index = e.target.dataset.remove;
-    if (index === undefined) return;
-    state.items.splice(Number(index), 1);
-    renderItems();
-    refresh();
-  });
-  $("addItem").addEventListener("click", () => {
-    state.items.push({ title: "새 항목", summary: "", url: "" });
-    renderItems();
-    refresh();
+  document.addEventListener("change", (e) => {
+    const el = e.target;
+    if (el.dataset.bind && el.type === "checkbox") {
+      setPath(state, el.dataset.bind, el.checked);
+      refresh();
+    } else if (el.dataset.sectionToggle !== undefined) {
+      state.sections[Number(el.dataset.sectionToggle)].enabled = el.checked;
+      refresh();
+    } else if (el.id === "viewport") {
+      refresh();
+    }
   });
 
-  $("templates").addEventListener("click", (e) => {
-    const key = e.target.dataset.template;
-    if (key) applyTemplate(key);
+  document.addEventListener("click", (e) => {
+    const el = e.target;
+    if (el.dataset.template) return applyTemplate(el.dataset.template);
+
+    if (el.dataset.move !== undefined) {
+      const [i, dir] = el.dataset.move.split(":").map(Number);
+      const j = i + dir;
+      [state.sections[i], state.sections[j]] = [state.sections[j], state.sections[i]];
+      return fullRender();
+    }
+    if (el.dataset.projectMove !== undefined) {
+      const [i, dir] = el.dataset.projectMove.split(":").map(Number);
+      const j = i + dir;
+      [state.projects[i], state.projects[j]] = [state.projects[j], state.projects[i]];
+      return fullRender();
+    }
+    if (el.dataset.remove !== undefined) {
+      state.projects.splice(Number(el.dataset.remove), 1);
+      return fullRender();
+    }
+    if (el.id === "addProject") {
+      state.projects.push({ title: "새 프로젝트", summary: "", url: "", date: "", tag: "" });
+      return fullRender();
+    }
   });
 
-  $("save").addEventListener("click", () => {
-    persist();
-    alert("브라우저에 저장했습니다.");
-  });
   $("reset").addEventListener("click", () => {
     if (!confirm("모든 내용을 초기화할까요?")) return;
-    state = structuredClone(DEFAULT_STATE);
-    syncInputs();
-    refresh();
+    state = clone(DEFAULT_STATE);
+    fullRender();
   });
+
   $("download").addEventListener("click", () => {
     const blob = new Blob([buildHtml()], { type: "text/html;charset=utf-8" });
     const link = document.createElement("a");
@@ -331,8 +745,42 @@
     URL.revokeObjectURL(link.href);
   });
 
-  syncInputs();
-  refresh();
+  $("exportSpec").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "homepage-spec.json";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+
+  $("importBtn").addEventListener("click", () => $("importFile").click());
+  $("importFile").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    try {
+      state = normalize(JSON.parse(await file.text()));
+      fullRender();
+    } catch (err) {
+      alert("명세 파일을 읽을 수 없습니다. JSON 형식을 확인해 주세요.");
+    }
+    e.target.value = "";
+  });
+
+  $("copyBrief").addEventListener("click", async () => {
+    const text = $("brief").value;
+    try {
+      await navigator.clipboard.writeText(text);
+      $("copyBrief").textContent = "복사됨";
+    } catch (err) {
+      $("brief").select();
+      document.execCommand("copy");
+      $("copyBrief").textContent = "복사됨";
+    }
+    setTimeout(() => { $("copyBrief").textContent = "명세서 복사"; }, 1500);
+  });
+
+  fullRender();
 </script>
 </body>
 </html>
