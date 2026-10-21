@@ -67,6 +67,40 @@ python -m unittest discover -s tests
 
 검증 실패 시(예: `javascript:` 링크, 잘못된 날짜 형식) 생성기가 오류를 내고 커밋하지 않습니다.
 
+## 회원명부·방문기록·연혁 문서 자동 생성
+
+CSV 데이터를 읽어 회원명부(엑셀), 방문기록과 연혁(워드) 문서를 만듭니다. AI는 쓰지 않고 정해진 형식대로 정리합니다.
+
+```bash
+pip install -r requirements-records.txt
+python generate_records.py                       # private/ 에서 읽어 out/ 에 저장
+python generate_records.py --data-dir examples   # 예시 데이터로 시험
+```
+
+### 입력 파일 (`private/` 폴더)
+
+| 파일 | 열 | 필수 |
+| --- | --- | --- |
+| `members.csv` | 이름, 생년월일, 연락처, 주소, 가입일, 상태 | 이름, 가입일 |
+| `visits.csv` | 날짜, 시간, 방문자, 소속, 방문목적, 담당자 | 날짜, 방문자 |
+| `history.csv` | 날짜, 구분, 내용 | 날짜, 내용 |
+
+- 날짜는 `YYYY-MM-DD` 형식이어야 하며, 실제로 존재하는 날짜여야 합니다.
+- 잘못된 값은 모아서 한 번에 알려 주고, 문서를 만들지 않습니다.
+- 파일이 없으면 그 문서만 건너뜁니다.
+
+### 출력 (`out/` 폴더)
+
+- `회원명부.xlsx`: 회원명부 시트(번호 자동 부여, 필터, 머리글 고정)와 요약 시트(인원, 상태별 집계)
+- `방문기록.docx`: 방문 기록 표
+- `연혁.docx`: 연도별로 묶은 연혁 목록
+
+### 개인정보 주의
+
+- `private/` 과 `out/` 은 `.gitignore` 에 있어서 git 에 올라가지 않습니다.
+- 저장소에는 `examples/` 의 가짜 데이터만 둡니다.
+- 실데이터는 로컬 PC 나 개인 저장소에 보관하고, 문서는 필요한 사람에게만 전달하세요.
+
 ## GitHub Pages 로 공개하기
 
 저장소 Settings → Pages 에서 `Deploy from a branch` 를 선택하고 기본 브랜치의 `/ (root)` 를 지정하면
