@@ -75,6 +75,10 @@
     .brief-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 16px; }
     .brief { width: 100%; min-height: 320px; font-family: ui-monospace, monospace; font-size: 0.8rem; white-space: pre; }
     .hint { font-size: 0.8rem; color: var(--muted); margin: 4px 0 0; }
+    .gallery-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+    .gallery-list figure { margin: 0; font-size: 0.75rem; }
+    .gallery-list img { width: 100%; height: 70px; object-fit: cover; border-radius: 6px; display: block; }
+    .gallery-list button { width: 100%; margin-top: 4px; font-size: 0.75rem; }
     .howto { padding: 10px 20px; background: var(--panel); border-bottom: 1px solid var(--line); font-size: 0.9rem; }
     .howto ol { margin: 6px 0 0; padding-left: 20px; }
     .howto li { margin: 3px 0; }
@@ -114,6 +118,14 @@
       <p class="hint">질문에 하나씩 답하면 됩니다. 건너뛰어도 되고, 아래 칸에서 나중에 고칠 수 있습니다.</p>
       <div id="wizardBox"></div>
     </details>
+    <details open>
+      <summary>사진첩 (사진 여러 장, 최대 12장)</summary>
+      <p class="hint">사진은 자동으로 작게 줄여서 들어갑니다. 한 번에 여러 장을 고를 수 있습니다.</p>
+      <input type="file" id="galleryFileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+      <p class="hint" id="galleryState"></p>
+      <div id="galleryList" class="gallery-list"></div>
+    </details>
+
     <details class="advanced">
       <summary>직접 고치기 (고급)</summary>
 
@@ -288,6 +300,7 @@
     hero: "상단 소개",
     about: "소개",
     projects: "프로젝트",
+    gallery: "사진첩",
     news: "소식",
     support: "후원 안내",
     volunteer: "자원봉사",
@@ -306,6 +319,7 @@
     center:  { label: "가운데 정렬 (차분한 소개 페이지)" },
   };
   const LOOK_WORDS = { 기본: "classic", 띠: "band", 카드: "card", 가운데: "center" };
+  const GALLERY_MAX = 12;
 
   // 템플릿: 색, 글꼴, 모서리를 한 번에 정합니다. 이름은 "템플릿: 숲" 처럼 말로도 고를 수 있습니다.
   const TEMPLATES = {
@@ -367,6 +381,7 @@
       { id: "hero", enabled: true },
       { id: "about", enabled: true },
       { id: "projects", enabled: true },
+      { id: "gallery", enabled: true },
       { id: "news", enabled: true },
       { id: "support", enabled: true },
       { id: "volunteer", enabled: true },
@@ -376,7 +391,7 @@
       { id: "social", enabled: false },
       { id: "contact", enabled: true },
     ],
-    headings: { about: "소개", projects: "프로젝트", contact: "연락처", news: "소식", support: "후원 안내", volunteer: "자원봉사", location: "오시는 길", faq: "자주 묻는 질문" },
+    headings: { about: "소개", projects: "프로젝트", contact: "연락처", gallery: "사진첩", news: "소식", support: "후원 안내", volunteer: "자원봉사", location: "오시는 길", faq: "자주 묻는 질문" },
     about: "",
     contact: "",
     support: "",
@@ -384,6 +399,7 @@
     location: "",
     news: [],
     faq: [],
+    gallery: [],
     projects: [
       { title: "첫 번째 프로젝트", summary: "", url: "", date: "", tag: "" },
     ],
@@ -405,6 +421,9 @@
     Object.assign(s.cta, raw.cta ?? {});
     Object.assign(s.social, raw.social ?? {});
     s.site.logo = safeImageData(s.site.logo);
+    if (Array.isArray(raw.gallery)) {
+      s.gallery = raw.gallery.map((g) => ({ src: safeImageData(g?.src), alt: String(g?.alt ?? "") })).filter((g) => g.src).slice(0, GALLERY_MAX);
+    }
     s.site.heroFile = safeImageData(s.site.heroFile);
     if (typeof raw.about === "string") s.about = raw.about;
     if (typeof raw.contact === "string") s.contact = raw.contact;
@@ -472,7 +491,8 @@
   }
 
   // http(s) 주소만 허용해서 javascript: 같은 주소를 막습니다.
-  const MAX_IMAGE_BYTES = 1000000;
+  const MAX_ORIGINAL_BYTES = 15000000;
+  const MAX_STORED_CHARS = 1400000;
   // 컴퓨터에서 고른 사진(data 주소)을 확인합니다. PNG, JPG, WEBP, GIF 만 통과합니다.
   function safeImageData(value) {
     const s = String(value ?? "").trim();
@@ -613,6 +633,14 @@
       <ul class="links">${links.map(([name, href]) => `<li><a href="${href}">${name}</a></li>`).join("")}</ul>
     </section>`;
     }
+    if (id === "gallery") {
+      const photos = s.gallery.filter((g) => safeImageData(g.src));
+      if (!photos.length) return "";
+      return `<section id="gallery">
+      <h2>${esc(s.headings.gallery)}</h2>
+      <div class="gallery">${photos.map((g, i) => `<img src="${g.src}" alt="${esc(g.alt || `${s.headings.gallery} ${i + 1}`)}" loading="lazy">`).join("")}</div>
+    </section>`;
+    }
     if (id === "news") {
       const items = s.news.filter((n) => n.title.trim()).slice().sort((a, b) => (a.date < b.date ? 1 : -1)).map((n) => {
         const url = safeUrl(n.url);
@@ -709,6 +737,8 @@
     a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
     body.look-band .hero { background: var(--accent); color: var(--bg); border-bottom: none; border-radius: var(--radius); padding: calc(var(--gap) * 1.5); }
     body.look-band .hero h1, body.look-band .hero .subtitle { color: var(--bg); }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+    .gallery img { width: 100%; height: auto; border-radius: var(--radius); display: block; }
     body.look-card article { background: rgba(127, 127, 127, 0.08); border: 1px solid rgba(127, 127, 127, 0.25); border-left: 4px solid var(--accent); padding: 12px 16px; }
     body.look-center main, body.look-center nav ul { text-align: center; }
     body.look-center nav ul { justify-content: center; }
@@ -1507,33 +1537,86 @@ ${navHtml}
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   });
 
-  // 컴퓨터의 사진을 홈페이지 데이터 안에 넣습니다. 계정도 서버도 필요 없습니다.
-  function pickImageFile(input, key) {
+  // 컴퓨터의 사진을 작게 줄여서 홈페이지 데이터 안에 넣습니다. 계정도 서버도 필요 없습니다.
+  function resizeImage(file, maxSide, type, quality) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        resolve(canvas.toDataURL(type, quality));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("사진을 읽지 못했습니다.")); };
+      img.src = url;
+    });
+  }
+  function isPhotoFile(file) {
+    return /^image\/(png|jpeg|webp|gif)$/.test(file.type);
+  }
+  async function pickImageFile(input, key) {
     const file = input.files[0];
     input.value = "";
     if (!file) return;
-    if (file.size > MAX_IMAGE_BYTES) {
-      alert(`사진은 1MB 이하만 넣을 수 있습니다. 지금 파일은 약 ${Math.round(file.size / 1000)}KB 입니다. 작게 줄인 사진을 골라 주세요.`);
+    if (!isPhotoFile(file)) { alert("PNG, JPG, WEBP, GIF 사진만 넣을 수 있습니다."); return; }
+    if (file.size > MAX_ORIGINAL_BYTES) { alert("사진이 너무 큽니다. 15MB 이하 사진을 골라 주세요."); return; }
+    const isLogo = key === "logo";
+    let data;
+    try {
+      data = await resizeImage(file, isLogo ? 400 : 1200, isLogo ? "image/png" : "image/jpeg", 0.8);
+    } catch (err) {
+      alert("사진을 읽지 못했습니다. 다른 사진을 골라 주세요.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const data = String(reader.result);
-      if (!safeImageData(data)) {
-        alert("PNG, JPG, WEBP, GIF 사진만 넣을 수 있습니다.");
-        return;
-      }
-      undoSnapshot = clone(state);
-      state.site[key] = data;
-      fullRender();
-      updateImageStatus();
-    };
-    reader.readAsDataURL(file);
+    if (data.length > MAX_STORED_CHARS) { alert("사진이 너무 복잡해서 줄이지 못했습니다. 다른 사진을 골라 주세요."); return; }
+    undoSnapshot = clone(state);
+    state.site[key] = data;
+    fullRender();
+    updateImageStatus();
   }
   function updateImageStatus() {
     $("heroFileState").textContent = state.site.heroFile ? "대표 사진이 들어 있습니다." : "대표 사진이 없습니다.";
     $("logoFileState").textContent = state.site.logo ? "로고가 들어 있습니다." : "로고가 없습니다.";
+    $("galleryState").textContent = `사진첩: ${state.gallery.length} / ${GALLERY_MAX}장`;
+    $("galleryList").innerHTML = state.gallery.map((g, i) => `<figure><img src="${g.src}" alt="사진 ${i + 1}"><button type="button" data-gallery-remove="${i}">빼기</button></figure>`).join("");
   }
+  async function addGalleryFiles(files) {
+    const room = GALLERY_MAX - state.gallery.length;
+    if (room <= 0) { alert(`사진첩에는 최대 ${GALLERY_MAX}장까지 넣을 수 있습니다.`); return; }
+    const picked = [...files].filter(isPhotoFile).slice(0, room);
+    if (files.length > room) alert(`${room}장만 넣었습니다. 사진첩은 최대 ${GALLERY_MAX}장입니다.`);
+    undoSnapshot = clone(state);
+    for (const file of picked) {
+      let data;
+      try {
+        data = await resizeImage(file, 1000, "image/jpeg", 0.8);
+      } catch (err) {
+        alert(`${file.name} 은(는) 사진을 읽지 못해 넣지 못했습니다.`);
+        continue;
+      }
+      if (data.length > MAX_STORED_CHARS) { alert(`${file.name} 은(는) 너무 복잡해서 넣지 못했습니다.`); continue; }
+      state.gallery.push({ src: data, alt: "" });
+    }
+    fullRender();
+    updateImageStatus();
+  }
+  $("galleryFileInput").addEventListener("change", (e) => {
+    const files = [...e.target.files];
+    e.target.value = "";
+    if (files.length) addGalleryFiles(files);
+  });
+  $("galleryList").addEventListener("click", (e) => {
+    const button = e.target.closest("[data-gallery-remove]");
+    if (!button) return;
+    undoSnapshot = clone(state);
+    state.gallery.splice(Number(button.dataset.galleryRemove), 1);
+    fullRender();
+    updateImageStatus();
+  });
   $("heroFileInput").addEventListener("change", (e) => pickImageFile(e.target, "heroFile"));
   $("logoFileInput").addEventListener("change", (e) => pickImageFile(e.target, "logo"));
   $("heroFileClear").addEventListener("click", () => { state.site.heroFile = ""; fullRender(); updateImageStatus(); });
