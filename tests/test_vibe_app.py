@@ -18,9 +18,37 @@ class StructureTest(unittest.TestCase):
     def test_example_structure_is_valid(self):
         self.assertEqual(ba.validate_structure(json.loads(EXAMPLE.read_text(encoding="utf-8"))), [])
 
-    def test_more_than_two_pages_rejected(self):
-        spec = _spec(pages=[{"name": "a", "fields": []}, {"name": "b", "fields": []}, {"name": "c", "fields": []}])
-        self.assertTrue(any("2개" in e for e in ba.validate_structure(spec)))
+    def test_completion_page_must_come_last(self):
+        spec = _spec(pages=[{"name": "완료", "fields": []}, _spec()["pages"][0]])
+        self.assertTrue(any("완료 화면보다 앞" in e for e in ba.validate_structure(spec)))
+
+    def test_only_one_completion_page(self):
+        spec = _spec(pages=[_spec()["pages"][0], {"name": "a", "fields": []}, {"name": "b", "fields": []}])
+        self.assertTrue(any("하나만" in e for e in ba.validate_structure(spec)))
+
+    def test_multiple_input_pages_allowed(self):
+        form = _spec()["pages"][0]
+        spec = _spec(pages=[form, dict(form, name="두 번째"), {"name": "완료", "fields": []}])
+        self.assertEqual(ba.validate_structure(spec), [])
+
+    def test_min_length_only_for_text_types(self):
+        spec = _spec()
+        number = [f for f in spec["pages"][0]["fields"] if f["type"] == "number"][0]
+        number["minLength"] = 2
+        self.assertTrue(any("minLength" in e for e in ba.validate_structure(spec)))
+
+    def test_min_length_greater_than_max_rejected(self):
+        spec = _spec()
+        spec["pages"][0]["fields"][0].update(minLength=10, maxLength=2)
+        self.assertTrue(any("minLength" in e and "maxLength" in e for e in ba.validate_structure(spec)))
+
+    def test_checkbox_with_options_rejected(self):
+        spec = _spec()
+        spec["pages"][0]["fields"].append({"label": "동의", "type": "checkbox", "options": ["예"]})
+        self.assertTrue(any("checkbox" in e for e in ba.validate_structure(spec)))
+
+    def test_save_must_be_boolean(self):
+        self.assertTrue(any("'save'" in e for e in ba.validate_structure(_spec(save="yes"))))
 
     def test_min_max_only_for_number(self):
         spec = _spec()
@@ -129,6 +157,66 @@ class CodePanelTest(unittest.TestCase):
         page = ba.build_html(_spec(), github)
         self.assertIn('"repo": "a/b"', page)
         self.assertIn('"path": "site/index.html"', page)
+
+
+class MultiStepAndSaveTest(unittest.TestCase):
+    def _two_step_spec(self, **extra):
+        form = _spec()["pages"][0]
+        spec = _spec(pages=[form, dict(form, name="두 번째"), {"name": "완료", "fields": []}])
+        spec.update(extra)
+        return spec
+
+    def test_each_input_page_becomes_a_step(self):
+        page = ba.build_html(self._two_step_spec())
+        self.assertEqual(page.count('class="step" data-step='), 2)
+        self.assertIn("1 / 2 단계", page)
+        self.assertIn('<button type="button" class="next">다음</button>', page)
+        self.assertIn('<button type="submit">제출</button>', page)
+
+    def test_single_step_has_no_progress_label(self):
+        self.assertNotIn('class="progress"', ba.build_html(_spec()))
+
+    def test_save_panel_only_when_enabled(self):
+        self.assertNotIn('id="saved-panel"', ba.build_html(_spec()))
+        page = ba.build_html(_spec(save=True))
+        self.assertIn('id="saved-panel"', page)
+        self.assertIn('id="download-csv"', page)
+        self.assertIn('id="clear-saved"', page)
+        self.assertIn("이 브라우저에만 저장됩니다", page)
+
+    def test_storage_key_is_named_after_page(self):
+        page = ba.build_html(_spec(save=True))
+        self.assertIn('"vibe-app:방문 신청 페이지"', page)
+
+    def test_new_field_types_render(self):
+        spec = _spec()
+        spec["pages"][0]["fields"] = [
+            {"label": "수업", "type": "radio", "required": True, "options": ["기초", "심화"]},
+            {"label": "동의", "type": "checkbox", "required": True},
+            {"label": "주소", "type": "url"},
+            {"label": "시간", "type": "time"},
+        ]
+        page = ba.build_html(spec)
+        self.assertIn('<fieldset class="field"><legend>수업 *</legend>', page)
+        self.assertIn('<input type="radio" name="f1" value="기초">', page)
+        self.assertIn('<input type="checkbox" id="f2"', page)
+        self.assertIn('<input type="url" id="f3"', page)
+        self.assertIn('<input type="time" id="f4"', page)
+
+    def test_radio_requires_options(self):
+        spec = _spec()
+        spec["pages"][0]["fields"].append({"label": "구분", "type": "radio", "required": False})
+        self.assertTrue(any("options" in e for e in mb_validate(spec)))
+
+    def test_csv_protection_and_bom_in_script(self):
+        page = ba.build_html(_spec(save=True))
+        self.assertIn('if (/^[=+\\-@]/.test(text)) text', page)
+        self.assertIn("\\uFEFF", page)
+
+
+def mb_validate(spec):
+    from vibe.make_brief import validate_spec
+    return validate_spec(spec)
 
 
 def html_unescape(text):

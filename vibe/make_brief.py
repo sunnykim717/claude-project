@@ -12,7 +12,8 @@ import argparse
 import json
 from pathlib import Path
 
-FIELD_TYPES = {"text", "textarea", "email", "phone", "date", "number", "select"}
+FIELD_TYPES = {"text", "textarea", "email", "phone", "date", "number", "select", "radio", "checkbox", "url", "time"}
+CHOICE_TYPES = {"select", "radio"}
 # 이 도구로는 만들지 않는 정보입니다. 주민등록번호, 계좌번호처럼 민감한 개인정보는 수집하지 않습니다.
 FORBIDDEN_LABEL_WORDS = ("주민등록", "주민번호", "계좌", "카드번호", "비밀번호")
 
@@ -44,8 +45,8 @@ def validate_spec(spec):
                 errors.append(f"{where}: 'label'(입력칸 이름)이 비어 있습니다.")
             if field.get("type") not in FIELD_TYPES:
                 errors.append(f"{where}: 'type' 은 {', '.join(sorted(FIELD_TYPES))} 중 하나여야 합니다.")
-            if field.get("type") == "select" and not field.get("options"):
-                errors.append(f"{where}: 선택 목록(select)에는 'options' 를 적어 주세요.")
+            if field.get("type") in CHOICE_TYPES and not field.get("options"):
+                errors.append(f"{where}: 선택 목록({field.get('type')})에는 'options' 를 적어 주세요.")
             if any(word in label for word in FORBIDDEN_LABEL_WORDS):
                 errors.append(f"{where}: '{label}' 은 민감한 개인정보라서 이 도구로 만들 수 없습니다.")
 
