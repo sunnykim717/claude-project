@@ -12,6 +12,7 @@ import generate  # noqa: E402
 import validate  # noqa: E402
 
 
+
 class _Copy:
     """테스트마다 템플릿을 임시 폴더에 복사해서 고쳐 봅니다."""
 
@@ -122,6 +123,60 @@ class GenerateTest(unittest.TestCase):
             self.assertIn("--primary: #0F766E;", index)
             self.assertIn("--font: Georgia, serif;", index)
             self.assertIn("--radius: 14px;", index)
+
+
+class SiteToolTest(unittest.TestCase):
+    """모든 명령은 임시 폴더를 대상으로 합니다. 저장소의 원본 템플릿은 건드리지 않습니다."""
+
+    def setUp(self):
+        import site_tool
+        self.tool = site_tool
+        self.tmp = tempfile.mkdtemp()
+        self.target = Path(self.tmp) / "new"
+        self.tool.main(["new", str(self.target)])
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def _run(self, *args):
+        return self.tool.main(["--root", str(self.target), *args])
+
+    def test_new_site_applies_name_and_design(self):
+        dest = Path(self.tmp) / "named"
+        self.assertEqual(self.tool.main(["new", str(dest), "--name", "민수의 작업실", "--design", "warm-orange"]), 0)
+        site = json.loads((dest / "config" / "site.json").read_text(encoding="utf-8"))
+        theme = json.loads((dest / "config" / "theme.json").read_text(encoding="utf-8"))
+        self.assertEqual(site["name"], "민수의 작업실")
+        self.assertEqual(theme["primaryColor"], "#C2410C")
+        self.assertEqual(theme["font"], "serif")
+
+    def test_new_refuses_existing_folder_and_unknown_design(self):
+        self.assertEqual(self.tool.main(["new", str(self.target)]), 1)
+        other = Path(self.tmp) / "other"
+        self.assertEqual(self.tool.main(["new", str(other), "--design", "없는-디자인"]), 1)
+        self.assertFalse(other.exists())
+
+    def test_set_nested_and_list_values_then_build(self):
+        self.assertEqual(self._run("set", "home.hero.title", "새 제목"), 0)
+        self.assertEqual(self._run("set", "projects.items.0.title", "새 사업"), 0)
+        self.assertEqual(self._run("build"), 0)
+        self.assertIn("새 제목", (self.target / "dist" / "index.html").read_text(encoding="utf-8"))
+        self.assertIn("새 사업", (self.target / "dist" / "projects.html").read_text(encoding="utf-8"))
+
+    def test_set_rejects_bad_value_and_keeps_old_file(self):
+        path = self.target / "config" / "theme.json"
+        before = path.read_text(encoding="utf-8")
+        self.assertEqual(self._run("set", "theme.primaryColor", '"blue"'), 1)
+        self.assertEqual(path.read_text(encoding="utf-8"), before)
+
+    def test_set_unknown_path_is_reported(self):
+        self.assertEqual(self._run("set", "site.없는항목.x", "1"), 1)
+        self.assertEqual(self._run("set", "nosuchfile.key", "1"), 1)
+
+    def test_repository_template_is_not_changed_by_tests(self):
+        before = (ROOT / "content" / "home.json").read_text(encoding="utf-8")
+        self._run("set", "home.hero.title", "테스트용 제목")
+        self.assertEqual((ROOT / "content" / "home.json").read_text(encoding="utf-8"), before)
 
 
 if __name__ == "__main__":
