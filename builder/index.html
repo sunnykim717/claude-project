@@ -103,30 +103,29 @@
     <button id="exportSpec" title="지금까지 적은 내용을 파일 하나(명세)로 저장합니다. 나중에 다시 불러와 이어서 고칠 수 있습니다.">💾 작업 저장</button>
     <button type="button" id="importBtn" title="예전에 저장한 작업 파일을 열어 이어서 고칩니다.">📂 작업 불러오기</button>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
-    <button id="exportSite" title="자동 갱신 기능(GitHub)을 쓰는 분만 필요합니다. 대부분은 필요 없습니다.">고급: site.json 내보내기</button>
-    <button id="reset" class="danger" title="모든 내용을 처음 상태로 지웁니다. 바로 전 상태는 ↩ 되돌리기로 되돌릴 수 있습니다.">초기화</button>
+
+
   </div>
 </header>
 <div class="howto">
-  <strong>이렇게 쓰세요</strong>
-  <ol>
-    <li>왼쪽 질문에 답하면 오른쪽에 홈페이지가 바로 그려집니다.</li>
-    <li>다 됐으면 <b>📄 홈페이지 파일 받기</b> 를 누르세요. 받은 파일을 더블클릭하면 브라우저에서 열립니다.</li>
-    <li>내일 이어서 하려면 <b>💾 작업 저장</b> 으로 파일을 받아 두세요. 다시 열 때는 <b>📂 작업 불러오기</b> 로 그 파일을 고릅니다.</li>
-  </ol>
-  <p class="next"><button type="button" id="fillStarter" class="primary">기본 구성 채우기 (안내 문구 포함)</button> 누르면 소개, 사업, 소식, 후원, 자원봉사, 오시는 길, 질문, 연락처 칸이 한 번에 채워집니다. [ ] 안의 글을 바꿔 쓰세요.</p>
-  <p class="next">다음 단계: 내 GitHub 계정에 올리고 키우는 방법은 <a href="https://github.com/sunnykim717/claude-project/blob/main/website-template/docs/%EB%8B%A4%EC%9D%8C-%EB%8B%A8%EA%B3%84-%EB%82%98%EB%A7%8C%EC%9D%98-%ED%99%88%ED%8E%98%EC%9D%B4%EC%A7%80.md" target="_blank" rel="noopener">안내서 보기</a> 를 누르세요.</p>
+  왼쪽 <b>문장으로 만들기</b>에 하고 싶은 말을 그냥 적으면 오른쪽에 홈페이지가 바로 그려집니다. 다 되면 <b>📄 홈페이지 파일 받기</b>를 누르세요. 나중에 고치려면 <b>💾 작업 저장</b>으로 파일을 받아 두세요.
 </div>
 
 <div class="layout">
   <aside>
-    <p class="hint">질문에 답하면 홈페이지가 만들어집니다. 더 세밀하게 고치려면 아래 "직접 고치기"를 여세요.</p>
     <details open>
-      <summary>질문에 답하며 만들기</summary>
-      <p class="hint">질문에 하나씩 답하면 됩니다. 건너뛰어도 되고, 아래 칸에서 나중에 고칠 수 있습니다.</p>
-      <div id="wizardBox"></div>
+      <summary>문장으로 만들기</summary>
+      <p class="hint">홈페이지에 넣고 싶은 내용을 그냥 적으세요. 한 줄에 한 문장씩 적으면 됩니다.<br>
+      예: 우리는 햇살 공부방입니다. 함께 배우고 함께 자라는 곳입니다. 전화는 02-123-4567 입니다. 강조색은 초록색, 글꼴은 명조로 해 주세요.</p>
+      <textarea id="sentenceInput" rows="9" placeholder="여기에 적으세요. 예: 햇살 공부방입니다. 전화는 02-123-4567 입니다."></textarea>
+      <div class="actions">
+        <button type="button" id="sentenceBuild" class="primary">이대로 홈페이지 만들기</button>
+        <button type="button" id="fillStarter">기본 구성으로 채우기</button>
+      </div>
+      <p class="hint" id="sentenceResult"></p>
+      <div id="wizardBox" hidden></div>
     </details>
-    <details open>
+    <details>
       <summary>사진첩 (사진 여러 장)</summary>
       <p class="hint">사진은 자동으로 작게 줄여서 들어갑니다. 한 번에 여러 장을 고를 수 있습니다. 지금은 최대 12장이며, 나중에 더 늘릴 수 있습니다.</p>
       <input type="file" id="galleryFileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
@@ -134,8 +133,8 @@
       <div id="galleryList" class="gallery-list"></div>
     </details>
 
-    <details open>
-      <summary>GitHub에 올리기 도우미 (선택)</summary>
+    <details>
+      <summary>GitHub에 올리기 (선택)</summary>
       <p class="hint">GitHub 계정이 있을 때만 필요합니다. 아이디와 비밀번호는 이 화면에 적지 않습니다. 아래 단계 버튼을 차례로 누르세요.</p>
       <label for="ghUser">GitHub 아이디</label>
       <input type="text" id="ghUser" placeholder="예: minsu-kim" autocomplete="off">
@@ -146,6 +145,10 @@
 
     <details class="advanced">
       <summary>직접 고치기 (고급)</summary>
+      <div class="actions">
+        <button type="button" id="exportSite" title="자동 갱신 기능(GitHub)을 쓰는 분만 필요합니다.">site.json 내보내기</button>
+        <button type="button" id="reset" class="danger" title="모든 내용을 처음 상태로 지웁니다. 바로 전 상태는 ↩ 되돌리기로 되돌릴 수 있습니다.">모두 지우고 처음부터</button>
+      </div>
 
       <details>
         <summary>말로 적기 (한 줄씩 적기)</summary>
@@ -2220,6 +2223,48 @@ ${navHtml}
   renderGithubHelper();
 
   $("headUndo").addEventListener("click", () => $("nlUndo").click());
+
+  // 문장으로 만들기: 아는 말은 해당 칸에 넣고, 모르는 문장은 소개 글에 그대로 넣습니다.
+  function buildFromSentences(text) {
+    undoSnapshot = clone(state);
+    const lines = text.split(/\n|(?<=[.!?])\s+|,\s*/).map((s) => s.trim()).filter(Boolean);
+    const notes = [];
+    const leftovers = [];
+    for (const line of lines) {
+      const clean = line.replace(/[.。]+$/, "").trim();
+      const found = parseNaturalText(clean);
+      if (found.applied.length) notes.push(...found.applied);
+      else if (found.notUnderstood.length) leftovers.push(line);
+    }
+    // 전화번호와 이메일은 찾아서 연락처에 넣습니다.
+    const phone = text.match(/0\d{1,2}-\d{3,4}-\d{4}/);
+    const email = text.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
+    if (phone && !state.contact.trim()) { state.contact = [phone[0], email ? email[0] : ""].filter(Boolean).join("\n"); notes.push("연락처 → " + phone[0]); }
+    // 제목이 아직 기본값이면 "~입니다" 문장에서 이름을 찾습니다.
+    const plain = leftovers.filter((l) => !/0\d{1,2}-\d{3,4}-\d{4}|@/.test(l));
+    let rest = plain;
+    if (state.site.title === DEFAULT_STATE.site.title) {
+      const namedLine = plain.find((l) => /^(?:우리는\s+|저희는\s+|우리\s+|저희\s+)?.{2,30}?(?:입니다|이에요|예요)\.?$/.test(l));
+      if (namedLine) {
+        state.site.title = namedLine.replace(/\.+$/, "").replace(/^(?:우리는\s+|저희는\s+|우리\s+|저희\s+)/, "").replace(/(?:입니다|이에요|예요)$/, "").trim();
+        rest = plain.filter((l) => l !== namedLine);
+        notes.push("이름 → " + state.site.title);
+      }
+    }
+    if (rest.length) {
+      state.about = [state.about.trim(), ...rest].filter(Boolean).join("\n");
+      notes.push(`소개 글에 문장 ${rest.length}개를 넣었습니다`);
+    }
+    fullRender();
+    $("sentenceResult").innerHTML = notes.length
+      ? "<strong>만들었습니다.</strong><br>" + notes.map((n) => "✓ " + esc(n)).join("<br>") + "<br>오른쪽 화면을 확인하세요. 틀리면 ↩ 되돌리기를 누르세요."
+      : "아무 내용도 찾지 못했습니다. 문장을 조금 더 적어 주세요.";
+  }
+  $("sentenceBuild").addEventListener("click", () => {
+    const text = $("sentenceInput").value.trim();
+    if (!text) { $("sentenceResult").textContent = "먼저 문장을 적어 주세요."; return; }
+    buildFromSentences(text);
+  });
 
   // 글자색을 배경에 맞춰 진하게 또는 옅게 바꿉니다. 기준(4.5:1)을 넘을 때까지만 바꿉니다.
   $("fixContrast").addEventListener("click", () => {
