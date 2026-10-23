@@ -108,15 +108,14 @@
   </div>
 </header>
 <div class="howto">
-  왼쪽 <b>문장으로 만들기</b>에 하고 싶은 말을 그냥 적으면 오른쪽에 홈페이지가 바로 그려집니다. 다 되면 <b>📄 홈페이지 파일 받기</b>를 누르세요. 나중에 고치려면 <b>💾 작업 저장</b>으로 파일을 받아 두세요.
+  왼쪽 칸에 하고 싶은 말을 적고 <b>이대로 홈페이지 만들기</b>를 누르세요. 다 되면 <b>📄 홈페이지 파일 받기</b>.
 </div>
 
 <div class="layout">
   <aside>
     <details open>
       <summary>문장으로 만들기</summary>
-      <p class="hint">홈페이지에 넣고 싶은 내용을 그냥 적으세요. 한 줄에 한 문장씩 적으면 됩니다.<br>
-      예: 우리는 햇살 공부방입니다. 함께 배우고 함께 자라는 곳입니다. 전화는 02-123-4567 입니다. 강조색은 초록색, 글꼴은 명조로 해 주세요.</p>
+      <p class="hint">예: 우리는 햇살 공부방입니다. 전화는 02-123-4567 입니다.</p>
       <textarea id="sentenceInput" rows="9" placeholder="여기에 적으세요. 예: 햇살 공부방입니다. 전화는 02-123-4567 입니다."></textarea>
       <div class="actions">
         <button type="button" id="sentenceBuild" class="primary">이대로 홈페이지 만들기</button>
@@ -127,7 +126,7 @@
     </details>
     <details>
       <summary>사진첩 (사진 여러 장)</summary>
-      <p class="hint">사진은 자동으로 작게 줄여서 들어갑니다. 한 번에 여러 장을 고를 수 있습니다. 지금은 최대 12장이며, 나중에 더 늘릴 수 있습니다.</p>
+      <p class="hint">사진은 자동으로 작아집니다. 최대 12장.</p>
       <input type="file" id="galleryFileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
       <p class="hint" id="galleryState"></p>
       <div id="galleryList" class="gallery-list"></div>
@@ -348,7 +347,7 @@
       <iframe class="preview-frame" id="frame" title="미리보기" sandbox="allow-scripts"></iframe>
     </div>
 
-    <details open>
+    <details>
       <summary>검수 결과</summary>
       <ul class="checks" id="checks"></ul>
     </details>
