@@ -108,15 +108,14 @@
   </div>
 </header>
 <div class="howto">
-  왼쪽 <b>문장으로 만들기</b>에 하고 싶은 말을 그냥 적으면 오른쪽에 홈페이지가 바로 그려집니다. 다 되면 <b>📄 홈페이지 파일 받기</b>를 누르세요. 나중에 고치려면 <b>💾 작업 저장</b>으로 파일을 받아 두세요.
+  왼쪽 칸에 하고 싶은 말을 적고 <b>이대로 홈페이지 만들기</b>를 누르세요. 다 되면 <b>📄 홈페이지 파일 받기</b>.
 </div>
 
 <div class="layout">
   <aside>
     <details open>
       <summary>문장으로 만들기</summary>
-      <p class="hint">홈페이지에 넣고 싶은 내용을 그냥 적으세요. 한 줄에 한 문장씩 적으면 됩니다.<br>
-      예: 우리는 햇살 공부방입니다. 함께 배우고 함께 자라는 곳입니다. 전화는 02-123-4567 입니다. 강조색은 초록색, 글꼴은 명조로 해 주세요.</p>
+      <p class="hint">예: 우리는 햇살 공부방입니다. 전화는 02-123-4567 입니다.</p>
       <textarea id="sentenceInput" rows="9" placeholder="여기에 적으세요. 예: 햇살 공부방입니다. 전화는 02-123-4567 입니다."></textarea>
       <div class="actions">
         <button type="button" id="sentenceBuild" class="primary">이대로 홈페이지 만들기</button>
@@ -127,7 +126,7 @@
     </details>
     <details>
       <summary>사진첩 (사진 여러 장)</summary>
-      <p class="hint">사진은 자동으로 작게 줄여서 들어갑니다. 한 번에 여러 장을 고를 수 있습니다. 지금은 최대 12장이며, 나중에 더 늘릴 수 있습니다.</p>
+      <p class="hint">사진은 자동으로 작아집니다. 최대 12장.</p>
       <input type="file" id="galleryFileInput" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
       <p class="hint" id="galleryState"></p>
       <div id="galleryList" class="gallery-list"></div>
@@ -348,7 +347,7 @@
       <iframe class="preview-frame" id="frame" title="미리보기" sandbox="allow-scripts"></iframe>
     </div>
 
-    <details open>
+    <details>
       <summary>검수 결과</summary>
       <ul class="checks" id="checks"></ul>
     </details>
@@ -1244,6 +1243,8 @@ ${navHtml}
     파랑: "#2563eb", 빨강: "#dc2626", 초록: "#16a34a", 노랑: "#eab308", 주황: "#ea580c", 보라: "#7c3aed",
     핑크: "#db2777", 검정: "#111827", 하양: "#ffffff", 하늘: "#0ea5e9",
   };
+  // 색 이름은 "강조색", "배경은", "글자색"처럼 줄 머리에 색을 가리키는 말이 있을 때만 적용합니다.
+  const COLOR_LINE = /^(?:강조\s*색|강조|배경\s*색|배경|글자\s*색|글자|글씨\s*색|글씨|텍스트\s*색|색깔|색)\s*(?:은|는|을|를|이|가|:|：)?/;
   const TEMPLATE_WORDS = {
     안개: "mist", 자두: "plum", 버건디: "burgundy", 올리브: "olive", 레몬: "lemon", 바닐라: "vanilla", 숯: "charcoal", 밤하늘: "midnight", 청자: "celadon", 살구: "apricot", 등나무: "wisteria", 블러시: "blush", 민들레: "dandelion", 숲속: "forest3", 해변: "beach", 불씨: "ember", 얼음: "ice", 체리: "cherry", 파스텔: "pastel", 돌: "stone", 청포도: "grape",
     미니멀: "minimal", 심플: "minimal", 오션: "ocean", 바다: "ocean", 웜: "warm", 따뜻: "warm",
@@ -1295,6 +1296,7 @@ ${navHtml}
   function cleanValue(value) {
     return value.trim()
       .replace(/\s*(으로|로)?\s*(바꿔\s*줘|바꿔줘|바꿔\s*주세요|해\s*줘|해줘|입니다|이에요|예요|이야)?\s*[.!]?$/, "")
+      .replace(/^['"‘“]+|['"’”]+$/g, "")
       .trim();
   }
 
@@ -1317,6 +1319,19 @@ ${navHtml}
       if (pattern.test(out)) return replacement + out.replace(pattern, "");
     }
     return out;
+  }
+
+  // 템플릿 이름은 "템플릿: 숲", "바다 템플릿으로 해 줘"처럼 이름 자리에 온 낱말만 찾습니다.
+  // "돌아가게"의 "돌"처럼 다른 말 속에 든 글자는 템플릿으로 보지 않습니다.
+  function templateKeyFrom(line) {
+    let m = line.match(/^(?:템플릿|테마|스타일|화면\s*스타일)\s*(?:[:：]|은|는|을|를|이|가|으로|로)?\s*(.+)$/);
+    if (!m) m = line.match(/^(.+?)\s*(?:템플릿|테마)\s*(?:으로|로)?\s*(?:해\s*줘|해\s*주세요|바꿔\s*줘|써\s*줘)?\s*[.!]?$/);
+    if (!m) return "";
+    for (const token of m[1].trim().split(/\s+/)) {
+      const bare = token.replace(/(?:으로|로|은|는|이|가|을|를)$/, "");
+      if (TEMPLATE_WORDS[bare]) return TEMPLATE_WORDS[bare];
+    }
+    return "";
   }
 
   function parseNaturalText(text) {
@@ -1344,8 +1359,7 @@ ${navHtml}
           setSection("cta", false);
           applied.push("버튼 숨김");
         } else if (word === "소식") {
-          state.news = [];
-          applied.push("소식 전체 삭제");
+          notUnderstood.push(`${raw} (지울 소식의 제목을 적어 주세요. 예: 소식 삭제: 제목)`);
         } else {
           const key = SOCIAL_BY_WORD[word] || SOCIAL_BY_WORD[word.toLowerCase()];
           if (key && state.social[key]) {
@@ -1355,7 +1369,7 @@ ${navHtml}
             notUnderstood.push(`${raw} (지울 ${word} 주소가 없습니다)`);
           }
         }
-      } else if ((m = line.match(/^소개\s*글\s*[:은는을를]?\s*(.+)$/))) {
+      } else if ((m = line.match(/^소개\s*글\s*[:은는을를]?\s*([^:：\s].*)$/))) {
         state.about = m[1].trim();
         aboutOpen = true;
         applied.push(`소개 글 → ${state.about}`);
@@ -1365,13 +1379,13 @@ ${navHtml}
         const section = state.sections.find((x) => x.id === SECTION_BY_WORD[word]);
         if (section) section.enabled = !hide;
         applied.push(`${word} ${hide ? "숨김" : "표시"}`);
-      } else if ((m = line.match(/^(?:한\s*줄\s*소개|부제목|소개)\s*[:은는을를]?\s*(.+)$/))) {
+      } else if ((m = line.match(/^(?:한\s*줄\s*소개|부제목|소개)(?!글)\s*[:은는을를]?\s*([^:：\s].*)$/))) {
         state.site.subtitle = cleanValue(m[1]);
         applied.push(`한 줄 소개 → ${state.site.subtitle}`);
-      } else if ((m = line.match(/^제목\s*[:은는을를]?\s*(.+)$/))) {
+      } else if ((m = line.match(/^제목\s*[:은는을를]?\s*([^:：\s].*)$/))) {
         state.site.title = cleanValue(m[1]);
         applied.push(`제목 → ${state.site.title}`);
-      } else if ((m = line.match(/^연락처\s*[:은는을를]?\s*(.+)$/))) {
+      } else if ((m = line.match(/^연락처\s*[:은는을를]?\s*([^:：\s].*)$/))) {
         state.contact = m[1].trim();
         applied.push(`연락처 → ${state.contact}`);
       } else if ((m = line.match(/^(?:질문|자주\s*묻는\s*질문)\s*(?:추가)?\s*[:：]\s*(.+)$/))) {
@@ -1451,7 +1465,7 @@ ${navHtml}
         const level = { 촘촘: "compact", 좁게: "compact", 빽빽: "compact", 보통: "normal", 기본: "normal", 넉넉: "airy", 넓게: "airy", 시원하게: "airy" }[m[1]];
         state.design.spacing = level;
         applied.push(`여백 → ${m[1]}`);
-      } else if (/색|강조|배경|글자|글씨/.test(line) && findColorName(line)) {
+      } else if (COLOR_LINE.test(line) && findColorName(line)) {
         const target = /배경/.test(line) ? "bg" : /글자|글씨|텍스트/.test(line) ? "text" : "accent";
         const name = findColorName(line);
         state.design[target] = COLOR_NAMES[name];
@@ -1463,10 +1477,10 @@ ${navHtml}
       } else if ((m = line.match(LOOK_LINE))) {
         state.design.look = LOOK_WORDS[m[1]];
         applied.push(`화면 스타일 → ${LOOKS[state.design.look].label}`);
-      } else if (/템플릿|스타일|테마/.test(line) && longestWord(TEMPLATE_WORDS, line)) {
-        const word = longestWord(TEMPLATE_WORDS, line);
-        const t = allTemplates()[TEMPLATE_WORDS[word]];
-        Object.assign(state.design, { template: TEMPLATE_WORDS[word], accent: t.accent, text: t.text, bg: t.bg, font: t.font, radius: t.radius });
+      } else if (templateKeyFrom(line)) {
+        const key = templateKeyFrom(line);
+        const t = allTemplates()[key];
+        Object.assign(state.design, { template: key, accent: t.accent, text: t.text, bg: t.bg, font: t.font, radius: t.radius });
         applied.push(`템플릿 → ${t.label}`);
       } else if (isAboutContinuation) {
         state.about += "\n" + line;
@@ -2225,40 +2239,112 @@ ${navHtml}
   $("headUndo").addEventListener("click", () => $("nlUndo").click());
 
   // 문장으로 만들기: 아는 말은 해당 칸에 넣고, 모르는 문장은 소개 글에 그대로 넣습니다.
+  const UNDO_LINE = /^(?:되돌려|되돌리|취소|원래대로|이전으로)/;
+  const PHONE_RE = /0\d{1,2}-\d{3,4}-\d{4}/;
+  const EMAIL_RE = /[^\s@]+@[^\s@]+\.[^\s@]+/;
+  // 쉼표 뒤가 이 말로 시작하면 새 명령으로 보고 나눕니다. 그 밖의 쉼표 조각은 앞 문장에 다시 붙입니다.
+  const CLAUSE_START = /^(?:제목|이름|홈페이지|소개|한\s*줄|부제목|본문|연락처|전화|문의|이메일|강조|배경|글자|글씨|색|글꼴|폰트|템플릿|테마|스타일|화면|모서리|여백|소식|프로젝트|버튼|SNS|인스타|유튜브|깃허브|질문|되돌)/;
+  // 명령이나 질문처럼 생긴 문장은 공개되는 소개 글에 넣지 않고 따로 보여 줍니다.
+  const COMMAND_TALK = /[:：?？]|주세요|해\s*줘|넣어|빼\s*줘|지워|바꿔|추가해|보여\s*줘|숨겨/;
+
+  function splitClauses(sentence) {
+    const out = [];
+    sentence.split(/,\s*/).forEach((piece, i) => {
+      if (i === 0 || CLAUSE_START.test(piece)) out.push(piece);
+      else out[out.length - 1] += ", " + piece;
+    });
+    return out;
+  }
+  // "햇살 공부방입니다"처럼 이름을 말하는 문장만 제목으로 봅니다. "함께 배우는 공간입니다"는 설명이라 제외합니다.
+  function nameFrom(sentence, allowBare) {
+    const m = sentence.match(/^(우리는\s+|저희는\s+)?(.{2,15}?)\s*(?:입니다|이에요|예요)$/);
+    if (!m || (!m[1] && !allowBare)) return "";
+    const tokens = m[2].trim().split(/\s+/);
+    if (tokens.length > 3) return "";
+    // "마을", "가을"처럼 명사 끝에 우연히 붙는 글자는 빼고, 설명을 만드는 어미만 봅니다.
+    if (tokens.some((t) => /(?:는|은|에서|에|고|며|하는|있는|되는)$/.test(t))) return "";
+    return m[2].trim();
+  }
+  // 전화번호와 이메일만 말한 문장인지 봅니다. 그 밖의 말이 없으면 소개 글에 넣지 않습니다.
+  function isContactOnly(clause) {
+    const rest = clause.replace(new RegExp(PHONE_RE.source, "g"), "").replace(new RegExp(EMAIL_RE.source, "g"), "")
+      .replace(/전화|번호|이메일|메일|연락처|문의|주소|보내|주세요|입니다|이에요|예요|은|는|이|가|을|를|으로|로|[:：,.\s]/g, "");
+    return rest.length === 0;
+  }
+
   function buildFromSentences(text) {
-    undoSnapshot = clone(state);
-    const lines = text.split(/\n|(?<=[.!?])\s+|,\s*/).map((s) => s.trim()).filter(Boolean);
-    const notes = [];
-    const leftovers = [];
-    for (const line of lines) {
-      const clean = line.replace(/[.。]+$/, "").trim();
-      const found = parseNaturalText(clean);
-      if (found.applied.length) notes.push(...found.applied);
-      else if (found.notUnderstood.length) leftovers.push(line);
+    const sentences = text.split(/\n|(?<=[.!?。])\s+/).map((s) => s.trim().replace(/[.。]+$/, "").trim()).filter(Boolean);
+    if (sentences.some((s) => UNDO_LINE.test(s))) {
+      // "되돌려 줘"는 직전 적용을 되돌립니다. 말로 적기 칸과 같은 동작입니다.
+      if (undoSnapshot) state = undoSnapshot;
+      undoSnapshot = null;
+      fullRender();
+      $("sentenceResult").innerHTML = "<strong>직전 적용을 되돌렸습니다.</strong>";
+      return;
     }
-    // 전화번호와 이메일은 찾아서 연락처에 넣습니다.
-    const phone = text.match(/0\d{1,2}-\d{3,4}-\d{4}/);
-    const email = text.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
-    if (phone && !state.contact.trim()) { state.contact = [phone[0], email ? email[0] : ""].filter(Boolean).join("\n"); notes.push("연락처 → " + phone[0]); }
-    // 제목이 아직 기본값이면 "~입니다" 문장에서 이름을 찾습니다.
-    const plain = leftovers.filter((l) => !/0\d{1,2}-\d{3,4}-\d{4}|@/.test(l));
-    let rest = plain;
-    if (state.site.title === DEFAULT_STATE.site.title) {
-      const namedLine = plain.find((l) => /^(?:우리는\s+|저희는\s+|우리\s+|저희\s+)?.{2,30}?(?:입니다|이에요|예요)\.?$/.test(l));
-      if (namedLine) {
-        state.site.title = namedLine.replace(/\.+$/, "").replace(/^(?:우리는\s+|저희는\s+|우리\s+|저희\s+)/, "").replace(/(?:입니다|이에요|예요)$/, "").trim();
-        rest = plain.filter((l) => l !== namedLine);
-        notes.push("이름 → " + state.site.title);
+    undoSnapshot = clone(state);
+    const notes = [];
+    const prose = [];   // 소개 글에 넣을 문장
+    const skipped = []; // 넣지 않은 문장과 그 이유
+    const contacts = [];
+    for (const sentence of sentences) {
+      for (const clause of splitClauses(sentence)) {
+        const found = parseNaturalText(clause);
+        if (found.applied.length) {
+          notes.push(...found.applied);
+          continue;
+        }
+        const phone = clause.match(PHONE_RE);
+        const email = clause.match(EMAIL_RE);
+        if (phone) contacts.push(phone[0]);
+        if (email) contacts.push(email[0]);
+        if ((phone || email) && isContactOnly(clause)) continue;
+        if (COMMAND_TALK.test(clause)) skipped.push({ text: clause, why: "" });
+        else prose.push(clause);
       }
     }
-    if (rest.length) {
-      state.about = [state.about.trim(), ...rest].filter(Boolean).join("\n");
-      notes.push(`소개 글에 문장 ${rest.length}개를 넣었습니다`);
+
+    // 연락처가 비어 있으면 찾은 번호와 이메일을 넣습니다. 이미 있으면 바꾸지 않고 알려 줍니다.
+    const contactList = [...new Set(contacts)];
+    if (contactList.length) {
+      if (!state.contact.trim()) {
+        state.contact = contactList.join("\n");
+        notes.push("연락처 → " + contactList.join(", "));
+      } else {
+        const fresh = contactList.filter((c) => !state.contact.includes(c));
+        if (fresh.length) skipped.push({ text: fresh.join(", "), why: "연락처가 이미 있어 바꾸지 않았습니다. 바꾸려면 '연락처: 새 번호' 라고 적으세요." });
+      }
     }
+
+    // 이름을 말하는 문장은 제목으로 씁니다. 제목이 이미 있으면 소개 글에 넣지 않고 알려 줍니다.
+    const nameIndex = prose.findIndex((c, i) => nameFrom(c, i === 0 || /^(우리는|저희는)/.test(c)));
+    if (nameIndex >= 0) {
+      const name = nameFrom(prose[nameIndex], nameIndex === 0 || /^(우리는|저희는)/.test(prose[nameIndex]));
+      const [nameSentence] = prose.splice(nameIndex, 1);
+      if (state.site.title === DEFAULT_STATE.site.title) {
+        state.site.title = name;
+        notes.push("이름 → " + name);
+      } else {
+        skipped.push({ text: nameSentence, why: `제목은 이미 '${state.site.title}'입니다. 바꾸려면 '제목: 새 이름' 이라고 적으세요.` });
+      }
+    }
+
+    // 같은 문장을 다시 눌러도 소개 글에 두 번 들어가지 않습니다.
+    const existing = state.about.split("\n").map((x) => x.trim());
+    const fresh = prose.filter((line) => !existing.includes(line));
+    if (fresh.length) {
+      state.about = [state.about.trim(), ...fresh].filter(Boolean).join("\n");
+      notes.push(`소개 글에 문장 ${fresh.length}개를 넣었습니다`);
+    } else if (prose.length) {
+      notes.push("이미 소개 글에 있는 문장이라 그대로 두었습니다");
+    }
+
     fullRender();
-    $("sentenceResult").innerHTML = notes.length
-      ? "<strong>만들었습니다.</strong><br>" + notes.map((n) => "✓ " + esc(n)).join("<br>") + "<br>오른쪽 화면을 확인하세요. 틀리면 ↩ 되돌리기를 누르세요."
-      : "아무 내용도 찾지 못했습니다. 문장을 조금 더 적어 주세요.";
+    const lines = [];
+    if (notes.length) lines.push("<strong>만들었습니다.</strong>", ...notes.map((n) => "✓ " + esc(n)), "오른쪽 화면을 확인하세요. 틀리면 ↩ 되돌리기를 누르세요.");
+    if (skipped.length) lines.push("<strong>넣지 않은 문장</strong>", ...skipped.flatMap(({ text, why }) => [`! ${esc(text)}`, `&nbsp;&nbsp;→ ${esc(why || answerFor(text))}`]));
+    if (!notes.length && !skipped.length) lines.push("아무 내용도 찾지 못했습니다. 문장을 조금 더 적어 주세요.");
+    $("sentenceResult").innerHTML = lines.join("<br>");
   }
   $("sentenceBuild").addEventListener("click", () => {
     const text = $("sentenceInput").value.trim();
